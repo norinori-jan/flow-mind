@@ -1,0 +1,1710 @@
+何も選択されていません
+
+コンテンツへ
+Gmail でのスクリーン リーダーの使用
+7 / 9,826
+flow-mind-index
+受信トレイ
+
+真田瑞光
+添付ファイル
+17:21 (2 時間前)
+To 自分、 norinori-jan2
+
+
+
+
+iPhoneから送信
+ 1 個の添付ファイル
+  •  Gmail によってスキャン済み
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0D0F14">
+<title>flow-mind</title>
+<style>
+/* ── TOKENS ── */
+:root {
+  --bg:       #0D0F14;
+  --surface:  #161A22;
+  --surface2: #1E232E;
+  --border:   rgba(255,255,255,0.08);
+  --border2:  rgba(255,255,255,0.14);
+  --gold:     #F5C842;
+  --gold-dim: rgba(245,200,66,0.18);
+  --blue:     #4A9EFF;
+  --red:      #FF5F5F;
+  --green:    #4AE09A;
+  --text:     #E8EAF0;
+  --text-dim: #6B7280;
+  --text-mid: #9CA3AF;
+  --r:        12px;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin:0; padding:0; }
+html, body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;
+  -webkit-font-smoothing:antialiased; }
+
+/* ── CANVAS LAYER ── */
+#graphCanvas {
+  position:fixed; inset:0; width:100%; height:100%; touch-action:none; cursor:default;
+}
+
+/* ── HEADER ── */
+header {
+  position:fixed; top:0; left:0; right:0; z-index:20;
+  display:flex; align-items:center; gap:10px; padding:calc(env(safe-area-inset-top)+10px) 14px 10px;
+  background:linear-gradient(to bottom, rgba(13,15,20,0.96) 70%, transparent);
+  pointer-events:none;
+}
+.app-title {
+  font-size:15px; font-weight:800; color:var(--gold); letter-spacing:.05em;
+  pointer-events:none;
+}
+.header-spacer { flex:1; }
+header button { pointer-events:auto; }
+
+.hdr-btn {
+  background:rgba(255,255,255,0.06); border:1px solid var(--border2);
+  border-radius:8px; color:var(--text); font-size:13px; font-weight:600;
+  padding:6px 12px; cursor:pointer; display:flex; align-items:center; gap:5px;
+  backdrop-filter:blur(8px); white-space:nowrap;
+}
+.hdr-btn:active { background:rgba(255,255,255,0.12); }
+.hdr-btn.gold { border-color:rgba(245,200,66,0.4); color:var(--gold); }
+.hdr-btn.gold:active { background:var(--gold-dim); }
+
+/* ── SCORE BAR (上位ノード) ── */
+#scoreBar {
+  position:fixed; top:calc(env(safe-area-inset-top)+52px); left:0; right:0; z-index:19;
+  display:flex; gap:6px; padding:0 14px; overflow-x:auto; pointer-events:none;
+  scrollbar-width:none;
+}
+#scoreBar::-webkit-scrollbar { display:none; }
+.score-chip {
+  flex-shrink:0; font-size:11px; font-weight:700; border-radius:100px;
+  padding:4px 12px; border:1px solid; white-space:nowrap; pointer-events:none;
+}
+
+/* ── ATTRACTOR BAR (感情状態表示) ── */
+#attractorBar {
+  position:fixed; top:calc(env(safe-area-inset-top)+86px); left:0; right:0; z-index:19;
+  display:flex; justify-content:center; pointer-events:none;
+}
+.attractor-chip {
+  font-size:12px; font-weight:800; border-radius:100px; padding:6px 16px;
+  border:1px solid; backdrop-filter:blur(10px); letter-spacing:.04em;
+  display:none; align-items:center; gap:6px;
+}
+.attractor-chip.show { display:flex; }
+.attractor-dot { width:7px; height:7px; border-radius:50%; }
+
+/* ── TOOLBAR (下部) ── */
+#toolbar {
+  position:fixed; bottom:0; left:0; right:0; z-index:20;
+  padding:10px 14px calc(env(safe-area-inset-bottom)+10px);
+  background:linear-gradient(to top, rgba(13,15,20,0.97) 70%, transparent);
+  display:flex; align-items:center; gap:8px;
+}
+.tool-btn {
+  background:rgba(255,255,255,0.06); border:1px solid var(--border2);
+  border-radius:10px; color:var(--text); font-size:13px; font-weight:600;
+  padding:9px 14px; cursor:pointer; display:flex; align-items:center; gap:6px;
+  backdrop-filter:blur(8px); white-space:nowrap; flex-shrink:0;
+}
+.tool-btn:active { background:rgba(255,255,255,0.12); }
+.tool-btn.active { border-color:var(--gold); color:var(--gold); background:var(--gold-dim); }
+.tool-btn.danger { border-color:rgba(255,95,95,0.4); color:var(--red); }
+.tool-btn.danger:active { background:rgba(255,95,95,0.12); }
+.tool-spacer { flex:1; }
+#modeLabel {
+  font-size:12px; color:var(--text-dim); pointer-events:none; text-align:center;
+  position:absolute; bottom:calc(env(safe-area-inset-bottom)+54px); left:0; right:0;
+}
+
+/* ── NODE SHEET ── */
+.sheet-overlay {
+  position:fixed; inset:0; z-index:30; background:rgba(0,0,0,0.55);
+  opacity:0; pointer-events:none; transition:opacity .2s;
+}
+.sheet-overlay.open { opacity:1; pointer-events:auto; }
+.sheet {
+  position:fixed; left:0; right:0; bottom:0; z-index:31;
+  background:var(--surface); border-radius:20px 20px 0 0;
+  border-top:1px solid var(--border2);
+  max-height:85vh; display:flex; flex-direction:column;
+  transform:translateY(100%); transition:transform .25s ease-out;
+  box-shadow:0 -4px 40px rgba(0,0,0,0.6);
+}
+.sheet.open { transform:translateY(0); }
+.sheet-handle { width:36px; height:4px; background:var(--border2); border-radius:2px; margin:10px auto 0; flex-shrink:0; }
+.sheet-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 16px; border-bottom:1px solid var(--border); flex-shrink:0;
+}
+.sheet-header h2 { font-size:16px; font-weight:700; }
+.sheet-header button { background:none; border:none; font-size:15px; color:var(--blue); padding:6px; cursor:pointer; font-weight:600; }
+.sheet-body { overflow-y:auto; padding:16px 16px calc(env(safe-area-inset-bottom)+24px); }
+
+.field-label { display:block; font-size:11px; color:var(--text-dim); font-weight:700;
+  text-transform:uppercase; letter-spacing:.06em; margin:16px 0 6px; }
+.field-label:first-child { margin-top:0; }
+
+input[type=text], textarea {
+  width:100%; font-size:16px; padding:10px 12px; border:1px solid var(--border2);
+  border-radius:var(--r); background:var(--surface2); color:var(--text);
+  font-family:inherit; -webkit-appearance:none;
+}
+input[type=text]:focus, textarea:focus { outline:2px solid var(--gold); border-color:var(--gold); }
+textarea { min-height:70px; resize:vertical; line-height:1.5; }
+
+/* 重みスライダー */
+.weight-row { display:flex; align-items:center; gap:12px; margin-top:4px; }
+.weight-row input[type=range] {
+  flex:1; -webkit-appearance:none; height:4px; border-radius:2px;
+  background:linear-gradient(to right, var(--gold) 0%, var(--gold) var(--pct,60%), var(--border2) var(--pct,60%));
+  outline:none; cursor:pointer;
+}
+.weight-row input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none; width:20px; height:20px; border-radius:50%;
+  background:var(--gold); border:2px solid var(--bg);
+  box-shadow:0 0 8px rgba(245,200,66,0.6);
+}
+.weight-val { font-size:18px; font-weight:800; color:var(--gold); min-width:24px; text-align:center; }
+
+/* ノードカラー選択 */
+.color-row { display:flex; gap:8px; margin-top:4px; }
+.color-swatch {
+  width:32px; height:32px; border-radius:50%; cursor:pointer;
+  border:2px solid transparent; transition:transform .15s;
+}
+.color-swatch.active { border-color:#fff; transform:scale(1.15); }
+
+/* AI分析結果 */
+.ai-result-box {
+  background:var(--surface2); border:1px solid var(--border2); border-radius:var(--r);
+  padding:14px; font-size:14px; line-height:1.75; margin-top:12px;
+  white-space:pre-wrap; display:none;
+}
+.ai-result-box.visible { display:block; }
+
+/* 物理層インジケータ（ノードシート内） */
+.physics-box {
+  background:var(--surface2); border:1px solid var(--border2); border-radius:var(--r);
+  padding:12px 14px; margin-top:8px; font-size:12px; color:var(--text-mid); line-height:1.8;
+}
+.physics-box b { color:var(--text); }
+
+/* ── GRAPH SELECTOR ── */
+#graphListWrap { margin-bottom:14px; }
+.graph-item {
+  display:flex; align-items:center; justify-content:space-between;
+  background:var(--surface2); border:1px solid var(--border); border-radius:var(--r);
+  padding:12px 14px; margin-bottom:8px; cursor:pointer;
+}
+.graph-item:active { background:var(--border); }
+.graph-item.current { border-color:var(--gold); }
+.graph-item-name { font-size:15px; font-weight:600; }
+.graph-item-meta { font-size:12px; color:var(--text-dim); margin-top:2px; }
+.graph-item-del { background:none; border:none; color:var(--red); font-size:18px; padding:4px 8px; cursor:pointer; }
+
+/* ── TOAST ── */
+.toast {
+  position:fixed; bottom:calc(env(safe-area-inset-bottom)+80px); left:50%;
+  transform:translateX(-50%) translateY(12px);
+  background:rgba(30,35,46,0.95); color:var(--text); border:1px solid var(--border2);
+  border-radius:100px; padding:9px 20px; font-size:13px; font-weight:600;
+  z-index:60; opacity:0; transition:opacity .2s, transform .2s;
+  white-space:nowrap; pointer-events:none; backdrop-filter:blur(12px);
+}
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ── AI LOADING ── */
+#aiLoading {
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+  z-index:50; background:var(--surface); border:1px solid var(--border2);
+  border-radius:16px; padding:20px 28px; font-size:14px; color:var(--text-mid);
+  display:none; text-align:center; box-shadow:0 8px 40px rgba(0,0,0,0.6);
+}
+#aiLoading.show { display:block; }
+
+/* ── EDGE DELETE HINT ── */
+#edgeHint {
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+  background:var(--surface); border:1px solid var(--border2); border-radius:14px;
+  padding:16px 20px; z-index:25; display:none; text-align:center;
+  box-shadow:0 4px 30px rgba(0,0,0,0.5);
+}
+#edgeHint.show { display:block; }
+#edgeHint p { font-size:14px; margin-bottom:12px; color:var(--text-mid); }
+#edgeHint button { margin:0 4px; padding:8px 16px; border-radius:8px; border:1px solid var(--border2);
+  font-size:14px; font-weight:600; cursor:pointer; }
+#edgeDeleteBtn { background:rgba(255,95,95,0.15); color:var(--red); border-color:rgba(255,95,95,0.3); }
+#edgeCancelBtn { background:var(--surface2); color:var(--text); }
+</style>
+</head>
+<body>
+
+<!-- CANVAS -->
+<canvas id="graphCanvas"></canvas>
+
+<!-- HEADER -->
+<header>
+  <span class="app-title">⬡ flow-mind</span>
+  <div class="header-spacer"></div>
+  <button class="hdr-btn" id="graphsBtn">📂 グラフ</button>
+  <button class="hdr-btn gold" id="analyzeBtn">✦ AI分析</button>
+</header>
+
+<!-- SCORE BAR -->
+<div id="scoreBar"></div>
+
+<!-- ATTRACTOR BAR -->
+<div id="attractorBar"><span class="attractor-chip" id="attractorChip"><span class="attractor-dot" id="attractorDot"></span><span id="attractorText"></span></span></div>
+
+<!-- MODE LABEL -->
+<div id="modeLabel">タップで新しいノードを追加</div>
+
+<!-- TOOLBAR -->
+<div id="toolbar">
+  <button class="tool-btn" id="addModeBtn">＋ 追加</button>
+  <button class="tool-btn" id="connectModeBtn">→ 接続</button>
+  <button class="tool-btn" id="editModeBtn">✎ 編集</button>
+  <div class="tool-spacer"></div>
+  <button class="tool-btn danger" id="deleteNodeBtn" style="display:none">🗑 削除</button>
+  <button class="tool-btn" id="resetViewBtn">⊙</button>
+</div>
+
+<!-- OVERLAY -->
+<div class="sheet-overlay" id="overlay"></div>
+
+<!-- NODE EDIT SHEET -->
+<div class="sheet" id="nodeSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <button id="nodeSheetCancel">キャンセル</button>
+    <h2 id="nodeSheetTitle">ノード編集</h2>
+    <button id="nodeSheetSave" style="color:var(--gold);font-weight:800;">保存</button>
+  </div>
+  <div class="sheet-body">
+    <label class="field-label">ラベル</label>
+    <input type="text" id="nLabel" placeholder="アイデア・概念を入力" maxlength="40">
+
+    <label class="field-label">メモ</label>
+    <textarea id="nMemo" placeholder="補足・根拠など（任意）"></textarea>
+
+    <label class="field-label">自己評価の重み（確信度）</label>
+    <div class="weight-row">
+      <input type="range" id="nWeight" min="1" max="5" step="1" value="3">
+      <span class="weight-val" id="nWeightVal">3</span>
+    </div>
+
+    <label class="field-label">ノードカラー</label>
+    <div class="color-row" id="colorRow">
+      <div class="color-swatch active" data-color="#4A9EFF" style="background:#4A9EFF"></div>
+      <div class="color-swatch" data-color="#F5C842" style="background:#F5C842"></div>
+      <div class="color-swatch" data-color="#4AE09A" style="background:#4AE09A"></div>
+      <div class="color-swatch" data-color="#FF5F5F" style="background:#FF5F5F"></div>
+      <div class="color-swatch" data-color="#C084FC" style="background:#C084FC"></div>
+      <div class="color-swatch" data-color="#FB923C" style="background:#FB923C"></div>
+    </div>
+
+    <label class="field-label" style="margin-top:20px;">接続エッジ</label>
+    <div id="edgeInfo" style="font-size:13px;color:var(--text-dim);padding:4px 0;"></div>
+
+    <label class="field-label" style="margin-top:20px;">物理層ステータス</label>
+    <div class="physics-box" id="physicsBox">—</div>
+  </div>
+</div>
+
+<!-- AI ANALYSIS SHEET -->
+<div class="sheet" id="aiSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <button id="aiSheetClose">閉じる</button>
+    <h2>AI グラフ分析</h2>
+    <span id="aiModelBadge" style="font-size:11px;background:var(--gold-dim);color:var(--gold);border-radius:100px;padding:3px 12px;font-weight:700;"></span>
+  </div>
+  <div class="sheet-body">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+      <button class="tool-btn" id="aiStructureBtn">🔍 構造分析</button>
+      <button class="tool-btn" id="aiWeakBtn">⚠️ 弱点検出</button>
+      <button class="tool-btn" id="aiSuggestBtn">💡 ノード提案</button>
+      <button class="tool-btn gold" id="aiHonneBtn">🧠 本音抽出</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <input type="text" id="aiCustomInput" placeholder="カスタム質問…" style="flex:1;font-size:15px;">
+      <button class="tool-btn gold" id="aiCustomBtn">送信</button>
+    </div>
+    <div class="ai-result-box" id="aiResultBox"></div>
+  </div>
+</div>
+
+<!-- GRAPHS LIST SHEET -->
+<div class="sheet" id="graphsSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <button id="graphsSheetClose">閉じる</button>
+    <h2>グラフ一覧</h2>
+    <button id="newGraphBtn" style="color:var(--gold);font-weight:800;">＋ 新規</button>
+  </div>
+  <div class="sheet-body">
+    <div id="graphListWrap"></div>
+    <div style="margin-top:8px;border-top:1px solid var(--border);padding-top:14px;">
+      <button class="tool-btn" id="importTransferBtn" style="width:100%;justify-content:center;">
+        📥 is_transfer から受信
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- EDGE DELETE HINT -->
+<div id="edgeHint">
+  <p id="edgeHintLabel">この接続を削除しますか？</p>
+  <button id="edgeDeleteBtn">削除</button>
+  <button id="edgeCancelBtn">キャンセル</button>
+</div>
+
+<!-- AI LOADING -->
+<div id="aiLoading">⏳ AIが分析中…</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════
+// CONSTANTS & STATE
+// ═══════════════════════════════════
+const LS_GRAPHS   = 'fm_graphs';
+const LS_CURRENT  = 'fm_current';
+const LS_CLAUDE   = 'ml_claude';
+const LS_GEMINI   = 'ml_gemini';
+const LS_OPENAI   = 'ml_openai';
+const LS_PROXY    = 'kansei_proxy_url';
+const LS_MODEL    = 'kansei_model';
+const LS_TRANSFER = 'is_transfer';
+
+const MODELS = {
+  claude: { label:'Claude', endpoint:'https://api.anthropic.com/v1/messages', model:'claude-sonnet-4-6' },
+  gemini: { label:'Gemini', endpoint:'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', model:'gemini-2.0-flash' },
+  openai: { label:'OpenAI', endpoint:'https://api.openai.com/v1/chat/completions', model:'gpt-4o-mini' },
+};
+
+// ═══════════════════════════════════
+// 感情の物理モデル — 定数（4階層）
+// ═══════════════════════════════════
+// ① 電荷の減衰速度（時定数 τ, ms）
+const CHARGE_DECAY_TAU = 4000;
+// ① 発火しきい値
+const FIRE_CHARGE_BOOST = 0.7;
+// ② 伝播効率（電流→電場・磁場のアナロジー：エッジのconductanceで増幅）
+const PROPAGATION_FACTOR = 0.42;
+// ① Hebbian強化幅（同時発火でconductanceが伸びる量）
+const HEBBIAN_STEP = 0.04;
+// ③ 同期検出の時間窓（ms）— この窓内の発火を「同期」とみなす
+const SYNC_WINDOW_MS = 2200;
+// ③ 周波数帯の境界（Hz相当、発火間隔から逆算した疑似周波数）
+const BAND_THRESH = { gamma:30, beta:13, alpha:8, theta:4 };
+// ③ 帯域ごとの色・速度（可視化用）
+const BAND_STYLE = {
+  gamma: { color:'#FF5F5F', speed:1.0, label:'γ波（怒り・集中）' },
+  beta:  { color:'#FB923C', speed:0.7, label:'β波（思考・緊張）' },
+  alpha: { color:'#4AE09A', speed:0.45,label:'α波（リラックス）' },
+  theta: { color:'#C084FC', speed:0.3, label:'θ波（不安・記憶）' },
+  delta: { color:'#4A9EFF', speed:0.18,label:'δ波（深い情動）' },
+};
+// ④ attractor判定テーブル（帯域 × 密度 × 持続時間 → 感情ラベル）
+function classifyAttractor(cluster) {
+  const { band, density, durationMs, size } = cluster;
+  if (size < 2) return null;
+  if (band === 'gamma') {
+    if (density > 0.6 && durationMs > 2800) return { label:'怒り', color:BAND_STYLE.gamma.color };
+    return { label:'集中', color:BAND_STYLE.gamma.color };
+  }
+  if (band === 'beta') {
+    return durationMs > 3000 ? { label:'緊張', color:BAND_STYLE.beta.color } : { label:'思考中', color:BAND_STYLE.beta.color };
+  }
+  if (band === 'alpha') {
+    return { label:'リラックス', color:BAND_STYLE.alpha.color };
+  }
+  if (band === 'theta') {
+    return density > 0.5 ? { label:'不安', color:BAND_STYLE.theta.color } : { label:'想起', color:BAND_STYLE.theta.color };
+  }
+  if (band === 'delta') {
+    return durationMs > 5000 ? { label:'深い情動', color:BAND_STYLE.delta.color } : null;
+  }
+  return null;
+}
+
+// Canvas
+const canvas = document.getElementById('graphCanvas');
+const ctx = canvas.getContext('2d');
+
+// Viewport transform
+let vpX = 0, vpY = 0, vpScale = 1;
+
+// Graph data
+let graphs = {};      // { id: { name, nodes:{}, edges:[] } }
+let currentGraphId = null;
+
+function currentGraph() { return graphs[currentGraphId] || null; }
+function nodes() { return currentGraph()?.nodes || {}; }
+function edges() { return currentGraph()?.edges || []; }
+
+// Modes
+const MODE = { ADD:'add', CONNECT:'connect', EDIT:'edit' };
+let mode = MODE.ADD;
+let connectFrom = null;   // nodeId of connect source
+let selectedNode = null;  // nodeId
+let selectedEdge = null;  // {from,to} index
+
+// Drag
+let dragging = null;  // { nodeId, offX, offY }
+let isPanning = false;
+let panStart = { x:0, y:0, vpX:0, vpY:0 };
+let lastTap = { time:0, x:0, y:0 };
+
+// Animation
+let animFrame = null;
+let glowPhase = 0;
+let lastFrameTime = performance.now();
+
+// 現在のattractor状態（④ クオリア層）
+let currentAttractor = null;
+let currentSyncClusters = [];
+
+// Node default
+const NODE_R = 38;
+let editingNodeId = null;
+let editingNodeColor = '#4A9EFF';
+
+// ═══════════════════════════════════
+// UTILS
+// ═══════════════════════════════════
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+function saveGraphs() {
+  try { localStorage.setItem(LS_GRAPHS, JSON.stringify(graphs)); } catch(e) { showToast('保存容量が不足しています'); }
+}
+
+function loadGraphs() {
+  try {
+    const raw = localStorage.getItem(LS_GRAPHS);
+    graphs = raw ? JSON.parse(raw) : {};
+    currentGraphId = localStorage.getItem(LS_CURRENT) || null;
+    if (!currentGraphId || !graphs[currentGraphId]) {
+      // デフォルトグラフ作成
+      createGraph('はじめてのグラフ');
+    }
+  } catch(e) { graphs = {}; createGraph('グラフ1'); }
+}
+
+function createGraph(name) {
+  const id = uid();
+  graphs[id] = { name, nodes:{}, edges:[], createdAt: Date.now() };
+  currentGraphId = id;
+  localStorage.setItem(LS_CURRENT, id);
+  saveGraphs();
+  return id;
+}
+
+function switchGraph(id) {
+  currentGraphId = id;
+  localStorage.setItem(LS_CURRENT, id);
+  connectFrom = null; selectedNode = null;
+  centerView();
+  updateScoreBar();
+  renderGraphList();
+}
+
+// ═══════════════════════════════════
+// PAGE RANK — 重要度スコア計算
+// ═══════════════════════════════════
+function computeScores() {
+  const g = currentGraph();
+  if (!g) return {};
+  const nids = Object.keys(g.nodes);
+  if (nids.length === 0) return {};
+
+  // 初期スコア = 自己重み
+  const scores = {};
+  nids.forEach(id => { scores[id] = g.nodes[id].weight || 3; });
+
+  // 反復（3回）
+  for (let iter = 0; iter < 3; iter++) {
+    const next = {};
+    nids.forEach(id => { next[id] = g.nodes[id].weight || 3; }); // 自己重みがベース
+    g.edges.forEach(e => {
+      const w = e.weight || 1;
+      // toノードはfromノードのスコアを受け取る
+      if (next[e.to] !== undefined && scores[e.from] !== undefined) {
+        next[e.to] += scores[e.from] * w * 0.4;
+      }
+    });
+    Object.assign(scores, next);
+  }
+
+  // 正規化 [0..1]
+  const max = Math.max(...Object.values(scores));
+  if (max > 0) nids.forEach(id => { scores[id] = scores[id] / max; });
+  return scores;
+}
+
+// ═══════════════════════════════════
+// ① ② 感情の物理モデル — 電荷の流れと伝播
+// ═══════════════════════════════════
+// ノードを「発火」させる（タップ＝活動電位の発生）
+function fireNode(id) {
+  const g = currentGraph();
+  const n = g?.nodes[id];
+  if (!n) return;
+
+  ensurePhysicsFields(n);
+  const now = Date.now();
+
+  // ① 発火履歴を記録（直近8件まで保持）
+  n.fireHistory.push(now);
+  if (n.fireHistory.length > 8) n.fireHistory.shift();
+  n.lastFired = now;
+  n.charge = Math.min(1, n.charge + FIRE_CHARGE_BOOST);
+
+  // ② 電流が流れる → 隣接ノードへ電場・磁場のように伝播
+  const outEdges = g.edges.filter(e => e.from === id || e.to === id);
+  outEdges.forEach(e => {
+    ensureEdgePhysics(e);
+    const otherId = e.from === id ? e.to : e.from;
+    const other = g.nodes[otherId];
+    if (!other) return;
+    ensurePhysicsFields(other);
+
+    const transferred = n.charge * (e.weight || 1) * e.conductance * PROPAGATION_FACTOR;
+    other.charge = Math.min(1, other.charge + transferred);
+
+    // ① 同時発火していたエッジは伝導率（シナプス強度）を強化＝Hebbian learning
+    const otherRecentlyFired = other.lastFired && (now - other.lastFired < SYNC_WINDOW_MS);
+    if (otherRecentlyFired) {
+      e.conductance = Math.min(2, e.conductance + HEBBIAN_STEP);
+    }
+  });
+
+  saveGraphs();
+}
+
+function ensurePhysicsFields(n) {
+  if (n.charge === undefined) n.charge = 0;
+  if (!n.fireHistory) n.fireHistory = [];
+  if (n.lastFired === undefined) n.lastFired = 0;
+}
+function ensureEdgePhysics(e) {
+  if (e.conductance === undefined) e.conductance = 1.0;
+}
+
+// charge の時間減衰（フレームごとに呼ぶ）
+function decayCharges(dtMs) {
+  const g = currentGraph();
+  if (!g) return;
+  const decayFactor = Math.exp(-dtMs / CHARGE_DECAY_TAU);
+  Object.values(g.nodes).forEach(n => {
+    if (n.charge) n.charge *= decayFactor;
+    if (n.charge < 0.01) n.charge = 0;
+  });
+}
+
+// ═══════════════════════════════════
+// ③ 神経ネットワークの同期検出（コヒーレンス）
+// ═══════════════════════════════════
+function estimateFreqBand(n) {
+  const h = n.fireHistory;
+  if (!h || h.length < 2) return null;
+  // 直近の発火間隔の平均（ms） → 疑似周波数（Hz）に変換
+  const recent = h.slice(-4);
+  let totalGap = 0, count = 0;
+  for (let i = 1; i < recent.length; i++) {
+    totalGap += recent[i] - recent[i-1];
+    count++;
+  }
+  if (count === 0) return null;
+  const avgGapMs = totalGap / count;
+  if (avgGapMs <= 0) return null;
+  const freqHz = 1000 / avgGapMs;
+  if (freqHz >= BAND_THRESH.gamma) return 'gamma';
+  if (freqHz >= BAND_THRESH.beta)  return 'beta';
+  if (freqHz >= BAND_THRESH.alpha) return 'alpha';
+  if (freqHz >= BAND_THRESH.theta) return 'theta';
+  return 'delta';
+}
+
+// 時間窓内に発火していて、互いに連結しているノード群をクラスタ化
+function detectSyncClusters() {
+  const g = currentGraph();
+  if (!g) return [];
+  const now = Date.now();
+  const activeIds = Object.keys(g.nodes).filter(id => {
+    const n = g.nodes[id];
+    return n.lastFired && (now - n.lastFired < SYNC_WINDOW_MS);
+  });
+  if (activeIds.length === 0) return [];
+
+  // 隣接マップ
+  const adj = {};
+  activeIds.forEach(id => adj[id] = []);
+  g.edges.forEach(e => {
+    if (adj[e.from] && activeIds.includes(e.to)) adj[e.from].push(e.to);
+    if (adj[e.to] && activeIds.includes(e.from)) adj[e.to].push(e.from);
+  });
+
+  // 連結成分を探索
+  const visited = new Set();
+  const clusters = [];
+  activeIds.forEach(start => {
+    if (visited.has(start)) return;
+    const stack = [start];
+    const comp = [];
+    while (stack.length) {
+      const cur = stack.pop();
+      if (visited.has(cur)) continue;
+      visited.add(cur);
+      comp.push(cur);
+      (adj[cur]||[]).forEach(nb => { if (!visited.has(nb)) stack.push(nb); });
+    }
+    if (comp.length === 0) return;
+
+    // 帯域を多数決で決定
+    const bandCounts = {};
+    let earliestFire = Infinity, latestFire = 0;
+    comp.forEach(id => {
+      const n = g.nodes[id];
+      const band = estimateFreqBand(n) || 'delta';
+      bandCounts[band] = (bandCounts[band]||0) + 1;
+      earliestFire = Math.min(earliestFire, n.fireHistory[0] || n.lastFired);
+      latestFire = Math.max(latestFire, n.lastFired);
+    });
+    const band = Object.entries(bandCounts).sort((a,b)=>b[1]-a[1])[0][0];
+    const density = comp.length / activeIds.length;
+    const durationMs = latestFire - earliestFire;
+
+    clusters.push({ nodeIds: comp, band, density, durationMs, size: comp.length });
+  });
+
+  return clusters.filter(c => c.size >= 2); // 単独ノードはクラスタとみなさない
+}
+
+function updateAttractorState() {
+  currentSyncClusters = detectSyncClusters();
+  if (currentSyncClusters.length === 0) { currentAttractor = null; updateAttractorBar(); return; }
+  // 最大クラスタを代表attractorとして採用
+  const main = currentSyncClusters.sort((a,b)=>b.size-a.size)[0];
+  currentAttractor = classifyAttractor(main);
+  updateAttractorBar();
+}
+
+function updateAttractorBar() {
+  const chip = document.getElementById('attractorChip');
+  const dot  = document.getElementById('attractorDot');
+  const text = document.getElementById('attractorText');
+  if (!currentAttractor) { chip.classList.remove('show'); return; }
+  chip.classList.add('show');
+  chip.style.color = currentAttractor.color;
+  chip.style.borderColor = currentAttractor.color + '55';
+  chip.style.background = currentAttractor.color + '15';
+  dot.style.background = currentAttractor.color;
+  text.textContent = currentAttractor.label;
+}
+
+// ═══════════════════════════════════
+// CANVAS RENDER
+// ═══════════════════════════════════
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+function worldToScreen(wx, wy) {
+  return { x: wx * vpScale + vpX, y: wy * vpScale + vpY };
+}
+function screenToWorld(sx, sy) {
+  return { x: (sx - vpX) / vpScale, y: (sy - vpY) / vpScale };
+}
+
+function centerView() {
+  const g = currentGraph();
+  if (!g) return;
+  const nids = Object.keys(g.nodes);
+  if (nids.length === 0) { vpX = canvas.width/2; vpY = canvas.height/2; vpScale = 1; return; }
+  let minX=Infinity, maxX=-Infinity, minY=Infinity, maxY=-Infinity;
+  nids.forEach(id => {
+    const n = g.nodes[id];
+    minX = Math.min(minX, n.x); maxX = Math.max(maxX, n.x);
+    minY = Math.min(minY, n.y); maxY = Math.max(maxY, n.y);
+  });
+  const cx = (minX+maxX)/2, cy = (minY+maxY)/2;
+  const margin = 120;
+  const scaleX = (canvas.width - margin*2) / Math.max(maxX-minX, 1);
+  const scaleY = (canvas.height - margin*2) / Math.max(maxY-minY, 1);
+  vpScale = Math.min(Math.min(scaleX, scaleY), 1.2);
+  vpX = canvas.width/2 - cx * vpScale;
+  vpY = canvas.height/2 - cy * vpScale;
+}
+
+function drawArrow(x1, y1, x2, y2, color, weight, glow) {
+  const dx = x2-x1, dy = y2-y1;
+  const len = Math.sqrt(dx*dx+dy*dy);
+  if (len < 1) return;
+  const ux = dx/len, uy = dy/len;
+  // 矢印の先端をノード端まで縮める
+  const r = NODE_R * vpScale;
+  const ex = x2 - ux*r, ey = y2 - uy*r;
+  const sx = x1 + ux*r, sy = y1 + uy*r;
+
+  ctx.save();
+  ctx.globalAlpha = glow ? 0.9 : 0.55;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = (1 + weight * 0.7) * vpScale;
+  ctx.lineCap = 'round';
+  if (glow) {
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 8;
+  }
+  ctx.beginPath();
+  ctx.moveTo(sx, sy);
+  ctx.lineTo(ex, ey);
+  ctx.stroke();
+
+  // 矢印ヘッド
+  const hs = 10 * vpScale;
+  const angle = Math.atan2(ey-sy, ex-sx);
+  ctx.fillStyle = color;
+  ctx.shadowBlur = glow ? 8 : 0;
+  ctx.beginPath();
+  ctx.moveTo(ex, ey);
+  ctx.lineTo(ex - hs*Math.cos(angle-0.4), ey - hs*Math.sin(angle-0.4));
+  ctx.lineTo(ex - hs*Math.cos(angle+0.4), ey - hs*Math.sin(angle+0.4));
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawEdgeWeight(x1, y1, x2, y2, w) {
+  const mx = (x1+x2)/2, my = (y1+y2)/2;
+  ctx.save();
+  ctx.fillStyle = 'rgba(245,200,66,0.9)';
+  ctx.font = `bold ${11*vpScale}px -apple-system`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(`×${w}`, mx, my - 10*vpScale);
+  ctx.restore();
+}
+
+// ② 電流が流れている様子を示すパルス（エッジ上を流れる光点）
+function drawCurrentPulse(x1, y1, x2, y2, charge, color) {
+  if (charge < 0.05) return;
+  const t = (Date.now() % 900) / 900;
+  const px = x1 + (x2-x1) * t;
+  const py = y1 + (y2-y1) * t;
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, charge);
+  ctx.fillStyle = color;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 10;
+  ctx.beginPath();
+  ctx.arc(px, py, 3.5 * vpScale, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawNode(n, id, score, phase) {
+  const s = worldToScreen(n.x, n.y);
+  const r = NODE_R * vpScale;
+  const isSel = selectedNode === id;
+  const isConnFrom = connectFrom === id;
+  const glowAmt = score * (0.5 + 0.5 * Math.sin(phase + (n.x+n.y)*0.01));
+
+  ctx.save();
+
+  // グロー
+  if (glowAmt > 0.3 || isSel || isConnFrom) {
+    ctx.shadowColor = isConnFrom ? '#F5C842' : (isSel ? '#fff' : n.color || '#4A9EFF');
+    ctx.shadowBlur = 8 + glowAmt * 24;
+  }
+
+  // 外リング（選択・接続）
+  if (isSel || isConnFrom) {
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, r + 5*vpScale, 0, Math.PI*2);
+    ctx.strokeStyle = isConnFrom ? '#F5C842' : 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 2*vpScale;
+    ctx.stroke();
+  }
+
+  // 本体
+  const grad = ctx.createRadialGradient(s.x - r*0.3, s.y - r*0.3, r*0.1, s.x, s.y, r);
+  const col = n.color || '#4A9EFF';
+  grad.addColorStop(0, col + 'CC');
+  grad.addColorStop(1, col + '55');
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, r, 0, Math.PI*2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.strokeStyle = col + 'AA';
+  ctx.lineWidth = 1.5*vpScale;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // ① 電荷リング（charge量を内側の光輪で表現）
+  if (n.charge > 0.03) {
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, r * 0.7, 0, Math.PI*2);
+    ctx.strokeStyle = `rgba(255,255,255,${n.charge * 0.7})`;
+    ctx.lineWidth = 2 * vpScale;
+    ctx.stroke();
+  }
+
+  // スコアリング（重要度）
+  if (score > 0) {
+    const pct = score;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, r + 3*vpScale, -Math.PI/2, -Math.PI/2 + Math.PI*2*pct);
+    ctx.strokeStyle = `rgba(245,200,66,${0.4 + pct*0.5})`;
+    ctx.lineWidth = 3*vpScale;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  }
+
+  // ラベル
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const fs = Math.max(10, Math.min(14, 12)) * vpScale;
+  ctx.font = `700 ${fs}px -apple-system`;
+  const maxW = r * 1.6;
+  const label = n.label || '?';
+  // 折り返し
+  const words = label.split('');
+  const lineH = fs * 1.3;
+  const lines = [];
+  let cur = '';
+  for (const ch of words) {
+    if (ctx.measureText(cur+ch).width > maxW) { lines.push(cur); cur = ch; }
+    else cur += ch;
+  }
+  if (cur) lines.push(cur);
+  const totalH = lines.length * lineH;
+  lines.forEach((line, i) => {
+    ctx.fillText(line, s.x, s.y - totalH/2 + lineH*(i+0.5));
+  });
+
+  // 重みバッジ
+  const badge = `W${n.weight||3}`;
+  ctx.font = `600 ${9*vpScale}px -apple-system`;
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fillText(badge, s.x, s.y + r * 0.7);
+
+  ctx.restore();
+}
+
+// ③④ 同期クラスタの波紋エフェクト（γ波風リング）— attractorの可視化
+function drawSyncRipples(phase) {
+  if (!currentSyncClusters.length) return;
+  const g = currentGraph();
+  if (!g) return;
+
+  currentSyncClusters.forEach(cluster => {
+    const style = BAND_STYLE[cluster.band] || BAND_STYLE.delta;
+    // クラスタの重心
+    let cx = 0, cy = 0;
+    cluster.nodeIds.forEach(id => {
+      const n = g.nodes[id];
+      cx += n.x; cy += n.y;
+    });
+    cx /= cluster.nodeIds.length; cy /= cluster.nodeIds.length;
+    const center = worldToScreen(cx, cy);
+
+    // 各ノードを包む波紋を個別に描く
+    cluster.nodeIds.forEach(id => {
+      const n = g.nodes[id];
+      const s = worldToScreen(n.x, n.y);
+      const baseR = NODE_R * vpScale;
+      for (let i = 0; i < 3; i++) {
+        const ringPhase = (phase * style.speed * 3 + i * 0.9) % 3;
+        const ringR = baseR + ringPhase * 22 * vpScale;
+        const alpha = Math.max(0, 1 - ringPhase / 3) * 0.5 * cluster.density;
+        if (alpha <= 0.01) continue;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = style.color;
+        ctx.lineWidth = 1.6 * vpScale;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, ringR, 0, Math.PI*2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    });
+
+    // クラスタ全体を囲む薄い帯域ラベル
+    if (cluster.nodeIds.length >= 2 && vpScale > 0.4) {
+      ctx.save();
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = style.color;
+      ctx.font = `700 ${11*vpScale}px -apple-system`;
+      ctx.textAlign = 'center';
+      ctx.fillText(style.label, center.x, center.y - NODE_R*vpScale - 26*vpScale);
+      ctx.restore();
+    }
+  });
+}
+
+function render(now) {
+  const dt = now ? (now - lastFrameTime) : 16;
+  lastFrameTime = now || performance.now();
+
+  resizeCanvas();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  glowPhase += 0.04;
+
+  const g = currentGraph();
+  if (!g) { animFrame = requestAnimationFrame(render); return; }
+
+  // ① 電荷の自然減衰
+  decayCharges(dt);
+
+  const scores = computeScores();
+
+  // Draw edges
+  g.edges.forEach(e => {
+    const from = g.nodes[e.from], to = g.nodes[e.to];
+    if (!from || !to) return;
+    ensureEdgePhysics(e);
+    const fs = worldToScreen(from.x, from.y);
+    const ts = worldToScreen(to.x, to.y);
+    const isSel = selectedEdge && selectedEdge.from===e.from && selectedEdge.to===e.to;
+    const col = isSel ? '#FF5F5F' : (from.color || '#4A9EFF');
+    drawArrow(fs.x, fs.y, ts.x, ts.y, col, e.weight||1, isSel);
+    if (vpScale > 0.5) drawEdgeWeight(fs.x, fs.y, ts.x, ts.y, e.weight||1);
+    // ② 電流パルス（fromに電荷が乗っていれば流れて見える）
+    drawCurrentPulse(fs.x, fs.y, ts.x, ts.y, from.charge||0, col);
+  });
+
+  // 接続モード中のプレビューライン
+  if (mode === MODE.CONNECT && connectFrom && g.nodes[connectFrom]) {
+    // drawn dynamically in pointermove — skip here
+  }
+
+  // ③④ 同期波紋（ノードより先に描いて、ノードが上に乗るように）
+  drawSyncRipples(glowPhase);
+
+  // Draw nodes
+  Object.entries(g.nodes).forEach(([id, n]) => {
+    ensurePhysicsFields(n);
+    drawNode(n, id, scores[id] || 0, glowPhase);
+  });
+
+  animFrame = requestAnimationFrame(render);
+}
+
+// attractor状態は描画ループとは別の軽い周期で再計算（重い処理ではないが頻度を抑える）
+setInterval(updateAttractorState, 500);
+
+// ═══════════════════════════════════
+// SCORE BAR
+// ═══════════════════════════════════
+function updateScoreBar() {
+  const scores = computeScores();
+  const g = currentGraph();
+  if (!g) return;
+  const sorted = Object.entries(scores)
+    .filter(([id]) => g.nodes[id])
+    .sort((a,b) => b[1]-a[1])
+    .slice(0, 5);
+
+  const bar = document.getElementById('scoreBar');
+  bar.innerHTML = sorted.map(([id, sc]) => {
+    const n = g.nodes[id];
+    const pct = Math.round(sc * 100);
+    const col = n.color || '#4A9EFF';
+    return `<span class="score-chip" style="color:${col};border-color:${col}40;background:${col}18;">
+      ${n.label || '?'} ${pct}%
+    </span>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════
+// INPUT HANDLING
+// ═══════════════════════════════════
+function getPos(e) {
+  const r = canvas.getBoundingClientRect();
+  if (e.touches) {
+    return { x: e.touches[0].clientX - r.left, y: e.touches[0].clientY - r.top };
+  }
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+function hitNode(sx, sy) {
+  const g = currentGraph();
+  if (!g) return null;
+  const w = screenToWorld(sx, sy);
+  const r = NODE_R;
+  for (const [id, n] of Object.entries(g.nodes)) {
+    const dx = n.x - w.x, dy = n.y - w.y;
+    if (dx*dx + dy*dy < r*r) return id;
+  }
+  return null;
+}
+
+function hitEdge(sx, sy) {
+  const g = currentGraph();
+  if (!g) return null;
+  const w = screenToWorld(sx, sy);
+  const thresh = 18 / vpScale;
+  for (const e of g.edges) {
+    const fn = g.nodes[e.from], tn = g.nodes[e.to];
+    if (!fn || !tn) continue;
+    const dx = tn.x - fn.x, dy = tn.y - fn.y;
+    const len = Math.sqrt(dx*dx+dy*dy);
+    if (len < 1) continue;
+    const t = Math.max(0, Math.min(1, ((w.x-fn.x)*dx+(w.y-fn.y)*dy)/(len*len)));
+    const px = fn.x + t*dx - w.x, py = fn.y + t*dy - w.y;
+    if (Math.sqrt(px*px+py*py) < thresh) return e;
+  }
+  return null;
+}
+
+// Pointer events
+let pointerDown = false;
+let pointerMoved = false;
+let pointerStartPos = { x:0, y:0 };
+
+canvas.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  pointerDown = true;
+  pointerMoved = false;
+  const pos = getPos(e);
+  pointerStartPos = pos;
+
+  const hitN = hitNode(pos.x, pos.y);
+
+  if (mode === MODE.EDIT) {
+    if (hitN) { selectedNode = hitN; dragging = { nodeId:hitN, offX:0, offY:0 }; }
+    else {
+      const hitE = hitEdge(pos.x, pos.y);
+      if (hitE) { selectedEdge = hitE; showEdgeHint(hitE); }
+      else { selectedNode = null; selectedEdge = null; }
+    }
+    document.getElementById('deleteNodeBtn').style.display = selectedNode ? '' : 'none';
+  } else if (mode === MODE.CONNECT) {
+    if (hitN) connectFrom = hitN;
+  } else {
+    // ADD mode
+    if (hitN) { dragging = { nodeId:hitN, offX:0, offY:0 }; selectedNode = hitN; }
+  }
+});
+
+canvas.addEventListener('pointermove', e => {
+  if (!pointerDown) return;
+  const pos = getPos(e);
+  const dx = pos.x - pointerStartPos.x, dy = pos.y - pointerStartPos.y;
+  if (Math.sqrt(dx*dx+dy*dy) > 4) pointerMoved = true;
+
+  if (dragging) {
+    const w = screenToWorld(pos.x, pos.y);
+    const g = currentGraph();
+    if (g && g.nodes[dragging.nodeId]) {
+      g.nodes[dragging.nodeId].x = w.x;
+      g.nodes[dragging.nodeId].y = w.y;
+    }
+  } else if (!dragging && pointerMoved && !connectFrom) {
+    // pan
+    vpX += pos.x - (pointerStartPos.x + (pointerMoved ? 0 : dx));
+    vpY += pos.y - (pointerStartPos.y + (pointerMoved ? 0 : dy));
+    pointerStartPos = pos;
+  }
+});
+
+canvas.addEventListener('pointerup', e => {
+  if (!pointerDown) return;
+  pointerDown = false;
+  const pos = getPos(e);
+  const hitN = hitNode(pos.x, pos.y);
+
+  if (dragging) {
+    saveGraphs();
+    updateScoreBar();
+    dragging = null;
+    return;
+  }
+
+  if (!pointerMoved) {
+    // TAP
+    if (mode === MODE.ADD) {
+      if (!hitN) {
+        // 新規ノード追加
+        const w = screenToWorld(pos.x, pos.y);
+        addNode(w.x, w.y);
+      } else {
+        // ① タップ＝発火（電荷を流す）してからノード編集を開く
+        fireNode(hitN);
+        openNodeSheet(hitN);
+      }
+    } else if (mode === MODE.CONNECT) {
+      if (connectFrom && hitN && hitN !== connectFrom) {
+        addEdge(connectFrom, hitN);
+        connectFrom = null;
+      } else if (hitN) {
+        connectFrom = hitN;
+        fireNode(hitN);
+      } else {
+        connectFrom = null;
+      }
+    } else if (mode === MODE.EDIT) {
+      if (hitN) { fireNode(hitN); openNodeSheet(hitN); }
+    }
+  }
+  dragging = null;
+});
+
+// Pinch zoom
+let lastPinchDist = 0;
+canvas.addEventListener('touchstart', e => {
+  if (e.touches.length === 2) lastPinchDist = pinchDist(e);
+}, { passive:true });
+canvas.addEventListener('touchmove', e => {
+  if (e.touches.length === 2) {
+    const dist = pinchDist(e);
+    const ratio = dist / lastPinchDist;
+    const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    vpX = cx - (cx - vpX) * ratio;
+    vpY = cy - (cy - vpY) * ratio;
+    vpScale = Math.max(0.3, Math.min(3, vpScale * ratio));
+    lastPinchDist = dist;
+    e.preventDefault();
+  }
+}, { passive:false });
+
+function pinchDist(e) {
+  const dx = e.touches[0].clientX - e.touches[1].clientX;
+  const dy = e.touches[0].clientY - e.touches[1].clientY;
+  return Math.sqrt(dx*dx+dy*dy);
+}
+
+// ═══════════════════════════════════
+// NODE / EDGE OPERATIONS
+// ═══════════════════════════════════
+function addNode(wx, wy) {
+  const g = currentGraph();
+  if (!g) return;
+  const id = uid();
+  g.nodes[id] = {
+    id, label:'新しいノード',
+    x: wx, y: wy,
+    weight: 3,
+    color: '#4A9EFF',
+    memo: '',
+    charge: 0,
+    fireHistory: [],
+    lastFired: 0,
+  };
+  saveGraphs();
+  updateScoreBar();
+  openNodeSheet(id, true);
+}
+
+function addEdge(from, to) {
+  const g = currentGraph();
+  if (!g) return;
+  // 重複チェック
+  if (g.edges.find(e => e.from===from && e.to===to)) { showToast('すでに接続済みです'); return; }
+  g.edges.push({ from, to, weight:1, conductance:1.0 });
+  saveGraphs();
+  updateScoreBar();
+  showToast('接続しました');
+}
+
+function deleteNode(id) {
+  const g = currentGraph();
+  if (!g) return;
+  delete g.nodes[id];
+  g.edges = g.edges.filter(e => e.from!==id && e.to!==id);
+  selectedNode = null;
+  document.getElementById('deleteNodeBtn').style.display = 'none';
+  saveGraphs();
+  updateScoreBar();
+}
+
+function deleteEdge(e) {
+  const g = currentGraph();
+  if (!g) return;
+  g.edges = g.edges.filter(x => !(x.from===e.from && x.to===e.to));
+  selectedEdge = null;
+  saveGraphs();
+  updateScoreBar();
+}
+
+// ═══════════════════════════════════
+// NODE SHEET
+// ═══════════════════════════════════
+function openNodeSheet(id, isNew=false) {
+  editingNodeId = id;
+  const g = currentGraph();
+  const n = g?.nodes[id];
+  if (!n) return;
+  ensurePhysicsFields(n);
+
+  document.getElementById('nodeSheetTitle').textContent = isNew ? '新規ノード' : 'ノード編集';
+  document.getElementById('nLabel').value = n.label || '';
+  document.getElementById('nMemo').value = n.memo || '';
+  const slider = document.getElementById('nWeight');
+  slider.value = n.weight || 3;
+  document.getElementById('nWeightVal').textContent = n.weight || 3;
+  updateSliderPct(slider);
+
+  editingNodeColor = n.color || '#4A9EFF';
+  document.querySelectorAll('.color-swatch').forEach(sw => {
+    sw.classList.toggle('active', sw.dataset.color === editingNodeColor);
+  });
+
+  // エッジ情報
+  const inEdges  = g.edges.filter(e => e.to===id);
+  const outEdges = g.edges.filter(e => e.from===id);
+  const edgeLines = [];
+  inEdges.forEach(e  => edgeLines.push(`← ${g.nodes[e.from]?.label||'?'} (×${e.weight||1})`));
+  outEdges.forEach(e => edgeLines.push(`→ ${g.nodes[e.to]?.label||'?'} (×${e.weight||1})`));
+  document.getElementById('edgeInfo').textContent = edgeLines.join('\n') || 'なし';
+
+  // 物理層ステータス表示
+  const band = estimateFreqBand(n);
+  const bandLabel = band ? BAND_STYLE[band].label : '未発火';
+  const cluster = currentSyncClusters.find(c => c.nodeIds.includes(id));
+  const attr = cluster ? classifyAttractor(cluster) : null;
+  document.getElementById('physicsBox').innerHTML =
+    `電荷量: <b>${Math.round(n.charge*100)}%</b>　発火回数: <b>${n.fireHistory.length}</b><br>` +
+    `推定帯域: <b>${bandLabel}</b><br>` +
+    `同期attractor: <b>${attr ? attr.label : '未収束'}</b>`;
+
+  openSheet('nodeSheet');
+  setTimeout(() => {
+    if (isNew) document.getElementById('nLabel').select();
+  }, 300);
+}
+
+function saveNodeSheet() {
+  const g = currentGraph();
+  const n = g?.nodes[editingNodeId];
+  if (!n) return;
+  n.label  = document.getElementById('nLabel').value.trim() || '?';
+  n.memo   = document.getElementById('nMemo').value;
+  n.weight = parseInt(document.getElementById('nWeight').value);
+  n.color  = editingNodeColor;
+  saveGraphs();
+  updateScoreBar();
+  closeSheet('nodeSheet');
+}
+
+// ═══════════════════════════════════
+// EDGE HINT
+// ═══════════════════════════════════
+function showEdgeHint(e) {
+  const g = currentGraph();
+  const label = `${g?.nodes[e.from]?.label||'?'} → ${g?.nodes[e.to]?.label||'?'} (×${e.weight||1}) を削除しますか？`;
+  document.getElementById('edgeHintLabel').textContent = label;
+  document.getElementById('edgeHint').classList.add('show');
+}
+
+// ═══════════════════════════════════
+// GRAPH LIST
+// ═══════════════════════════════════
+function renderGraphList() {
+  const wrap = document.getElementById('graphListWrap');
+  const ids = Object.keys(graphs).sort((a,b) => (graphs[b].createdAt||0)-(graphs[a].createdAt||0));
+  wrap.innerHTML = ids.map(id => {
+    const g = graphs[id];
+    const nodeCount = Object.keys(g.nodes||{}).length;
+    const isCur = id === currentGraphId;
+    return `<div class="graph-item ${isCur?'current':''}" data-id="${id}">
+      <div>
+        <div class="graph-item-name">${escHtml(g.name)}${isCur?' ✓':''}</div>
+        <div class="graph-item-meta">ノード ${nodeCount}個</div>
+      </div>
+      <button class="graph-item-del" data-del="${id}">🗑</button>
+    </div>`;
+  }).join('') || '<div style="text-align:center;color:var(--text-dim);padding:30px;">グラフがありません</div>';
+
+  wrap.querySelectorAll('.graph-item[data-id]').forEach(el => {
+    el.addEventListener('click', ev => {
+      if (ev.target.dataset.del) return;
+      switchGraph(el.dataset.id);
+      closeSheet('graphsSheet');
+    });
+  });
+  wrap.querySelectorAll('[data-del]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = btn.dataset.del;
+      if (!confirm(`「${graphs[id]?.name}」を削除しますか？`)) return;
+      delete graphs[id];
+      if (currentGraphId === id) {
+        const remaining = Object.keys(graphs);
+        if (remaining.length === 0) createGraph('グラフ1');
+        else switchGraph(remaining[0]);
+      }
+      saveGraphs();
+      renderGraphList();
+    });
+  });
+}
+
+// ═══════════════════════════════════
+// is_transfer 連携
+// ═══════════════════════════════════
+function importFromTransfer() {
+  try {
+    const raw = localStorage.getItem(LS_TRANSFER);
+    if (!raw) { showToast('is_transferにデータがありません'); return; }
+    const payload = JSON.parse(raw);
+    const items = payload.items || (Array.isArray(payload) ? payload : null);
+    if (!items || items.length === 0) { showToast('インポートできるデータがありません'); return; }
+
+    const g = currentGraph();
+    if (!g) return;
+
+    // アイテム→ノード変換
+    let added = 0;
+    const cols = ['#4A9EFF','#4AE09A','#F5C842','#C084FC','#FB923C','#FF5F5F'];
+    items.forEach((item, i) => {
+      const angle = (i / items.length) * Math.PI * 2;
+      const dist = 200 + Math.random() * 100;
+      const id = item.id || uid();
+      if (!g.nodes[id]) {
+        g.nodes[id] = {
+          id,
+          label: (item.title || '無題').slice(0,20),
+          memo: (item.body || '').replace(/<[^>]+>/g,'').slice(0,100),
+          weight: 3,
+          color: cols[i % cols.length],
+          x: Math.cos(angle) * dist,
+          y: Math.sin(angle) * dist,
+          charge: 0,
+          fireHistory: [],
+          lastFired: 0,
+        };
+        added++;
+      }
+    });
+    saveGraphs();
+    updateScoreBar();
+    centerView();
+    closeSheet('graphsSheet');
+    showToast(`${added}件のノードを追加しました`);
+  } catch(e) {
+    console.error(e);
+    showToast('インポートに失敗しました');
+  }
+}
+
+// ═══════════════════════════════════
+// #import= URL HASH
+// ═══════════════════════════════════
+function checkImportHash() {
+  if (!location.hash.startsWith('#import=')) return;
+  try {
+    const b64 = location.hash.slice(8);
+    const json = decodeURIComponent(escape(atob(b64)));
+    const payload = JSON.parse(json);
+    const name = payload.graphName || `インポート_${new Date().toLocaleDateString()}`;
+    const newId = createGraph(name);
+    const g = graphs[newId];
+    if (payload.nodes) g.nodes = payload.nodes;
+    if (payload.edges) g.edges = payload.edges;
+    saveGraphs();
+    switchGraph(newId);
+    showToast(`グラフ「${name}」をインポートしました`);
+  } catch(e) { console.warn('hash import error', e); }
+  finally { history.replaceState(null,'',location.pathname); }
+}
+
+// ═══════════════════════════════════
+// AI LAYER
+// ═══════════════════════════════════
+async function callAI(prompt) {
+  const modelKey = localStorage.getItem(LS_MODEL) || 'claude';
+  const proxyUrl = localStorage.getItem(LS_PROXY) || '';
+  const m = MODELS[modelKey] || MODELS.claude;
+  const keyMap = { claude:LS_CLAUDE, gemini:LS_GEMINI, openai:LS_OPENAI };
+  const apiKey = localStorage.getItem(keyMap[modelKey]) || '';
+
+  if (!apiKey && !proxyUrl) throw new Error(`APIキーが未設定です。quick-refの⚙️設定から入力してください（${m.label}）`);
+
+  if (proxyUrl) {
+    const res = await fetch(proxyUrl, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:modelKey, prompt }),
+    });
+    if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
+    const d = await res.json();
+    return d.text || d.content || JSON.stringify(d);
+  }
+
+  if (modelKey === 'claude') {
+    const res = await fetch(m.endpoint, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,
+        'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body: JSON.stringify({ model:m.model, max_tokens:1024,
+        messages:[{role:'user',content:prompt}] }),
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error?.message || `Claude ${res.status}`);
+    return d.content?.[0]?.text || '';
+  }
+  if (modelKey === 'gemini') {
+    const res = await fetch(`${m.endpoint}?key=${apiKey}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ contents:[{parts:[{text:prompt}]}],
+        generationConfig:{maxOutputTokens:1024} }),
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error?.message || `Gemini ${res.status}`);
+    return d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  }
+  if (modelKey === 'openai') {
+    const res = await fetch(m.endpoint, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${apiKey}`},
+      body: JSON.stringify({ model:m.model, max_tokens:1024,
+        messages:[{role:'user',content:prompt}] }),
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error?.message || `OpenAI ${res.status}`);
+    return d.choices?.[0]?.message?.content || '';
+  }
+  throw new Error('未対応のモデル');
+}
+
+function buildGraphDescription() {
+  const g = currentGraph();
+  if (!g) return '';
+  const scores = computeScores();
+  const nodeLines = Object.entries(g.nodes)
+    .sort((a,b) => (scores[b[0]]||0)-(scores[a[0]]||0))
+    .map(([id,n]) => `・${n.label}（自己重み:${n.weight}、重要度スコア:${Math.round((scores[id]||0)*100)}%）${n.memo?` → ${n.memo}`:''}`);
+  const edgeLines = g.edges.map(e =>
+    `${g.nodes[e.from]?.label||'?'} →[×${e.weight||1}]→ ${g.nodes[e.to]?.label||'?'}`);
+  return `グラフ名：${g.name}\n\n【ノード】\n${nodeLines.join('\n')}\n\n【因果エッジ】\n${edgeLines.join('\n')||'なし'}`;
+}
+
+// ④ 同期クラスタ＝attractor情報を構造化してAIに渡す（本音抽出用コンテキスト）
+function buildAttractorContext() {
+  const g = currentGraph();
+  if (!g || currentSyncClusters.length === 0) {
+    return '現在、同期している（活性化している）ノード群はありません。';
+  }
+  const lines = currentSyncClusters.map(c => {
+    const attr = classifyAttractor(c);
+    const style = BAND_STYLE[c.band];
+    const nodeLabels = c.nodeIds.map(id => g.nodes[id]?.label || '?').join('、');
+    return `・帯域:${style.label}／持続:${Math.round(c.durationMs)}ms／密度:${Math.round(c.density*100)}%\n` +
+      `  関与ノード: ${nodeLabels}\n` +
+      `  推定attractor: ${attr ? attr.label : '未収束（過渡状態）'}`;
+  });
+  return `現在、以下の神経同期パターン（電気振動のクラスタ）が検出されています：\n${lines.join('\n\n')}`;
+}
+
+async function runAnalysis(type, custom='') {
+  const desc = buildGraphDescription();
+  if (!desc.includes('ノード')) { showToast('ノードを追加してから分析してください'); return; }
+
+  const attractorCtx = buildAttractorContext();
+
+  const prompts = {
+    structure: `以下の因果グラフを分析してください。\n最重要ノード（影響力が大きいもの）の理由、構造的な特徴、改善提案を日本語で教えてください。\n\n${desc}`,
+    weak: `以下の因果グラフの弱点を検出してください。\n孤立したノード、根拠の薄い繋がり、論理的な飛躍、見落とされている関係性を日本語で指摘してください。\n\n${desc}`,
+    suggest: `以下の因果グラフを見て、追加すべきノード（概念・アイデア）を5つ提案してください。\n各提案に、既存のどのノードと繋がるかも示してください。日本語で。\n\n${desc}`,
+    honne: `あなたは「感情の物理モデル」に基づいて本音を抽出するアシスタントです。\n` +
+      `感情とは、神経ネットワークの特定の周波数帯での同期（コヒーレンス）が、安定した状態（attractor）に収束したときの主観的体験だと考えます。\n\n` +
+      `${attractorCtx}\n\n` +
+      `以下はこのユーザーの思考グラフです：\n${desc}\n\n` +
+      `上記の同期パターン（特にγ波＝怒り・集中、θ波＝不安、δ波＝深い情動）が、` +
+      `どのノード群を中心に起きているかに注目し、ユーザー自身もまだ言語化できていない「本音」を断定せず仮説として1〜3個、日本語で提示してください。` +
+      `根拠として、どの同期クラスタ・どのノードの組み合わせからその仮説を導いたかも明記してください。`,
+  };
+
+  const prompt = custom
+    ? `${custom}\n\n---\n${attractorCtx}\n\n${desc}`
+    : prompts[type];
+  const box = document.getElementById('aiResultBox');
+  box.classList.remove('visible');
+  document.getElementById('aiLoading').classList.add('show');
+
+  try {
+    const result = await callAI(prompt);
+    box.textContent = result;
+    box.classList.add('visible');
+  } catch(e) {
+    showToast(e.message);
+  } finally {
+    document.getElementById('aiLoading').classList.remove('show');
+  }
+}
+
+// ═══════════════════════════════════
+// SHEET HELPERS
+// ═══════════════════════════════════
+function openSheet(id) {
+  document.getElementById(id).classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+}
+function closeSheet(id) {
+  document.getElementById(id).classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+function closeAllSheets() {
+  ['nodeSheet','aiSheet','graphsSheet'].forEach(id => {
+    document.getElementById(id).classList.remove('open');
+  });
+  document.getElementById('overlay').classList.remove('open');
+}
+
+function setMode(m) {
+  mode = m;
+  connectFrom = null;
+  document.getElementById('addModeBtn').classList.toggle('active', m===MODE.ADD);
+  document.getElementById('connectModeBtn').classList.toggle('active', m===MODE.CONNECT);
+  document.getElementById('editModeBtn').classList.toggle('active', m===MODE.EDIT);
+  const labels = {
+    add:'タップで新しいノードを追加 / ノードをタップで編集・発火',
+    connect:'接続元ノードをタップ → 接続先をタップ',
+    edit:'ノードをタップで編集 / ドラッグで移動 / エッジをタップで削除',
+  };
+  document.getElementById('modeLabel').textContent = labels[m];
+  document.getElementById('deleteNodeBtn').style.display = 'none';
+  selectedNode = null; selectedEdge = null;
+}
+
+function updateSliderPct(slider) {
+  const pct = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
+  slider.style.setProperty('--pct', pct + '%');
+}
+
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2300);
+}
+
+// ═══════════════════════════════════
+// WIRE EVENTS
+// ═══════════════════════════════════
+function wireEvents() {
+  // モード
+  document.getElementById('addModeBtn').addEventListener('click', () => setMode(MODE.ADD));
+  document.getElementById('connectModeBtn').addEventListener('click', () => setMode(MODE.CONNECT));
+  document.getElementById('editModeBtn').addEventListener('click', () => setMode(MODE.EDIT));
+
+  // ノードシート
+  document.getElementById('nodeSheetCancel').addEventListener('click', () => closeSheet('nodeSheet'));
+  document.getElementById('nodeSheetSave').addEventListener('click', saveNodeSheet);
+
+  // 重みスライダー
+  const slider = document.getElementById('nWeight');
+  slider.addEventListener('input', () => {
+    document.getElementById('nWeightVal').textContent = slider.value;
+    updateSliderPct(slider);
+  });
+
+  // カラースウォッチ
+  document.querySelectorAll('.color-swatch').forEach(sw => {
+    sw.addEventListener('click', () => {
+      editingNodeColor = sw.dataset.color;
+      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+      sw.classList.add('active');
+    });
+  });
+
+  // ノード削除
+  document.getElementById('deleteNodeBtn').addEventListener('click', () => {
+    if (selectedNode && confirm('このノードを削除しますか？')) deleteNode(selectedNode);
+  });
+
+  // リセットビュー
+  document.getElementById('resetViewBtn').addEventListener('click', () => { centerView(); });
+
+  // エッジヒント
+  document.getElementById('edgeDeleteBtn').addEventListener('click', () => {
+    if (selectedEdge) { deleteEdge(selectedEdge); selectedEdge=null; }
+    document.getElementById('edgeHint').classList.remove('show');
+  });
+  document.getElementById('edgeCancelBtn').addEventListener('click', () => {
+    selectedEdge = null;
+    document.getElementById('edgeHint').classList.remove('show');
+  });
+
+  // AI分析シート
+  document.getElementById('analyzeBtn').addEventListener('click', () => {
+    const modelKey = localStorage.getItem(LS_MODEL) || 'claude';
+    document.getElementById('aiModelBadge').textContent = MODELS[modelKey]?.label || modelKey;
+    document.getElementById('aiResultBox').classList.remove('visible');
+    openSheet('aiSheet');
+  });
+  document.getElementById('aiSheetClose').addEventListener('click', () => closeSheet('aiSheet'));
+  document.getElementById('aiStructureBtn').addEventListener('click', () => runAnalysis('structure'));
+  document.getElementById('aiWeakBtn').addEventListener('click', () => runAnalysis('weak'));
+  document.getElementById('aiSuggestBtn').addEventListener('click', () => runAnalysis('suggest'));
+  document.getElementById('aiHonneBtn').addEventListener('click', () => runAnalysis('honne'));
+  document.getElementById('aiCustomBtn').addEventListener('click', () => {
+    const v = document.getElementById('aiCustomInput').value.trim();
+    if (v) runAnalysis(null, v);
+  });
+  document.getElementById('aiCustomInput').addEventListener('keydown', e => {
+    if (e.key==='Enter') { const v=e.target.value.trim(); if(v) runAnalysis(null,v); }
+  });
+
+  // グラフ一覧
+  document.getElementById('graphsBtn').addEventListener('click', () => { renderGraphList(); openSheet('graphsSheet'); });
+  document.getElementById('graphsSheetClose').addEventListener('click', () => closeSheet('graphsSheet'));
+  document.getElementById('newGraphBtn').addEventListener('click', () => {
+    const name = prompt('グラフ名を入力してください', '新しいグラフ');
+    if (!name) return;
+    createGraph(name.trim() || '新しいグラフ');
+    renderGraphList();
+    closeSheet('graphsSheet');
+    centerView();
+    showToast(`「${name}」を作成しました`);
+  });
+  document.getElementById('importTransferBtn').addEventListener('click', importFromTransfer);
+
+  // overlay
+  document.getElementById('overlay').addEventListener('click', closeAllSheets);
+}
+
+// ═══════════════════════════════════
+// INIT
+// ═══════════════════════════════════
+function init() {
+  loadGraphs();
+  checkImportHash();
+  resizeCanvas();
+  centerView();
+  setMode(MODE.ADD);
+  wireEvents();
+  updateScoreBar();
+  render();
+}
+
+window.addEventListener('resize', resizeCanvas);
+init();
+</script>
+</body>
+</html>
+index.html
+index.html を表示しています。
