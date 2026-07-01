@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0D0F14">
+<title>hub — flow ecosystem</title>
+<style>
+:root {
+  --bg:      #0D0F14;
+  --s1:      #161A22;
+  --s2:      #1E232E;
+  --border:  rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --gold:    #F5C842;
+  --gold-d:  rgba(245,200,66,0.15);
+  --blue:    #4A9EFF;
+  --green:   #4AE09A;
+  --purple:  #C084FC;
+  --orange:  #FB923C;
+  --red:     #FF5F5F;
+  --text:    #E8EAF0;
+  --dim:     #6B7280;
+  --mid:     #9CA3AF;
+  --r:       14px;
+}
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+html,body {
+  width:100%; min-height:100%; background:var(--bg); color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:calc(env(safe-area-inset-bottom)+24px);
+}
+
+/* ── HEADER ── */
+header {
+  position:sticky; top:0; z-index:10;
+  padding:calc(env(safe-area-inset-top)+14px) 18px 14px;
+  background:rgba(13,15,20,0.95); backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:10px;
+}
+.logo { font-size:20px; font-weight:900; color:var(--gold); letter-spacing:.04em; }
+.logo span { color:var(--mid); font-weight:400; font-size:13px; margin-left:6px; }
+.hdr-spacer { flex:1; }
+.hdr-time { font-size:12px; color:var(--dim); }
+
+/* ── SECTION ── */
+section { padding:20px 16px 0; }
+.section-title {
+  font-size:11px; font-weight:800; color:var(--dim);
+  text-transform:uppercase; letter-spacing:.08em;
+  margin-bottom:12px;
+}
+
+/* ── ATTRACTOR CARD ── */
+.attractor-card {
+  background:var(--s1); border:1px solid var(--border2); border-radius:var(--r);
+  padding:16px; margin-bottom:6px; position:relative; overflow:hidden;
+}
+.attractor-card::before {
+  content:''; position:absolute; inset:0; opacity:0.06;
+  background: radial-gradient(circle at 80% 50%, var(--gold), transparent 70%);
+}
+.attractor-label {
+  font-size:11px; color:var(--dim); margin-bottom:6px; font-weight:700;
+  text-transform:uppercase; letter-spacing:.06em;
+}
+.attractor-state {
+  font-size:26px; font-weight:900; letter-spacing:.02em; min-height:36px;
+}
+.attractor-meta { font-size:12px; color:var(--mid); margin-top:4px; line-height:1.6; }
+.attractor-band-row {
+  display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;
+}
+.band-chip {
+  font-size:11px; font-weight:700; border-radius:100px; padding:3px 10px;
+  border:1px solid; white-space:nowrap;
+}
+
+/* ── APP GRID ── */
+.app-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:6px;
+}
+.app-card {
+  background:var(--s1); border:1px solid var(--border2); border-radius:var(--r);
+  padding:16px 14px; cursor:pointer; text-decoration:none; color:inherit;
+  display:block; position:relative; overflow:hidden;
+  transition:background .15s, border-color .15s;
+  -webkit-tap-highlight-color:transparent;
+}
+.app-card:active { background:var(--s2); }
+.app-card.primary { border-color: rgba(245,200,66,0.35); }
+.app-card.primary::before {
+  content:''; position:absolute; inset:0; opacity:0.07;
+  background:radial-gradient(circle at 20% 30%, var(--gold), transparent 60%);
+}
+.app-icon { font-size:24px; margin-bottom:8px; }
+.app-name { font-size:14px; font-weight:800; margin-bottom:3px; }
+.app-desc { font-size:11px; color:var(--mid); line-height:1.5; }
+.app-badge {
+  position:absolute; top:10px; right:10px;
+  font-size:10px; font-weight:700; border-radius:100px;
+  padding:2px 8px; border:1px solid;
+}
+
+/* ── TRANSFER CARD ── */
+.transfer-card {
+  background:var(--s1); border:1px solid var(--border2); border-radius:var(--r);
+  padding:16px; margin-bottom:10px;
+}
+.transfer-header {
+  display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;
+}
+.transfer-title { font-size:14px; font-weight:700; }
+.transfer-count {
+  font-size:12px; font-weight:700; background:var(--gold-d);
+  color:var(--gold); border-radius:100px; padding:2px 10px;
+}
+.transfer-items {
+  max-height:110px; overflow-y:auto; margin-bottom:10px;
+  scrollbar-width:none;
+}
+.transfer-items::-webkit-scrollbar { display:none; }
+.transfer-item {
+  font-size:13px; color:var(--mid); padding:5px 0;
+  border-bottom:1px solid var(--border);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.transfer-item:last-child { border-bottom:none; }
+.transfer-empty { font-size:13px; color:var(--dim); text-align:center; padding:16px 0; }
+.btn-row { display:flex; gap:8px; }
+.btn {
+  flex:1; padding:9px; border-radius:10px; font-size:13px; font-weight:700;
+  border:1px solid var(--border2); background:var(--s2); color:var(--text);
+  cursor:pointer; text-align:center;
+}
+.btn:active { background:var(--border2); }
+.btn.gold { border-color:rgba(245,200,66,0.4); color:var(--gold); background:var(--gold-d); }
+.btn.danger { border-color:rgba(255,95,95,0.35); color:var(--red); }
+
+/* ── KEY TABLE ── */
+.key-table {
+  background:var(--s1); border:1px solid var(--border2); border-radius:var(--r);
+  overflow:hidden; margin-bottom:6px;
+}
+.key-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:11px 14px; border-bottom:1px solid var(--border); gap:10px;
+}
+.key-row:last-child { border-bottom:none; }
+.key-name { font-size:12px; font-weight:700; color:var(--mid); font-family:monospace; }
+.key-val {
+  font-size:12px; color:var(--text); flex:1; text-align:right;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.key-val.set { color:var(--green); }
+.key-val.unset { color:var(--dim); }
+
+/* ── GRAPH PREVIEW ── */
+.graph-preview {
+  background:var(--s1); border:1px solid var(--border2); border-radius:var(--r);
+  padding:14px; margin-bottom:6px;
+}
+.graph-preview-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:6px 0; border-bottom:1px solid var(--border); font-size:13px;
+}
+.graph-preview-row:last-child { border-bottom:none; }
+.graph-preview-name { font-weight:600; }
+.graph-preview-meta { font-size:12px; color:var(--dim); }
+
+/* ── TOAST ── */
+.toast {
+  position:fixed; bottom:calc(env(safe-area-inset-bottom)+24px); left:50%;
+  transform:translateX(-50%) translateY(10px);
+  background:rgba(30,35,46,0.96); color:var(--text); border:1px solid var(--border2);
+  border-radius:100px; padding:9px 20px; font-size:13px; font-weight:600;
+  z-index:60; opacity:0; transition:opacity .2s, transform .2s;
+  pointer-events:none; backdrop-filter:blur(12px); white-space:nowrap;
+}
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⬡ flow<span>/ ecosystem hub</span></div>
+  <div class="hdr-spacer"></div>
+  <div class="hdr-time" id="clock"></div>
+</header>
+
+<!-- ① ATTRACTOR STATUS -->
+<section>
+  <div class="section-title">現在の感情状態（attractor）</div>
+  <div class="attractor-card">
+    <div class="attractor-label">④ クオリア層 — flow-mind 検出中</div>
+    <div class="attractor-state" id="attractorState">—</div>
+    <div class="attractor-meta" id="attractorMeta">flow-mindを開いてノードをタップすると検出されます</div>
+    <div class="attractor-band-row" id="bandRow"></div>
+  </div>
+</section>
+
+<!-- ② APP LINKS -->
+<section>
+  <div class="section-title">アプリ</div>
+  <div class="app-grid">
+    <a class="app-card primary" href="./index.html">
+      <div class="app-icon">⬡</div>
+      <div class="app-name">flow-mind</div>
+      <div class="app-desc">感情の物理モデル因果グラフ</div>
+    </a>
+    <a class="app-card" href="../quick-ref/index.html" id="quickRefLink">
+      <div class="app-icon">📚</div>
+      <div class="app-name">quick-ref</div>
+      <div class="app-desc">第二の脳 / AI要約</div>
+      <span class="app-badge" id="quickRefBadge" style="display:none;"></span>
+    </a>
+    <a class="app-card" href="../vocal-lab-v3/index.html">
+      <div class="app-icon">🎙</div>
+      <div class="app-name">vocal-lab</div>
+      <div class="app-desc">フレーズ録音 / ピッチ補正</div>
+    </a>
+    <a class="app-card" href="../score-editor-v2/index.html">
+      <div class="app-icon">🎼</div>
+      <div class="app-name">score-editor</div>
+      <div class="app-desc">ピアノロール / 音楽構築</div>
+    </a>
+    <a class="app-card" href="../illust-studio/index.html">
+      <div class="app-icon">🎨</div>
+      <div class="app-name">illust-studio</div>
+      <div class="app-desc">手描き / AI色彩補助</div>
+    </a>
+    <a class="app-card" href="../kansei/draft.html">
+      <div class="app-icon">✍️</div>
+      <div class="app-name">kansei / draft</div>
+      <div class="app-desc">五モード執筆スタジオ</div>
+    </a>
+  </div>
+</section>
+
+<!-- ③ is_transfer -->
+<section>
+  <div class="section-title">is_transfer（アプリ間データ橋渡し）</div>
+  <div class="transfer-card">
+    <div class="transfer-header">
+      <div class="transfer-title">📦 転送バッファ</div>
+      <div class="transfer-count" id="transferCount">0件</div>
+    </div>
+    <div class="transfer-items" id="transferItems">
+      <div class="transfer-empty">データなし</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn gold" onclick="sendToFlowMind()">⬡ flow-mindへ送る</button>
+      <button class="btn danger" onclick="clearTransfer()">🗑 クリア</button>
+    </div>
+  </div>
+</section>
+
+<!-- ④ flow-mind グラフ一覧プレビュー -->
+<section>
+  <div class="section-title">flow-mind — グラフ一覧</div>
+  <div class="graph-preview" id="graphPreview">
+    <div style="text-align:center;color:var(--dim);font-size:13px;padding:12px 0;">読み込み中…</div>
+  </div>
+</section>
+
+<!-- ⑤ 共有LSキー確認 -->
+<section>
+  <div class="section-title">共有キー（localStorage）</div>
+  <div class="key-table">
+    <div class="key-row">
+      <span class="key-name">ml_claude</span>
+      <span class="key-val" id="kv-claude">—</span>
+    </div>
+    <div class="key-row">
+      <span class="key-name">ml_gemini</span>
+      <span class="key-val" id="kv-gemini">—</span>
+    </div>
+    <div class="key-row">
+      <span class="key-name">ml_openai</span>
+      <span class="key-val" id="kv-openai">—</span>
+    </div>
+    <div class="key-row">
+      <span class="key-name">kansei_model</span>
+      <span class="key-val" id="kv-model">—</span>
+    </div>
+    <div class="key-row">
+      <span class="key-name">kansei_proxy_url</span>
+      <span class="key-val" id="kv-proxy">—</span>
+    </div>
+  </div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── 共有定数（flow-mindと同じキー）
+const LS = {
+  GRAPHS:   'fm_graphs',
+  CURRENT:  'fm_current',
+  CLAUDE:   'ml_claude',
+  GEMINI:   'ml_gemini',
+  OPENAI:   'ml_openai',
+  PROXY:    'kansei_proxy_url',
+  MODEL:    'kansei_model',
+  TRANSFER: 'is_transfer',
+};
+
+// 感情物理モデル定数（flow-mindと同じ）
+const BAND_STYLE = {
+  gamma: { color:'#FF5F5F', label:'γ波 怒り・集中' },
+  beta:  { color:'#FB923C', label:'β波 思考・緊張' },
+  alpha: { color:'#4AE09A', label:'α波 リラックス' },
+  theta: { color:'#C084FC', label:'θ波 不安・記憶' },
+  delta: { color:'#4A9EFF', label:'δ波 深い情動' },
+};
+const SYNC_WINDOW_MS = 2200;
+const BAND_THRESH = { gamma:30, beta:13, alpha:8, theta:4 };
+
+function estimateFreqBand(n) {
+  const h = n.fireHistory;
+  if (!h || h.length < 2) return null;
+  const recent = h.slice(-4);
+  let total = 0, cnt = 0;
+  for (let i = 1; i < recent.length; i++) { total += recent[i]-recent[i-1]; cnt++; }
+  if (!cnt) return null;
+  const hz = 1000 / (total/cnt);
+  if (hz >= BAND_THRESH.gamma) return 'gamma';
+  if (hz >= BAND_THRESH.beta)  return 'beta';
+  if (hz >= BAND_THRESH.alpha) return 'alpha';
+  if (hz >= BAND_THRESH.theta) return 'theta';
+  return 'delta';
+}
+
+function classifyAttractor(cluster) {
+  const { band, density, durationMs, size } = cluster;
+  if (size < 2) return null;
+  if (band==='gamma') return durationMs>2800&&density>0.6 ? '怒り' : '集中';
+  if (band==='beta')  return durationMs>3000 ? '緊張' : '思考中';
+  if (band==='alpha') return 'リラックス';
+  if (band==='theta') return density>0.5 ? '不安' : '想起';
+  if (band==='delta') return durationMs>5000 ? '深い情動' : null;
+  return null;
+}
+
+function detectAttractorFromLS() {
+  try {
+    const raw = localStorage.getItem(LS.GRAPHS);
+    if (!raw) return null;
+    const graphs = JSON.parse(raw);
+    const curId = localStorage.getItem(LS.CURRENT);
+    const g = graphs[curId];
+    if (!g) return null;
+    const now = Date.now();
+    const nids = Object.keys(g.nodes||{});
+    const active = nids.filter(id => {
+      const n = g.nodes[id];
+      return n.lastFired && (now - n.lastFired < SYNC_WINDOW_MS);
+    });
+    if (active.length < 2) return { attractor: null, bands: [], graphName: g.name, nodeCount: nids.length };
+
+    // 帯域カウント
+    const bandCounts = {};
+    active.forEach(id => {
+      const b = estimateFreqBand(g.nodes[id]) || 'delta';
+      bandCounts[b] = (bandCounts[b]||0)+1;
+    });
+    const topBand = Object.entries(bandCounts).sort((a,b)=>b[1]-a[1])[0][0];
+    const density = active.length / nids.length;
+    let earliest = Infinity, latest = 0;
+    active.forEach(id => {
+      const n = g.nodes[id];
+      const h = n.fireHistory;
+      if (h&&h[0]) earliest=Math.min(earliest,h[0]);
+      latest = Math.max(latest, n.lastFired);
+    });
+    const durationMs = latest - (isFinite(earliest)?earliest:latest);
+    const cluster = { band:topBand, density, durationMs, size:active.length };
+    return {
+      attractor: classifyAttractor(cluster),
+      band: topBand,
+      bands: Object.entries(bandCounts),
+      graphName: g.name,
+      nodeCount: nids.length,
+      activeCount: active.length,
+    };
+  } catch { return null; }
+}
+
+function renderAttractor() {
+  const result = detectAttractorFromLS();
+  const stateEl = document.getElementById('attractorState');
+  const metaEl  = document.getElementById('attractorMeta');
+  const bandRow = document.getElementById('bandRow');
+
+  if (!result) { stateEl.textContent='—'; metaEl.textContent='flow-mindのグラフが見つかりません'; bandRow.innerHTML=''; return; }
+  if (!result.attractor) {
+    stateEl.textContent = '未収束';
+    stateEl.style.color = 'var(--mid)';
+    metaEl.textContent = `${result.graphName} · ノード${result.nodeCount}個 · アクティブ${result.activeCount||0}個`;
+    bandRow.innerHTML='';
+    return;
+  }
+
+  const bst = BAND_STYLE[result.band];
+  stateEl.textContent = result.attractor;
+  stateEl.style.color = bst?.color || 'var(--gold)';
+  metaEl.textContent = `${result.graphName} · ノード${result.nodeCount}個 · 同期${result.activeCount}個 · ${bst?.label||''}`;
+  bandRow.innerHTML = (result.bands||[]).map(([b,c]) => {
+    const s = BAND_STYLE[b];
+    return `<span class="band-chip" style="color:${s.color};border-color:${s.color}44;">${s.label} ×${c}</span>`;
+  }).join('');
+}
+
+function renderTransfer() {
+  try {
+    const raw = localStorage.getItem(LS.TRANSFER);
+    const payload = raw ? JSON.parse(raw) : null;
+    const items = payload?.items || (Array.isArray(payload)?payload:[]);
+    document.getElementById('transferCount').textContent = `${items.length}件`;
+    const el = document.getElementById('transferItems');
+    if (!items.length) {
+      el.innerHTML = '<div class="transfer-empty">データなし</div>';
+      return;
+    }
+    el.innerHTML = items.map(item =>
+      `<div class="transfer-item">${escHtml(item.title||item.label||'無題')}</div>`
+    ).join('');
+  } catch {
+    document.getElementById('transferItems').innerHTML = '<div class="transfer-empty">読み込みエラー</div>';
+  }
+}
+
+function renderGraphPreview() {
+  try {
+    const raw = localStorage.getItem(LS.GRAPHS);
+    const el = document.getElementById('graphPreview');
+    if (!raw) { el.innerHTML='<div style="text-align:center;color:var(--dim);font-size:13px;padding:12px 0;">グラフなし</div>'; return; }
+    const graphs = JSON.parse(raw);
+    const curId = localStorage.getItem(LS.CURRENT);
+    const ids = Object.keys(graphs).sort((a,b)=>(graphs[b].createdAt||0)-(graphs[a].createdAt||0));
+    el.innerHTML = ids.slice(0,6).map(id => {
+      const g = graphs[id];
+      const nCount = Object.keys(g.nodes||{}).length;
+      const eCount = (g.edges||[]).length;
+      const isCur = id===curId;
+      return `<div class="graph-preview-row">
+        <span class="graph-preview-name">${isCur?'✓ ':''}<span style="color:${isCur?'var(--gold)':'var(--text)'}">${escHtml(g.name)}</span></span>
+        <span class="graph-preview-meta">ノード${nCount} · エッジ${eCount}</span>
+      </div>`;
+    }).join('');
+  } catch {
+    document.getElementById('graphPreview').innerHTML='<div style="color:var(--dim);font-size:13px;padding:12px;">読み込みエラー</div>';
+  }
+}
+
+function renderKeys() {
+  const keys = [
+    ['kv-claude', LS.CLAUDE],
+    ['kv-gemini', LS.GEMINI],
+    ['kv-openai', LS.OPENAI],
+    ['kv-model',  LS.MODEL],
+    ['kv-proxy',  LS.PROXY],
+  ];
+  keys.forEach(([elId, key]) => {
+    const val = localStorage.getItem(key);
+    const el = document.getElementById(elId);
+    if (!val) {
+      el.textContent = '未設定'; el.className='key-val unset';
+    } else if (key.startsWith('ml_') || key==='kansei_proxy_url') {
+      // APIキーは先頭8文字だけ表示
+      el.textContent = val.slice(0,8)+'…'; el.className='key-val set';
+    } else {
+      el.textContent = val; el.className='key-val set';
+    }
+  });
+}
+
+function sendToFlowMind() {
+  const raw = localStorage.getItem(LS.TRANSFER);
+  if (!raw) { showToast('転送データがありません'); return; }
+  // flow-mindのindex.htmlへ遷移。is_transfer受信機能は既存のものを使う
+  location.href = './index.html';
+}
+
+function clearTransfer() {
+  if (!confirm('is_transferをクリアしますか？')) return;
+  localStorage.removeItem(LS.TRANSFER);
+  renderTransfer();
+  showToast('クリアしました');
+}
+
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),2300);
+}
+
+function updateClock() {
+  const now=new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+}
+
+function refresh() {
+  renderAttractor();
+  renderTransfer();
+  renderGraphPreview();
+  renderKeys();
+}
+
+// ── StorageEvent — 別タブ（flow-mind）の変更をリアルタイム反映
+window.addEventListener('storage', e => {
+  if ([LS.GRAPHS, LS.TRANSFER].includes(e.key)) refresh();
+});
+
+// 初期化
+refresh();
+updateClock();
+setInterval(renderAttractor, 800);   // attractor状態は高頻度で更新
+setInterval(updateClock, 5000);
+</script>
+</body>
+</html>
+

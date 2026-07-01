@@ -1,0 +1,22 @@
+{
+  "name": "flow-mind",
+  "short_name": "flow-mind",
+  "description": "感情の物理モデルで動く因果グラフ — 自分が何を感じているかを可視化する",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0D0F14",
+  "theme_color": "#0D0F14",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "related_applications": [],
+  "categories": ["productivity", "utilities"],
+  "lang": "ja"
+}
+

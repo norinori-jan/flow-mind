@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#0D0F14"/>
+  <!-- 六角形ノード中央 -->
+  <polygon points="256,140 310,170 310,230 256,260 202,230 202,170" fill="none" stroke="#F5C842" stroke-width="8"/>
+  <!-- 外周ノード3つ -->
+  <circle cx="140" cy="310" r="28" fill="none" stroke="#4A9EFF" stroke-width="6"/>
+  <circle cx="372" cy="310" r="28" fill="none" stroke="#4AE09A" stroke-width="6"/>
+  <circle cx="256" cy="380" r="28" fill="none" stroke="#C084FC" stroke-width="6"/>
+  <!-- エッジ -->
+  <line x1="202" y1="215" x2="165" y2="285" stroke="#4A9EFF" stroke-width="3" stroke-opacity="0.7"/>
+  <line x1="310" y1="215" x2="347" y2="285" stroke="#4AE09A" stroke-width="3" stroke-opacity="0.7"/>
+  <line x1="256" y1="260" x2="256" y2="352" stroke="#C084FC" stroke-width="3" stroke-opacity="0.7"/>
+  <!-- 波紋（γ波アナロジー） -->
+  <circle cx="256" cy="200" r="72" fill="none" stroke="#F5C842" stroke-width="2" stroke-opacity="0.25"/>
+  <circle cx="256" cy="200" r="95" fill="none" stroke="#F5C842" stroke-width="1.5" stroke-opacity="0.12"/>
+</svg>
+
