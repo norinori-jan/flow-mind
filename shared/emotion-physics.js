@@ -7,7 +7,15 @@
  *   <script src="https://norinori-jan.github.io/flow-mind/shared/emotion-physics.js"></script>
  *   const ep = window.EmotionPhysics;
  *
- * バージョン: 1.0.0
+ * バージョン: 1.1.0
+ * 変更履歴:
+ *   1.1.0 - detectSyncClusters の density 計算バグを修正
+ *           （分母がグラフ全体のノード数 → 現在アクティブなノード数に修正。
+ *             flow-mind本体(index.html)のロジックと一致させた）
+ *         - fireNode 内の到達しない死んだコードを削除
+ *         - ブリッジからの自動送信専用キー is_emotion_transfer を追加
+ *           （quick-refの「全データ一括転送」ボタン等が使う is_transfer との
+ *             書き込み競合を避けるため）
  */
 (function(global) {
   'use strict';
@@ -98,11 +106,9 @@
     n.lastFired = now;
     n.charge = Math.min(1, n.charge + FIRE_CHARGE_BOOST);
 
-    // ② 電流 → 隣接ノードへ伝播
+    // ② 電流 → 隣接ノードへ伝播（有向グラフ: fromからtoへのみ）
     graph.edges.forEach(e => {
       ensureEdge(e);
-      const otherId = e.from === nodeId ? e.to : e.from === nodeId ? e.to : null;
-      // 有向グラフ: fromからtoへのみ伝播
       if (e.from !== nodeId) return;
       const other = graph.nodes[e.to];
       if (!other) return;
@@ -157,6 +163,12 @@
 
   /**
    * ③ 時間窓内に同時発火している連結ノード群をクラスタ化
+   *
+   * density は「現在アクティブなノードのうち、このクラスタが占める割合」。
+   * グラフ全体のノード数を分母にすると、グラフが育つほどdensityが下がり
+   * attractorが検出されなくなってしまうため、flow-mind本体(index.html)と
+   * 同じ基準（アクティブノード数）に合わせている。
+   *
    * @param {{ nodes: Object, edges: Array }} graph
    * @returns {Array<{ nodeIds, band, density, durationMs, size }>}
    */
@@ -207,7 +219,7 @@
         nodeIds:    comp,
         band,
         bandCounts,
-        density:    comp.length / nids.length,
+        density:    comp.length / activeIds.length, // ← 修正: activeIds基準
         durationMs: isFinite(earliest) ? latest - earliest : 0,
         size:       comp.length,
       });
@@ -282,12 +294,16 @@
   // is_transfer プロトコル
   // ══════════════════════════════════════
 
+  /** ユーザーが明示的に行う「全データ一括転送」用（quick-refの設定画面など） */
   const LS_TRANSFER = 'is_transfer';
+  /** ブリッジが保存のたびに自動送信する感情メタデータ専用キー（is_transferと競合させない） */
+  const LS_EMOTION_TRANSFER = 'is_emotion_transfer';
   const LS_GRAPHS   = 'fm_graphs';
   const LS_CURRENT  = 'fm_current';
 
   /**
-   * is_transfer にデータを書き込む（emotionMeta付き）
+   * 感情メタデータ付きで is_emotion_transfer に書き込む（ブリッジからの自動送信用）
+   * 手動の全データ一括転送(is_transfer)とは別キーなので上書き事故が起きない。
    * @param {string} source アプリ名
    * @param {Array<{ id, title, body, [key]: any }>} items
    * @param {{ attractor, band, timestamp }|null} emotionMeta
@@ -300,7 +316,7 @@
       timestamp: Date.now(),
     };
     try {
-      localStorage.setItem(LS_TRANSFER, JSON.stringify(payload));
+      localStorage.setItem(LS_EMOTION_TRANSFER, JSON.stringify(payload));
       return true;
     } catch (e) {
       console.error('[EmotionPhysics] writeTransfer failed:', e);
@@ -310,7 +326,9 @@
 
   /**
    * flow-mindの現在のattractor状態をlocalStorageから読む
-   * （flow-mindが同じorigin上で動いている場合のみ動作）
+   * （flow-mindが同じorigin上で動いている場合のみ動作。
+   *   GitHub Pagesのユーザーサイト配下は norinori-jan.github.io が共通originなので、
+   *   flow-mind/quick-ref/vocal-lab等の別リポジトリでも読み書き可能）
    * @returns {{ attractor, band, graphName }|null}
    */
   function readFlowMindAttractor() {
@@ -347,6 +365,7 @@
 
   /**
    * テキストから感情帯域を推定（簡易キーワードマッチ）
+   * HTMLタグは呼び出し側で除去してから渡すこと（quick-refのbodyはcontenteditable由来のHTML文字列）
    * @param {string} text
    * @returns {{ band: string, score: number, color: string, label: string }|null}
    */
@@ -421,9 +440,7 @@
    * @returns {{ band, style }}
    */
   function bandFromVoiceFeatures({ rms = 0.5, pitch = 200, tempo = 4 }) {
-    // 高エネルギー・高ピッチ・速いテンポ → gamma
-    // 低エネルギー・低ピッチ・遅いテンポ → delta
-    const energyScore = rms;                    // 0-1
+    const energyScore = rms;                     // 0-1
     const pitchScore  = Math.min(1, pitch / 400); // 0-1 (400Hz上限)
     const tempoScore  = Math.min(1, tempo / 8);   // 0-1 (8音節/秒上限)
     const combined = (energyScore + pitchScore + tempoScore) / 3;
@@ -445,6 +462,10 @@
     BAND_THRESH,
     SYNC_WINDOW_MS,
     CHARGE_DECAY_TAU,
+    LS_TRANSFER,
+    LS_EMOTION_TRANSFER,
+    LS_GRAPHS,
+    LS_CURRENT,
 
     // ① ② 電荷・伝播
     ensureNode,

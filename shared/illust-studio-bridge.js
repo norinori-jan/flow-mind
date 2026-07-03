@@ -118,7 +118,7 @@
     illust._emotionMeta = meta;
     session.stop();
 
-    // is_transfer に書き込む
+    // is_emotion_transfer に書き込む
     ep.writeTransfer('illust-studio', [{
       id:    illust.id || Date.now().toString(36),
       title: illust.title || '無題のイラスト',

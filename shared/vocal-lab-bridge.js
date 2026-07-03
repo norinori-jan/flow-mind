@@ -8,9 +8,13 @@
  *
  * 機能:
  *   1. 録音フレーズの音声特徴量（RMS・ピッチ・テンポ）から感情帯域を推定
- *   2. 推定帯域を is_transfer に書き込み → flow-mind でノード化
+ *   2. 推定帯域を is_emotion_transfer に書き込み → flow-mind でノード化
  *   3. 録音中に flow-mind の attractor をリアルタイム表示
  *   4. フレーズリストに感情帯域チップを表示
+ *
+ * 変更履歴:
+ *   1.1.0 - getPitch()の自己相関計算(O(n²))を毎フレーム(60fps)呼んでいたのを
+ *           150msごとに間引くよう修正（iPhoneでの発熱・カクつき対策）
  */
 (function() {
   'use strict';
@@ -28,6 +32,10 @@
       this.timeData = new Float32Array(this.bufferSize);
       this.freqData = new Float32Array(analyserNode.frequencyBinCount);
       this.onsetTimes = [];  // テンポ推定用の発声オンセット
+      // ピッチ推定は重い(O(n²))ので間引く
+      this._lastPitchCalcAt = 0;
+      this._lastPitchValue = 0;
+      this._pitchIntervalMs = 150;
     }
 
     /** RMS（音量）を計算 (0-1) */
@@ -37,8 +45,15 @@
       return Math.sqrt(sum / this.timeData.length);
     }
 
-    /** 基本ピッチを推定（自己相関法・簡易版）(Hz) */
+    /** 基本ピッチを推定（自己相関法・簡易版）(Hz)
+     *  150msに1回だけ計算し、それ以外は前回値を返す。 */
     getPitch() {
+      const now = Date.now();
+      if (now - this._lastPitchCalcAt < this._pitchIntervalMs) {
+        return this._lastPitchValue;
+      }
+      this._lastPitchCalcAt = now;
+
       this.analyser.getFloatTimeDomainData(this.timeData);
       const buf = this.timeData;
       const SIZE = buf.length;
@@ -48,7 +63,8 @@
         for (let i = 0; i < SIZE - lag; i++) corr += buf[i] * buf[i + lag];
         if (corr > bestCorr) { bestCorr = corr; bestLag = lag; }
       }
-      return bestLag > 0 ? this.sampleRate / bestLag : 0;
+      this._lastPitchValue = bestLag > 0 ? this.sampleRate / bestLag : 0;
+      return this._lastPitchValue;
     }
 
     /** 発声オンセットを検出してテンポ推定 (音節/秒) */
@@ -96,7 +112,7 @@
 
     phrase._emotionMeta = emotionMeta;
 
-    // is_transfer に書き込む
+    // is_emotion_transfer に書き込む
     ep.writeTransfer('vocal-lab', [{
       id:    phrase.id || Date.now().toString(36),
       title: phrase.label || phrase.text || 'フレーズ',

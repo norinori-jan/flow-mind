@@ -8,7 +8,7 @@
  *
  * 機能:
  *   1. BPM・コード進行から感情帯域（attractor）を逆算
- *   2. 楽曲データを is_transfer に書き込み → flow-mind でノード化
+ *   2. 楽曲データを is_emotion_transfer に書き込み → flow-mind でノード化
  *   3. 編集中の BPM・コードが変わるたびにリアルタイムで attractor を更新
  *   4. flow-mind の現在 attractor から BPM・調性のサジェストを生成
  */

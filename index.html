@@ -229,6 +229,68 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
   font-size:14px; font-weight:600; cursor:pointer; }
 #edgeDeleteBtn { background:rgba(255,95,95,0.15); color:var(--red); border-color:rgba(255,95,95,0.3); }
 #edgeCancelBtn { background:var(--surface2); color:var(--text); }
+
+/* ── QUICK CAPTURE (すぐ記録) ── */
+#quickCaptureFab {
+  position:fixed; right:16px; bottom:calc(env(safe-area-inset-bottom)+78px); z-index:22;
+  width:58px; height:58px; border-radius:50%;
+  background:linear-gradient(145deg, var(--gold), #E0A800);
+  color:#1A1400; border:none; font-size:26px; font-weight:800;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 4px 18px rgba(245,200,66,0.45);
+  cursor:pointer;
+}
+#quickCaptureFab:active { transform:scale(0.94); }
+#quickCaptureFab.recording {
+  background:linear-gradient(145deg, var(--red), #C43A3A);
+  box-shadow:0 4px 18px rgba(255,95,95,0.5);
+  animation: qc-pulse 1.1s infinite;
+}
+@keyframes qc-pulse {
+  0%,100% { box-shadow:0 4px 18px rgba(255,95,95,0.5); }
+  50% { box-shadow:0 4px 30px rgba(255,95,95,0.85); }
+}
+
+#quickCaptureBar {
+  position:fixed; left:12px; right:12px;
+  bottom:calc(env(safe-area-inset-bottom)+10px); z-index:23;
+  background:var(--surface); border:1px solid var(--border2);
+  border-radius:18px; padding:12px 12px calc(env(safe-area-inset-bottom)+12px);
+  box-shadow:0 -6px 30px rgba(0,0,0,0.55);
+  transform:translateY(120%); transition:transform .22s ease-out;
+}
+#quickCaptureBar.open { transform:translateY(0); }
+.qc-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.qc-title { font-size:12px; font-weight:800; color:var(--gold); letter-spacing:.04em; }
+.qc-close { background:none; border:none; color:var(--text-dim); font-size:14px; padding:4px 6px; cursor:pointer; }
+.qc-row { display:flex; align-items:flex-end; gap:8px; }
+#qcInput {
+  flex:1; min-height:44px; max-height:120px; resize:none;
+  font-size:16px; padding:10px 12px; border:1px solid var(--border2);
+  border-radius:12px; background:var(--surface2); color:var(--text);
+  font-family:inherit; line-height:1.4;
+}
+#qcInput:focus { outline:2px solid var(--gold); border-color:var(--gold); }
+.qc-mic-btn, .qc-send-btn {
+  flex-shrink:0; width:44px; height:44px; border-radius:12px; border:1px solid var(--border2);
+  background:var(--surface2); color:var(--text); font-size:18px;
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+.qc-mic-btn.recording { background:rgba(255,95,95,0.18); border-color:var(--red); color:var(--red); animation: qc-pulse 1.1s infinite; }
+.qc-send-btn { background:var(--gold); border-color:var(--gold); color:#1A1400; font-weight:800; }
+.qc-send-btn:active { background:#E0A800; }
+.qc-status { font-size:12px; color:var(--text-dim); margin-top:6px; min-height:16px; }
+.qc-status.busy { color:var(--gold); }
+
+/* ── SYNC SHEET ── */
+.sync-platform-box {
+  border:1px solid var(--border2); border-radius:var(--r);
+  padding:14px; margin-bottom:12px; background:var(--surface2);
+}
+.sync-platform-box h3 { font-size:13px; font-weight:800; color:var(--gold); margin-bottom:8px; }
+.sync-platform-box p { font-size:12px; color:var(--text-mid); line-height:1.6; margin-bottom:10px; }
+.sync-status-line { font-size:12px; color:var(--text-dim); margin-top:8px; }
+.sync-btn-row { display:flex; gap:8px; flex-wrap:wrap; }
 </style>
 </head>
 <body>
@@ -241,6 +303,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
   <span class="app-title">⬡ flow-mind</span>
   <div class="header-spacer"></div>
   <button class="hdr-btn" id="graphsBtn">📂 グラフ</button>
+  <button class="hdr-btn" id="syncBtn">☁️</button>
   <button class="hdr-btn gold" id="analyzeBtn">✦ AI分析</button>
 </header>
 
@@ -353,12 +416,74 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
   <button id="edgeCancelBtn">キャンセル</button>
 </div>
 
+<!-- SYNC SHEET -->
+<div class="sheet" id="syncSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <button id="syncSheetClose">閉じる</button>
+    <h2>☁️ iCloud同期</h2>
+    <span></span>
+  </div>
+  <div class="sheet-body">
+    <div class="sync-platform-box" id="syncCloudBox">
+      <h3>☁️ クラウド(全端末共通・推奨)</h3>
+      <p>Cloudflare Workerのエンドポイントとトークンを1回設定すれば、iPhoneでもWindowsでも同じデータにアクセスできます。ネット接続さえあれば即座に反映されます。</p>
+      <label class="field-label">エンドポイントURL</label>
+      <input type="text" id="cloudEndpointInput" placeholder="https://norinori-sync.xxx.workers.dev">
+      <label class="field-label">トークン</label>
+      <input type="text" id="cloudTokenInput" placeholder="wrangler secret putで設定したトークン">
+      <div class="sync-btn-row" style="margin-top:12px;">
+        <button class="tool-btn gold" id="cloudSaveConfigBtn">保存</button>
+        <button class="tool-btn" id="cloudSyncNowBtn">🔄 今すぐ同期</button>
+      </div>
+      <div class="sync-status-line" id="cloudSyncStatus">未設定</div>
+    </div>
+    <div class="sync-platform-box" id="syncDesktopBox">
+      <h3>💻 Windows / PC（フォルダ同期・代替手段）</h3>
+      <p>iCloud Drive for Windowsの同期フォルダを一度選ぶと、以降は変更のたびに自動で書き込み・起動時に読み込みます。</p>
+      <div class="sync-btn-row">
+        <button class="tool-btn" id="syncConnectBtn">📁 フォルダに接続</button>
+        <button class="tool-btn" id="syncNowBtn">🔄 今すぐ同期</button>
+      </div>
+      <div class="sync-status-line" id="syncDesktopStatus">未接続</div>
+    </div>
+    <div class="sync-platform-box" id="syncMobileBox">
+      <h3>📱 iPhone（手動書き出し・代替手段）</h3>
+      <p>書き出し→「Filesに保存」でiCloud Driveを選ぶ／読み込み→ファイル選択でiCloud Driveから選ぶ、という手動フローです。</p>
+      <div class="sync-btn-row">
+        <button class="tool-btn" id="syncExportBtn">⬆️ iCloudへ書き出す</button>
+        <button class="tool-btn" id="syncImportBtn">⬇️ iCloudから読み込む</button>
+      </div>
+      <div class="sync-status-line" id="syncMobileStatus"></div>
+    </div>
+  </div>
+</div>
+
 <!-- AI LOADING -->
 <div id="aiLoading">⏳ AIが分析中…</div>
+
+<!-- QUICK CAPTURE FAB -->
+<button id="quickCaptureFab" aria-label="すぐ記録">⚡</button>
+
+<!-- QUICK CAPTURE BAR -->
+<div id="quickCaptureBar">
+  <div class="qc-header">
+    <span class="qc-title">⚡ すぐ記録</span>
+    <button class="qc-close" id="qcCloseBtn">閉じる</button>
+  </div>
+  <div class="qc-row">
+    <textarea id="qcInput" placeholder="思いついたことをそのまま…" rows="1"></textarea>
+    <button class="qc-mic-btn" id="qcMicBtn" title="音声で記録">🎙</button>
+    <button class="qc-send-btn" id="qcSendBtn" title="ノードとして追加">＋</button>
+  </div>
+  <div class="qc-status" id="qcStatus"></div>
+</div>
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<script src="./shared/sync-bridge.js"></script>
+<script src="./shared/cloud-sync.js"></script>
 <script>
 // ═══════════════════════════════════
 // CONSTANTS & STATE
@@ -371,6 +496,9 @@ const LS_OPENAI   = 'ml_openai';
 const LS_PROXY    = 'kansei_proxy_url';
 const LS_MODEL    = 'kansei_model';
 const LS_TRANSFER = 'is_transfer';
+// ブリッジ(quick-ref-bridge等)が保存のたびに自動送信する専用キー。
+// 手動の「全データ一括転送」(is_transfer)とは別キーなので上書き事故を避けられる。
+const LS_EMOTION_TRANSFER = 'is_emotion_transfer';
 
 const MODELS = {
   claude: { label:'Claude', endpoint:'https://api.anthropic.com/v1/messages', model:'claude-sonnet-4-6' },
@@ -460,11 +588,73 @@ let lastFrameTime = performance.now();
 // 現在のattractor状態（④ クオリア層）
 let currentAttractor = null;
 let currentSyncClusters = [];
+// クイック記録の自動接続に使う「直前に発火したノード」
+let lastFiredNodeId = null;
 
 // Node default
 const NODE_R = 38;
 let editingNodeId = null;
 let editingNodeColor = '#4A9EFF';
+
+// ═══════════════════════════════════
+// FLOWCHART LAYOUT — 常時、構造化された上→下のレイアウトに整列させる
+// ═══════════════════════════════════
+// エッジの向き(from→to)を使って各ノードの「階層(level)」を決め、
+// 同じ階層のノードは横に並べる。ループ(循環)がある場合は、そこだけ
+// 未確定のまま残るので、最後にまとめて末尾の階層へ配置する。
+function applyFlowchartLayout() {
+  const g = currentGraph();
+  if (!g) return;
+  const ids = Object.keys(g.nodes);
+  if (ids.length === 0) return;
+
+  const inDeg = {};
+  ids.forEach(id => { inDeg[id] = 0; });
+  g.edges.forEach(e => { if (inDeg[e.to] !== undefined) inDeg[e.to]++; });
+
+  const outAdj = {};
+  ids.forEach(id => { outAdj[id] = []; });
+  g.edges.forEach(e => { if (outAdj[e.from]) outAdj[e.from].push(e.to); });
+
+  const level = {};
+  const queue = [];
+  ids.forEach(id => { if (inDeg[id] === 0) { level[id] = 0; queue.push(id); } });
+
+  const inDegWork = Object.assign({}, inDeg);
+  let qi = 0;
+  while (qi < queue.length) {
+    const cur = queue[qi++];
+    outAdj[cur].forEach(nb => {
+      level[nb] = Math.max(level[nb] !== undefined ? level[nb] : 0, level[cur] + 1);
+      inDegWork[nb]--;
+      if (inDegWork[nb] === 0 && level[nb] !== undefined && !queue.includes(nb)) queue.push(nb);
+    });
+  }
+
+  // 循環などで未確定のまま残ったノードは、最大階層の次にまとめて配置
+  let maxLevel = 0;
+  Object.values(level).forEach(l => { if (l > maxLevel) maxLevel = l; });
+  ids.forEach(id => { if (level[id] === undefined) { maxLevel++; level[id] = maxLevel; } });
+
+  // 階層ごとにグルーピングして横に並べる
+  const byLevel = {};
+  ids.forEach(id => {
+    const l = level[id];
+    (byLevel[l] = byLevel[l] || []).push(id);
+  });
+
+  const LEVEL_SPACING = 190; // 上下の間隔
+  const NODE_SPACING = 130;  // 同階層内の左右間隔
+
+  Object.keys(byLevel).map(Number).sort((a,b) => a-b).forEach(lvl => {
+    const row = byLevel[lvl];
+    row.forEach((id, i) => {
+      const n = g.nodes[id];
+      n.x = (i - (row.length - 1) / 2) * NODE_SPACING;
+      n.y = lvl * LEVEL_SPACING;
+    });
+  });
+}
 
 // ═══════════════════════════════════
 // UTILS
@@ -473,6 +663,10 @@ function uid() { return Date.now().toString(36) + Math.random().toString(36).sli
 
 function saveGraphs() {
   try { localStorage.setItem(LS_GRAPHS, JSON.stringify(graphs)); } catch(e) { showToast('保存容量が不足しています'); }
+  // Windows/PC でフォルダ接続済みなら自動でiCloud Driveへも書き込む（デバウンス済み・未接続なら何もしない）
+  if (window.SyncBridge) SyncBridge.autoSave('flow-mind', graphs);
+  // クラウド(全端末共通)が設定済みならそちらにも自動書き込み
+  if (window.CloudSync) CloudSync.cloudSave('flow-mind', graphs);
 }
 
 function loadGraphs() {
@@ -500,6 +694,8 @@ function switchGraph(id) {
   currentGraphId = id;
   localStorage.setItem(LS_CURRENT, id);
   connectFrom = null; selectedNode = null;
+  lastFiredNodeId = null;
+  applyFlowchartLayout();
   centerView();
   updateScoreBar();
   renderGraphList();
@@ -555,6 +751,7 @@ function fireNode(id) {
   if (n.fireHistory.length > 8) n.fireHistory.shift();
   n.lastFired = now;
   n.charge = Math.min(1, n.charge + FIRE_CHARGE_BOOST);
+  lastFiredNodeId = id;
 
   // ② 電流が流れる → 隣接ノードへ電場・磁場のように伝播
   const outEdges = g.edges.filter(e => e.from === id || e.to === id);
@@ -1071,7 +1268,7 @@ canvas.addEventListener('pointerdown', e => {
   const hitN = hitNode(pos.x, pos.y);
 
   if (mode === MODE.EDIT) {
-    if (hitN) { selectedNode = hitN; dragging = { nodeId:hitN, offX:0, offY:0 }; }
+    if (hitN) { selectedNode = hitN; }
     else {
       const hitE = hitEdge(pos.x, pos.y);
       if (hitE) { selectedEdge = hitE; showEdgeHint(hitE); }
@@ -1081,8 +1278,8 @@ canvas.addEventListener('pointerdown', e => {
   } else if (mode === MODE.CONNECT) {
     if (hitN) connectFrom = hitN;
   } else {
-    // ADD mode
-    if (hitN) { dragging = { nodeId:hitN, offX:0, offY:0 }; selectedNode = hitN; }
+    // ADD mode（ドラッグ移動は無効。自動レイアウトが位置を管理するため）
+    if (hitN) { selectedNode = hitN; }
   }
 });
 
@@ -1191,6 +1388,7 @@ function addNode(wx, wy) {
     fireHistory: [],
     lastFired: 0,
   };
+  applyFlowchartLayout();
   saveGraphs();
   updateScoreBar();
   openNodeSheet(id, true);
@@ -1202,6 +1400,7 @@ function addEdge(from, to) {
   // 重複チェック
   if (g.edges.find(e => e.from===from && e.to===to)) { showToast('すでに接続済みです'); return; }
   g.edges.push({ from, to, weight:1, conductance:1.0 });
+  applyFlowchartLayout();
   saveGraphs();
   updateScoreBar();
   showToast('接続しました');
@@ -1214,6 +1413,7 @@ function deleteNode(id) {
   g.edges = g.edges.filter(e => e.from!==id && e.to!==id);
   selectedNode = null;
   document.getElementById('deleteNodeBtn').style.display = 'none';
+  applyFlowchartLayout();
   saveGraphs();
   updateScoreBar();
 }
@@ -1223,6 +1423,7 @@ function deleteEdge(e) {
   if (!g) return;
   g.edges = g.edges.filter(x => !(x.from===e.from && x.to===e.to));
   selectedEdge = null;
+  applyFlowchartLayout();
   saveGraphs();
   updateScoreBar();
 }
@@ -1343,6 +1544,36 @@ function renderGraphList() {
 // ═══════════════════════════════════
 // is_transfer 連携
 // ═══════════════════════════════════
+// アイテム1件を、感情メタデータがあればそれを反映したノードとして追加する共通処理
+function addNodeFromTransferItem(item, index, total, g) {
+  const angle = (index / total) * Math.PI * 2;
+  const dist = 200 + Math.random() * 100;
+  const id = item.id || uid();
+  if (g.nodes[id]) return null;
+
+  const meta = item._emotionMeta || null;
+  const band = meta?.band || meta?.textBand || meta?.fmBand || null;
+  const bandStyle = band ? BAND_STYLE[band] : null;
+  const cols = ['#4A9EFF','#4AE09A','#F5C842','#C084FC','#FB923C','#FF5F5F'];
+
+  g.nodes[id] = {
+    id,
+    label: (item.title || '無題').slice(0,20),
+    memo: (item.body || '').replace(/<[^>]+>/g,'').slice(0,200),
+    weight: 3,
+    // 感情メタがあればその帯域の色を使う。なければ従来通り虹色を割り当て。
+    color: bandStyle ? bandStyle.color : cols[index % cols.length],
+    x: Math.cos(angle) * dist,
+    y: Math.sin(angle) * dist,
+    charge: 0,
+    fireHistory: [],
+    lastFired: 0,
+    sourceApp: item._emotionMeta ? (item.source || null) : undefined,
+    emotionBand: band || undefined,
+  };
+  return id;
+}
+
 function importFromTransfer() {
   try {
     const raw = localStorage.getItem(LS_TRANSFER);
@@ -1354,29 +1585,12 @@ function importFromTransfer() {
     const g = currentGraph();
     if (!g) return;
 
-    // アイテム→ノード変換
     let added = 0;
-    const cols = ['#4A9EFF','#4AE09A','#F5C842','#C084FC','#FB923C','#FF5F5F'];
     items.forEach((item, i) => {
-      const angle = (i / items.length) * Math.PI * 2;
-      const dist = 200 + Math.random() * 100;
-      const id = item.id || uid();
-      if (!g.nodes[id]) {
-        g.nodes[id] = {
-          id,
-          label: (item.title || '無題').slice(0,20),
-          memo: (item.body || '').replace(/<[^>]+>/g,'').slice(0,100),
-          weight: 3,
-          color: cols[i % cols.length],
-          x: Math.cos(angle) * dist,
-          y: Math.sin(angle) * dist,
-          charge: 0,
-          fireHistory: [],
-          lastFired: 0,
-        };
-        added++;
-      }
+      const id = addNodeFromTransferItem(item, i, items.length, g);
+      if (id) { added++; fireNode(id); }
     });
+    applyFlowchartLayout();
     saveGraphs();
     updateScoreBar();
     centerView();
@@ -1385,6 +1599,45 @@ function importFromTransfer() {
   } catch(e) {
     console.error(e);
     showToast('インポートに失敗しました');
+  }
+}
+
+// ── ブリッジからの自動送信(is_emotion_transfer)を静かに取り込む ──
+// quick-ref-bridge等が保存のたびに書き込む1件データを、確認なしで
+// 因果グラフに自動追加する。既に取り込んだタイムスタンプは記録して重複防止。
+let lastEmotionTransferTs = Number(localStorage.getItem('fm_last_emotion_ts') || 0);
+
+function checkEmotionTransfer() {
+  try {
+    const raw = localStorage.getItem(LS_EMOTION_TRANSFER);
+    if (!raw) return;
+    const payload = JSON.parse(raw);
+    if (!payload.timestamp || payload.timestamp <= lastEmotionTransferTs) return;
+    if (payload.source === 'flow-mind') return; // 自分自身の書き込みは無視
+    const items = payload.items;
+    if (!Array.isArray(items) || items.length === 0) return;
+
+    const g = currentGraph();
+    if (!g) return;
+
+    let added = 0, lastId = null;
+    items.forEach((item, i) => {
+      // 自動受信ではitemに_emotionMetaが無いことがあるので、ペイロード全体のemotionMetaで補う
+      const merged = item._emotionMeta ? item : { ...item, _emotionMeta: payload.emotionMeta };
+      const id = addNodeFromTransferItem(merged, i, items.length, g);
+      if (id) { added++; lastId = id; }
+    });
+    if (added > 0) {
+      applyFlowchartLayout();
+      saveGraphs();
+      updateScoreBar();
+      if (lastId) fireNode(lastId);
+      showToast(`${payload.source || '他アプリ'}から${added}件を受信しました`);
+    }
+    lastEmotionTransferTs = payload.timestamp;
+    localStorage.setItem('fm_last_emotion_ts', String(lastEmotionTransferTs));
+  } catch(e) {
+    console.warn('checkEmotionTransfer error', e);
   }
 }
 
@@ -1402,6 +1655,7 @@ function checkImportHash() {
     const g = graphs[newId];
     if (payload.nodes) g.nodes = payload.nodes;
     if (payload.edges) g.edges = payload.edges;
+    applyFlowchartLayout();
     saveGraphs();
     switchGraph(newId);
     showToast(`グラフ「${name}」をインポートしました`);
@@ -1560,7 +1814,7 @@ function setMode(m) {
   const labels = {
     add:'タップで新しいノードを追加 / ノードをタップで編集・発火',
     connect:'接続元ノードをタップ → 接続先をタップ',
-    edit:'ノードをタップで編集 / ドラッグで移動 / エッジをタップで削除',
+    edit:'ノードをタップで編集 / エッジをタップで削除（配置は自動整列）',
   };
   document.getElementById('modeLabel').textContent = labels[m];
   document.getElementById('deleteNodeBtn').style.display = 'none';
@@ -1583,6 +1837,425 @@ function showToast(msg) {
   el.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('show'), 2300);
+}
+
+// ═══════════════════════════════════
+// QUICK CAPTURE — すぐ記録（音声 / テキスト / 共有シート起動）
+// ═══════════════════════════════════
+let qcRecorder = null;
+let qcChunks = [];
+let qcRecording = false;
+
+function openQuickCapture(prefillText) {
+  document.getElementById('quickCaptureBar').classList.add('open');
+  const input = document.getElementById('qcInput');
+  if (typeof prefillText === 'string') input.value = prefillText;
+  setQcStatus('');
+  setTimeout(() => { input.focus(); autoGrowQc(); }, 150);
+}
+
+function closeQuickCapture() {
+  document.getElementById('quickCaptureBar').classList.remove('open');
+  if (qcRecording) stopQcRecording();
+}
+
+function autoGrowQc() {
+  const el = document.getElementById('qcInput');
+  el.style.height = 'auto';
+  el.style.height = Math.min(120, el.scrollHeight) + 'px';
+}
+
+function setQcStatus(msg, busy) {
+  const el = document.getElementById('qcStatus');
+  el.textContent = msg || '';
+  el.classList.toggle('busy', !!busy);
+}
+
+// テキストからノードを即時作成し、直前に発火したノードへ因果エッジで接続する
+// （＝孤立ノードにせず、既存の思考グラフの中に位置づける）
+function quickAddNode(text) {
+  const g = currentGraph();
+  if (!g) return;
+  const trimmed = text.trim();
+  if (!trimmed) { showToast('内容を入力してください'); return; }
+
+  const connectSourceId = (lastFiredNodeId && g.nodes[lastFiredNodeId]) ? lastFiredNodeId : null;
+  const basePos = connectSourceId
+    ? { x: g.nodes[connectSourceId].x, y: g.nodes[connectSourceId].y }
+    : screenToWorld(canvas.width/2, canvas.height/2);
+  const angle = Math.random() * Math.PI * 2;
+  const dist = 130 + Math.random() * 40;
+  const pos = { x: basePos.x + Math.cos(angle)*dist, y: basePos.y + Math.sin(angle)*dist };
+
+  const id = uid();
+  const firstLine = trimmed.split('\n')[0].slice(0, 18);
+  g.nodes[id] = {
+    id,
+    label: firstLine || '記録',
+    memo: trimmed,                // 全文を必ずメモに保持（省略しない）
+    x: pos.x, y: pos.y,
+    weight: 3,
+    color: '#4A9EFF',
+    charge: 0,
+    fireHistory: [],
+    lastFired: 0,
+  };
+
+  // 直前に発火したノードがあれば、因果の連鎖として自動接続
+  if (connectSourceId) {
+    g.edges.push({ from: connectSourceId, to: id, weight: 1, conductance: 1.0 });
+  }
+
+  applyFlowchartLayout();
+  saveGraphs();
+  updateScoreBar();
+  closeQuickCapture();
+  fireNode(id);                   // 発火させて電荷・同期波を伝播させる
+  document.getElementById('qcInput').value = '';
+  autoGrowQc();
+
+  // 全文・接続を確認できるよう、ノード編集シートを自動で開く
+  openNodeSheet(id, true);
+  showToast(connectSourceId ? '記録して接続しました' : '記録しました');
+}
+
+// ── 音声入力（MediaRecorderで録音 → AI(Whisper系)で文字起こし）──
+// 補足：iOS Safariはブラウザ標準の音声認識(SpeechRecognition)に対応していないため、
+// 録音してAI APIに送って文字起こしする方式にしています。
+function startQcRecording() {
+  if (qcRecording) return;
+  if (!window.isSecureContext) {
+    showToast('マイクはhttps環境でのみ使用できます');
+    return;
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast('このブラウザ/表示モードは録音に対応していません');
+    return;
+  }
+  if (typeof MediaRecorder === 'undefined') {
+    showToast('この環境はMediaRecorderに対応していません');
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({ audio:true }).then(stream => {
+    qcChunks = [];
+    const mimeType = MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4'
+      : (MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : '');
+    try {
+      qcRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+    } catch (recErr) {
+      console.error(recErr);
+      showToast('録音の初期化に失敗しました: ' + recErr.message);
+      stream.getTracks().forEach(t => t.stop());
+      return;
+    }
+    qcRecorder.ondataavailable = e => { if (e.data.size > 0) qcChunks.push(e.data); };
+    qcRecorder.onerror = e => {
+      console.error('MediaRecorder error', e.error);
+      showToast('録音エラー: ' + (e.error?.message || e.error?.name || '不明なエラー'));
+    };
+    qcRecorder.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      if (qcChunks.length === 0) { setQcStatus(''); showToast('録音データが取得できませんでした'); return; }
+      const blob = new Blob(qcChunks, { type: qcRecorder.mimeType || 'audio/webm' });
+      transcribeAndFill(blob);
+    };
+    qcRecorder.start();
+    qcRecording = true;
+    document.getElementById('qcMicBtn').classList.add('recording');
+    document.getElementById('quickCaptureFab').classList.add('recording');
+    setQcStatus('🎙 録音中…もう一度タップで文字起こし', true);
+  }).catch(err => {
+    console.error(err);
+    // iOSでよくある原因を判別してメッセージを出し分ける
+    let msg = 'マイクへのアクセスが必要です';
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      msg = 'マイクへのアクセスが拒否されています。設定 > Safari(またはこのアプリ) > マイク を確認してください';
+    } else if (err.name === 'NotFoundError') {
+      msg = 'マイクが見つかりません';
+    } else if (err.name === 'NotReadableError') {
+      msg = '他のアプリがマイクを使用中の可能性があります';
+    } else if (err.name === 'SecurityError') {
+      msg = 'セキュリティ制限によりマイクを使用できません(https環境か確認してください)';
+    }
+    showToast(msg + `（${err.name}）`);
+  });
+}
+
+function stopQcRecording() {
+  if (!qcRecording || !qcRecorder) return;
+  qcRecording = false;
+  document.getElementById('qcMicBtn').classList.remove('recording');
+  document.getElementById('quickCaptureFab').classList.remove('recording');
+  if (qcRecorder.state !== 'inactive') qcRecorder.stop();
+}
+
+async function transcribeAndFill(blob) {
+  setQcStatus('⏳ 文字起こし中…', true);
+  const apiKey = localStorage.getItem(LS_OPENAI) || '';
+  const proxyUrl = localStorage.getItem(LS_PROXY) || '';
+  if (!apiKey && !proxyUrl) {
+    setQcStatus('');
+    showToast('文字起こしにはOpenAI APIキーが必要です（quick-refの⚙️設定）');
+    return;
+  }
+  try {
+    let text = '';
+    if (proxyUrl) {
+      const form = new FormData();
+      form.append('file', blob, 'audio.' + (blob.type.includes('mp4') ? 'mp4' : 'webm'));
+      form.append('purpose', 'transcription');
+      const res = await fetch(proxyUrl.replace(/\/$/, '') + '/transcribe', { method:'POST', body: form });
+      if (!res.ok) throw new Error(`Proxy transcribe error: ${res.status}`);
+      const d = await res.json();
+      text = d.text || '';
+    } else {
+      const form = new FormData();
+      form.append('file', blob, 'audio.' + (blob.type.includes('mp4') ? 'mp4' : 'webm'));
+      form.append('model', 'whisper-1');
+      form.append('language', 'ja');
+      const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method:'POST',
+        headers: { 'Authorization': `Bearer ${apiKey}` },
+        body: form,
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error?.message || `Whisper ${res.status}`);
+      text = d.text || '';
+    }
+    const input = document.getElementById('qcInput');
+    input.value = (input.value ? input.value + '\n' : '') + text.trim();
+    autoGrowQc();
+    setQcStatus('');
+  } catch(e) {
+    console.error(e);
+    setQcStatus('');
+    showToast('文字起こしに失敗しました: ' + e.message);
+  }
+}
+
+// ── URL経由の即記録受信 ──
+// index.html#capture=<encodeURIComponent(text)> で開くと、すぐ記録バーにテキストが入った状態で起動する。
+// &auto=1 を付けるとバーを開かずそのままノード化する（例：iOSショートカットの「共有」アクションから）。
+function checkCaptureHash() {
+  if (!location.hash.startsWith('#capture=')) return;
+  try {
+    const raw = location.hash.slice('#capture='.length);
+    const [encoded, ...rest] = raw.split('&');
+    const text = decodeURIComponent(encoded);
+    const auto = rest.includes('auto=1');
+    if (auto && text.trim()) {
+      quickAddNode(text);
+    } else {
+      openQuickCapture(text);
+    }
+  } catch(e) { console.warn('capture hash parse error', e); }
+  finally { history.replaceState(null, '', location.pathname); }
+}
+
+function wireQuickCapture() {
+  const fab = document.getElementById('quickCaptureFab');
+  const bar = document.getElementById('quickCaptureBar');
+  const input = document.getElementById('qcInput');
+  const micBtn = document.getElementById('qcMicBtn');
+  const sendBtn = document.getElementById('qcSendBtn');
+  const closeBtn = document.getElementById('qcCloseBtn');
+
+  // FABはタップでバーを開くだけ（録音はマイクボタンを直接タップした時だけ開始する。
+  // iOSはgetUserMediaをユーザー操作の“直接の結果”としてでないと許可しないため、
+  // setTimeoutを挟む長押し起動は使わない）
+  fab.addEventListener('click', () => openQuickCapture());
+
+  closeBtn.addEventListener('click', closeQuickCapture);
+
+  input.addEventListener('input', autoGrowQc);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      quickAddNode(input.value);
+    }
+  });
+
+  micBtn.addEventListener('click', () => {
+    if (qcRecording) stopQcRecording();
+    else startQcRecording();
+  });
+
+  sendBtn.addEventListener('click', () => quickAddNode(input.value));
+}
+
+// ═══════════════════════════════════
+// SYNC — Windows(File System Access API) / iPhone(手動Files連携)
+// ═══════════════════════════════════
+// ═══════════════════════════════════
+// SYNC — Windows(File System Access API) / iPhone(手動Files連携) / クラウド(全端末共通)
+// ═══════════════════════════════════
+async function checkCloudSyncOnLoad() {
+  if (!window.CloudSync || !CloudSync.isConfigured()) return;
+  try {
+    const payload = await CloudSync.cloudLoad('flow-mind');
+    if (!payload || !payload.data) return;
+    const localLastSync = CloudSync.getLastSyncedAt('flow-mind') || 0;
+    if (payload.timestamp > localLastSync) {
+      const when = new Date(payload.timestamp).toLocaleString('ja-JP');
+      if (confirm(`クラウド側に新しいデータがあります(${when})。読み込みますか？\n（現在のグラフは上書きされます）`)) {
+        graphs = payload.data;
+        const ids = Object.keys(graphs);
+        if (!graphs[currentGraphId]) {
+          currentGraphId = ids[0] || null;
+          if (!currentGraphId) createGraph('はじめてのグラフ');
+          else localStorage.setItem(LS_CURRENT, currentGraphId);
+        }
+        applyFlowchartLayout();
+        saveGraphs();
+        centerView();
+        updateScoreBar();
+        showToast('クラウドから読み込みました');
+      }
+    }
+  } catch(e) { console.warn('checkCloudSyncOnLoad error', e); }
+}
+
+async function refreshCloudSyncStatus() {
+  if (!window.CloudSync) return;
+  const c = CloudSync.getConfig();
+  document.getElementById('cloudEndpointInput').value = c.endpoint || '';
+  document.getElementById('cloudTokenInput').value = c.token || '';
+  if (!CloudSync.isConfigured()) {
+    document.getElementById('cloudSyncStatus').textContent = '未設定';
+    return;
+  }
+  const ts = CloudSync.getLastSyncedAt('flow-mind');
+  document.getElementById('cloudSyncStatus').textContent = ts
+    ? `設定済み / 最終同期: ${new Date(ts).toLocaleString('ja-JP')}`
+    : '設定済み（まだ未同期）';
+}
+
+function wireCloudSync() {
+  document.getElementById('cloudSaveConfigBtn').addEventListener('click', async () => {
+    if (!window.CloudSync) { showToast('cloud-sync.jsが読み込まれていません'); return; }
+    const endpoint = document.getElementById('cloudEndpointInput').value;
+    const token = document.getElementById('cloudTokenInput').value;
+    CloudSync.setConfig(endpoint, token);
+    showToast('設定を保存しました');
+    await checkCloudSyncOnLoad();
+    CloudSync.cloudSave('flow-mind', graphs); // 設定直後に一度書き込んでおく
+    refreshCloudSyncStatus();
+  });
+
+  document.getElementById('cloudSyncNowBtn').addEventListener('click', async () => {
+    if (!window.CloudSync || !CloudSync.isConfigured()) { showToast('先にエンドポイント/トークンを設定してください'); return; }
+    CloudSync.cloudSave('flow-mind', graphs);
+    showToast('同期しました');
+    setTimeout(refreshCloudSyncStatus, 1400);
+  });
+}
+
+async function checkCloudOnLoad() {
+  if (!window.SyncBridge || !SyncBridge.isDesktopCapable()) return;
+  try {
+    const connected = await SyncBridge.isConnected('flow-mind');
+    if (!connected) return;
+    const payload = await SyncBridge.autoLoad('flow-mind');
+    if (!payload || !payload.data) return;
+    const localLastSync = SyncBridge.getLastSyncedAt('flow-mind') || 0;
+    if (payload.timestamp > localLastSync) {
+      const when = new Date(payload.timestamp).toLocaleString('ja-JP');
+      if (confirm(`iCloud側に新しいデータがあります(${when})。読み込みますか？\n（現在のグラフは上書きされます）`)) {
+        graphs = payload.data;
+        const ids = Object.keys(graphs);
+        if (!graphs[currentGraphId]) {
+          currentGraphId = ids[0] || null;
+          if (!currentGraphId) createGraph('はじめてのグラフ');
+          else localStorage.setItem(LS_CURRENT, currentGraphId);
+        }
+        applyFlowchartLayout();
+        saveGraphs();
+        centerView();
+        updateScoreBar();
+        showToast('iCloudから読み込みました');
+      }
+    }
+  } catch(e) { console.warn('checkCloudOnLoad error', e); }
+}
+
+function openSyncSheet() {
+  const isDesktop = window.SyncBridge && SyncBridge.isDesktopCapable();
+  document.getElementById('syncDesktopBox').style.display = isDesktop ? '' : 'none';
+  document.getElementById('syncMobileBox').style.display = isDesktop ? 'none' : '';
+  refreshSyncStatus();
+  refreshCloudSyncStatus();
+  openSheet('syncSheet');
+}
+
+async function refreshSyncStatus() {
+  if (!window.SyncBridge) return;
+  if (SyncBridge.isDesktopCapable()) {
+    const connected = await SyncBridge.isConnected('flow-mind');
+    const ts = SyncBridge.getLastSyncedAt('flow-mind');
+    document.getElementById('syncDesktopStatus').textContent = connected
+      ? `接続済み${ts ? ' / 最終同期: ' + new Date(ts).toLocaleString('ja-JP') : ''}`
+      : '未接続';
+  } else {
+    const ts = SyncBridge.getLastSyncedAt('flow-mind-sync');
+    document.getElementById('syncMobileStatus').textContent = ts
+      ? `最終書き出し: ${new Date(ts).toLocaleString('ja-JP')}`
+      : 'まだ書き出していません';
+  }
+}
+
+function wireSyncSheet() {
+  wireCloudSync();
+  document.getElementById('syncBtn').addEventListener('click', openSyncSheet);
+  document.getElementById('syncSheetClose').addEventListener('click', () => closeSheet('syncSheet'));
+
+  document.getElementById('syncConnectBtn').addEventListener('click', async () => {
+    if (!window.SyncBridge) { showToast('同期モジュールが読み込まれていません'); return; }
+    try {
+      await SyncBridge.connectFolder('flow-mind');
+      showToast('フォルダに接続しました');
+      await checkCloudOnLoad();
+      SyncBridge.autoSave('flow-mind', graphs); // 接続直後に現在の状態を一度書き込む
+      refreshSyncStatus();
+    } catch(e) {
+      console.error(e);
+      showToast('接続に失敗しました: ' + e.message);
+    }
+  });
+
+  document.getElementById('syncNowBtn').addEventListener('click', async () => {
+    if (!window.SyncBridge || !(await SyncBridge.isConnected('flow-mind'))) {
+      showToast('先にフォルダへ接続してください');
+      return;
+    }
+    SyncBridge.autoSave('flow-mind', graphs);
+    showToast('同期しました');
+    setTimeout(refreshSyncStatus, 1400);
+  });
+
+  document.getElementById('syncExportBtn').addEventListener('click', () => {
+    if (!window.SyncBridge) { showToast('同期モジュールが読み込まれていません'); return; }
+    SyncBridge.exportToFiles('flow-mind-sync.json', graphs);
+    showToast('書き出しました。保存先でiCloud Driveを選んでください');
+    setTimeout(refreshSyncStatus, 300);
+  });
+
+  document.getElementById('syncImportBtn').addEventListener('click', async () => {
+    if (!window.SyncBridge) { showToast('同期モジュールが読み込まれていません'); return; }
+    const payload = await SyncBridge.importFromFiles();
+    if (!payload || !payload.data) return;
+    if (!confirm('現在のグラフを読み込んだデータで上書きします。よろしいですか？')) return;
+    graphs = payload.data;
+    const ids = Object.keys(graphs);
+    currentGraphId = ids[0] || null;
+    if (!currentGraphId) createGraph('はじめてのグラフ');
+    else localStorage.setItem(LS_CURRENT, currentGraphId);
+    applyFlowchartLayout();
+    saveGraphs();
+    centerView();
+    updateScoreBar();
+    renderGraphList();
+    showToast('読み込みました');
+  });
 }
 
 // ═══════════════════════════════════
@@ -1676,11 +2349,23 @@ function wireEvents() {
 function init() {
   loadGraphs();
   checkImportHash();
+  applyFlowchartLayout();
   resizeCanvas();
   centerView();
   setMode(MODE.ADD);
   wireEvents();
+  wireQuickCapture();
+  wireSyncSheet();
   updateScoreBar();
+  checkCaptureHash();
+  checkEmotionTransfer();
+  checkCloudOnLoad();
+  checkCloudSyncOnLoad();
+  // 他アプリ(quick-ref等)からの自動送信を定期チェック + ページ復帰時にもチェック
+  setInterval(checkEmotionTransfer, 4000);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) checkEmotionTransfer();
+  });
   render();
 }
 

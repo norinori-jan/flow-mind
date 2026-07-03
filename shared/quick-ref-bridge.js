@@ -7,9 +7,14 @@
  *   <script src="https://norinori-jan.github.io/flow-mind/shared/quick-ref-bridge.js"></script>
  *
  * 機能:
- *   1. メモ保存時にテキストの感情帯域を推定 → is_transfer に emotionMeta 付きで書き込む
+ *   1. メモ保存時にテキストの感情帯域を推定 → is_emotion_transfer に emotionMeta 付きで書き込む
  *   2. flow-mind の現在 attractor を読んで、メモに感情タグを自動付与
  *   3. 「flow-mind へ送る」ボタンを既存の送信UIに追加
+ *
+ * 変更履歴:
+ *   1.1.0 - 未使用だった LS_ITEMS 定数を削除（quick-refはIndexedDB管理のため不要だった）
+ *         - item.body はcontenteditable由来のHTML文字列のため、
+ *           感情推定に渡す前にタグを除去するよう修正
  */
 (function() {
   'use strict';
@@ -17,15 +22,18 @@
   const ep = window.EmotionPhysics;
   if (!ep) { console.warn('[quick-ref-bridge] EmotionPhysics が読み込まれていません'); return; }
 
-  // ── quick-ref の保存キー（既存のものに合わせる）
-  const LS_ITEMS = 'qr_items'; // quick-ref が使っているキー名に変更してください
+  /** HTML文字列からタグを除去してプレーンテキスト化 */
+  function stripHtml(html) {
+    return (html || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  }
 
   // ── メモ保存フック
   // quick-ref の保存処理（saveItem など）の末尾にこの関数を呼ぶ
   function onItemSaved(item) {
-    const text = [item.title || '', item.body || ''].join(' ');
+    const plainBody = stripHtml(item.body);
+    const text = [item.title || '', plainBody].join(' ');
 
-    // ① テキストから感情帯域を推定
+    // ① テキストから感情帯域を推定（HTMLタグ除去済みのテキストで）
     const textBand = ep.estimateBandFromText(text);
 
     // ② flow-mind の現在 attractor を読む（同 origin の場合のみ動作）
@@ -43,8 +51,9 @@
     // item に emotionMeta を埋め込んで保存
     item._emotionMeta = emotionMeta;
 
-    // is_transfer へも書き込む（flow-mind 側でノード化できる）
-    ep.writeTransfer('quick-ref', [item], emotionMeta);
+    // is_emotion_transfer へも書き込む（flow-mind 側で自動的にノード化される）
+    // body はプレーンテキスト化した版を送る（flow-mind側でも二重にタグ除去されるが、念のため）
+    ep.writeTransfer('quick-ref', [{ ...item, body: plainBody }], emotionMeta);
 
     console.log('[quick-ref-bridge] emotionMeta 付与:', emotionMeta);
     return emotionMeta;
@@ -73,7 +82,8 @@
     `;
     btn.addEventListener('click', () => {
       const fmState = ep.readFlowMindAttractor();
-      ep.writeTransfer('quick-ref', [item], {
+      const plainBody = stripHtml(item.body);
+      ep.writeTransfer('quick-ref', [{ ...item, body: plainBody }], {
         textBand:    item._emotionMeta?.textBand || null,
         fmAttractor: fmState?.attractor?.label || null,
         timestamp:   Date.now(),
