@@ -1,5 +1,5 @@
 // flow-mind Service Worker
-const CACHE = 'flow-mind-v1';
+const CACHE = 'flow-mind-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -23,16 +23,22 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // APIリクエストはキャッシュしない
-  if (e.request.url.includes('api.anthropic.com') ||
-      e.request.url.includes('googleapis.com') ||
-      e.request.url.includes('openai.com')) {
-    e.respondWith(fetch(e.request));
+  // 自分のサイト（同一オリジン）以外への通信は、キャッシュ処理を挟まず常にそのまま素通りさせる。
+  // AI API・Cloudflare Worker(sync-worker/cloud-sync)・その他どんな外部サービスが増えても
+  // ここを個別に列挙する必要がないようにするための修正。
+  const url = new URL(e.request.url);
+  if (url.origin !== self.location.origin) {
+    return; // e.respondWith を呼ばない＝Service Workerは何もせず、ブラウザの通常通信に任せる
+  }
+
+  // GET以外（POST/PUT等）は同一オリジンでもキャッシュ対象外
+  if (e.request.method !== 'GET') {
     return;
   }
+
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
-      if (res.ok && e.request.method === 'GET') {
+      if (res.ok) {
         const clone = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, clone));
       }
@@ -40,4 +46,5 @@ self.addEventListener('fetch', e => {
     }))
   );
 });
+
 
