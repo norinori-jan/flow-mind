@@ -482,9 +482,81 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<!-- 同期モジュール -->
 <script src="./shared/sync-bridge.js"></script>
 <script src="./shared/cloud-sync.js"></script>
+
 <script>
+// ─────────────────────────────────────────────
+// saveGraphs（ローカル＋クラウド自動保存）
+// ─────────────────────────────────────────────
+function saveGraphs() {
+    try { 
+        localStorage.setItem(LS_GRAPHS, JSON.stringify(graphs)); 
+    } catch (e) { 
+        showToast('ローカル保存に失敗しました'); 
+    }
+
+    if (window.SyncBridge) SyncBridge.autoSave('flow-mind', graphs);
+    if (window.CloudSync) CloudSync.cloudSave('flow-mind', graphs);
+}
+
+// ─────────────────────────────────────────────
+// 同期モード設定
+// ─────────────────────────────────────────────
+let CLOUD_PRIORITY = false;
+
+// ─────────────────────────────────────────────
+// loadFromCloud（クラウド自動ロード）
+// ─────────────────────────────────────────────
+async function loadFromCloud() {
+    if (!window.SyncBridge || !SyncBridge.isConfigured()) return;
+
+    const localTs = Number(localStorage.getItem("fm_cloud_last") || 0);
+
+    await SyncBridge.autoLoad("flow-mind", localTs, (cloudData, cloudTs) => {
+        if (!cloudData || typeof cloudData !== "object") return;
+
+        // ── クラウド優先モード ─────────────────────────────
+        if (CLOUD_PRIORITY) {
+            graphs = cloudData;
+            localStorage.setItem("fm_graphs", JSON.stringify(graphs));
+            localStorage.setItem("fm_cloud_last", String(cloudTs));
+
+            const ids = Object.keys(graphs);
+            if (ids.length > 0) currentGraphId = ids[0];
+
+            renderAll();
+            showToast("☁️ クラウド優先モード：クラウドから復元しました");
+            return;
+        }
+
+        // ── ローカル優先モード（既存の挙動） ─────────────────
+        const msg = `☁️ クラウドに新しいデータがあります\n(${new Date(cloudTs).toLocaleString("ja-JP")})\n\n上書きして読み込みますか？`;
+        if (!confirm(msg)) return;
+
+        graphs = cloudData;
+        localStorage.setItem("fm_graphs", JSON.stringify(graphs));
+        localStorage.setItem("fm_cloud_last", String(cloudTs));
+
+        const ids = Object.keys(graphs);
+        if (ids.length > 0) currentGraphId = ids[0];
+
+        renderAll();
+        showToast("☁️ クラウドから復元しました");
+    });
+}
+
+// ─────────────────────────────────────────────
+// オンライン復帰時の再送（※重複なし）
+// ─────────────────────────────────────────────
+window.addEventListener('online', () => {
+    if (window.SyncBridge) SyncBridge.retryPending();
+    if (window.CloudSync) CloudSync.retryPending();
+});
+
+
+
 // ═══════════════════════════════════
 // CONSTANTS & STATE
 // ═══════════════════════════════════
@@ -2361,12 +2433,18 @@ function init() {
   checkEmotionTransfer();
   checkCloudOnLoad();
   checkCloudSyncOnLoad();
+
   // 他アプリ(quick-ref等)からの自動送信を定期チェック + ページ復帰時にもチェック
   setInterval(checkEmotionTransfer, 4000);
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) checkEmotionTransfer();
   });
+
   render();
+
+  // ── クラウド自動ロード（追加） ──────────────────────
+  // SyncBridge が構成済みならクラウドの更新をチェックして反映
+  loadFromCloud();
 }
 
 window.addEventListener("resize", resizeCanvas);
@@ -2375,4 +2453,3 @@ init();
 </script>
 </body>
 </html>
-
