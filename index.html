@@ -651,6 +651,7 @@ async function loadFromCloud() {
     const ids = Object.keys(graphs);
     if (ids.length > 0) { currentGraphId = ids[0]; }
     renderAll();
+    setTimeout(loadFromCloud, 800);
     showToast("?? ƒNƒ‰ƒEƒh‚©‚ç•œŒ³‚µ‚Ü‚µ‚½");
   });
 }
