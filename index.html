@@ -62,7 +62,7 @@ header button { pointer-events:auto; }
 .hdr-btn.gold { border-color:rgba(245,200,66,0.4); color:var(--gold); }
 .hdr-btn.gold:active { background:var(--gold-dim); }
 
-/* ── SCORE BAR (上位ノーチE ── */
+/* ── SCORE BAR (上位ノード) ── */
 #scoreBar {
   position:fixed; top:calc(env(safe-area-inset-top)+52px); left:0; right:0; z-index:19;
   display:flex; gap:6px; padding:0 14px; overflow-x:auto; pointer-events:none;
@@ -160,7 +160,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 }
 .weight-val { font-size:18px; font-weight:800; color:var(--gold); min-width:24px; text-align:center; }
 
-/* ノ�Eドカラー選抁E*/
+/* ノードカラー選択 */
 .color-row { display:flex; gap:8px; margin-top:4px; }
 .color-swatch {
   width:32px; height:32px; border-radius:50%; cursor:pointer;
@@ -168,7 +168,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 }
 .color-swatch.active { border-color:#fff; transform:scale(1.15); }
 
-/* AI刁E��結果 */
+/* AI分析結果 */
 .ai-result-box {
   background:var(--surface2); border:1px solid var(--border2); border-radius:var(--r);
   padding:14px; font-size:14px; line-height:1.75; margin-top:12px;
@@ -176,7 +176,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 }
 .ai-result-box.visible { display:block; }
 
-/* 物琁E��インジケータ�E�ノードシート�E�E�E*/
+/* 物理層インジケータ（ノードシート内） */
 .physics-box {
   background:var(--surface2); border:1px solid var(--border2); border-radius:var(--r);
   padding:12px 14px; margin-top:8px; font-size:12px; color:var(--text-mid); line-height:1.8;
@@ -303,7 +303,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
   <span class="app-title">⬡ flow-mind</span>
   <div class="header-spacer"></div>
   <button class="hdr-btn" id="graphsBtn">📂 グラフ</button>
-  <button class="hdr-btn" id="syncBtn">☁️ 同期</button>
+  <button class="hdr-btn" id="syncBtn">☁️</button>
   <button class="hdr-btn gold" id="analyzeBtn">✦ AI分析</button>
 </header>
 
@@ -318,12 +318,12 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 
 <!-- TOOLBAR -->
 <div id="toolbar">
-  <button class="tool-btn" id="addModeBtn">⊕ 追加</button>
-  <button class="tool-btn" id="connectModeBtn">↗️ 接続</button>
-  <button class="tool-btn" id="editModeBtn">✏️ 編集</button>
+  <button class="tool-btn" id="addModeBtn">＋ 追加</button>
+  <button class="tool-btn" id="connectModeBtn">→ 接続</button>
+  <button class="tool-btn" id="editModeBtn">✎ 編集</button>
   <div class="tool-spacer"></div>
   <button class="tool-btn danger" id="deleteNodeBtn" style="display:none">🗑 削除</button>
-  <button class="tool-btn" id="resetViewBtn">⊡ リセット</button>
+  <button class="tool-btn" id="resetViewBtn">⊙</button>
 </div>
 
 <!-- OVERLAY -->
@@ -339,10 +339,10 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
   </div>
   <div class="sheet-body">
     <label class="field-label">ラベル</label>
-    <input type="text" id="nLabel" placeholder="アイディア・概念を記入" maxlength="40">
+    <input type="text" id="nLabel" placeholder="アイデア・概念を入力" maxlength="40">
 
     <label class="field-label">メモ</label>
-    <textarea id="nMemo" placeholder="補足・根拠など�E�任意！E></textarea>
+    <textarea id="nMemo" placeholder="補足・根拠など（任意）"></textarea>
 
     <label class="field-label">自己評価の重み（確信度）</label>
     <div class="weight-row">
@@ -350,7 +350,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
       <span class="weight-val" id="nWeightVal">3</span>
     </div>
 
-    <label class="field-label">ノ�Eドカラー</label>
+    <label class="field-label">ノードカラー</label>
     <div class="color-row" id="colorRow">
       <div class="color-swatch active" data-color="#4A9EFF" style="background:#4A9EFF"></div>
       <div class="color-swatch" data-color="#F5C842" style="background:#F5C842"></div>
@@ -360,11 +360,11 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
       <div class="color-swatch" data-color="#FB923C" style="background:#FB923C"></div>
     </div>
 
-    <label class="field-label" style="margin-top:20px;">接続エチE��</label>
+    <label class="field-label" style="margin-top:20px;">接続エッジ</label>
     <div id="edgeInfo" style="font-size:13px;color:var(--text-dim);padding:4px 0;"></div>
 
-    <label class="field-label" style="margin-top:20px;">物琁E��スチE�Eタス</label>
-    <div class="physics-box" id="physicsBox"> E/div>
+    <label class="field-label" style="margin-top:20px;">物理層ステータス</label>
+    <div class="physics-box" id="physicsBox">—</div>
   </div>
 </div>
 
@@ -372,15 +372,15 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 <div class="sheet" id="aiSheet">
   <div class="sheet-handle"></div>
   <div class="sheet-header">
-    <button id="aiSheetClose">閉じめE/button>
-    <h2>AI グラフ�E极E/h2>
+    <button id="aiSheetClose">閉じる</button>
+    <h2>AI グラフ分析</h2>
     <span id="aiModelBadge" style="font-size:11px;background:var(--gold-dim);color:var(--gold);border-radius:100px;padding:3px 12px;font-weight:700;"></span>
   </div>
   <div class="sheet-body">
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
-      <button class="tool-btn" id="aiStructureBtn">🔍 構造刁E��</button>
-      <button class="tool-btn" id="aiWeakBtn">⚠�E�E弱点検�E</button>
-      <button class="tool-btn" id="aiSuggestBtn">💡 ノ�Eド提桁E/button>
+      <button class="tool-btn" id="aiStructureBtn">🔍 構造分析</button>
+      <button class="tool-btn" id="aiWeakBtn">⚠️ 弱点検出</button>
+      <button class="tool-btn" id="aiSuggestBtn">💡 ノード提案</button>
       <button class="tool-btn gold" id="aiHonneBtn">🧠 本音抽出</button>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:10px;">
@@ -395,9 +395,9 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 <div class="sheet" id="graphsSheet">
   <div class="sheet-handle"></div>
   <div class="sheet-header">
-    <button id="graphsSheetClose">閉じめE/button>
+    <button id="graphsSheetClose">閉じる</button>
     <h2>グラフ一覧</h2>
-    <button id="newGraphBtn" style="color:var(--gold);font-weight:800;">�E�E新要E/button>
+    <button id="newGraphBtn" style="color:var(--gold);font-weight:800;">＋ 新規</button>
   </div>
   <div class="sheet-body">
     <div id="graphListWrap"></div>
@@ -411,7 +411,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 
 <!-- EDGE DELETE HINT -->
 <div id="edgeHint">
-  <p id="edgeHintLabel">こ�E接続を削除しますか�E�E/p>
+  <p id="edgeHintLabel">この接続を削除しますか？</p>
   <button id="edgeDeleteBtn">削除</button>
   <button id="edgeCancelBtn">キャンセル</button>
 </div>
@@ -420,39 +420,39 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 <div class="sheet" id="syncSheet">
   <div class="sheet-handle"></div>
   <div class="sheet-header">
-    <button id="syncSheetClose">閉じめE/button>
-    <h2>☁E��EiCloud同期</h2>
+    <button id="syncSheetClose">閉じる</button>
+    <h2>☁️ iCloud同期</h2>
     <span></span>
   </div>
   <div class="sheet-body">
     <div class="sync-platform-box" id="syncCloudBox">
-      <h3>☁E��EクラウチE全端末共通�E推奨)</h3>
-      <p>Cloudflare Workerのエンド�Eイントとト�EクンめE回設定すれ�E、iPhoneでもWindowsでも同じデータにアクセスできます。ネチE��接続さえあれ�E即座に反映されます、E/p>
-      <label class="field-label">エンド�EインチERL</label>
+      <h3>☁️ クラウド(全端末共通・推奨)</h3>
+      <p>Cloudflare Workerのエンドポイントとトークンを1回設定すれば、iPhoneでもWindowsでも同じデータにアクセスできます。ネット接続さえあれば即座に反映されます。</p>
+      <label class="field-label">エンドポイントURL</label>
       <input type="text" id="cloudEndpointInput" placeholder="https://norinori-sync.xxx.workers.dev">
-      <label class="field-label">ト�Eクン</label>
+      <label class="field-label">トークン</label>
       <input type="text" id="cloudTokenInput" placeholder="wrangler secret putで設定したトークン">
       <div class="sync-btn-row" style="margin-top:12px;">
-        <button class="tool-btn gold" id="cloudSaveConfigBtn">保孁E/button>
-        <button class="tool-btn" id="cloudSyncNowBtn">🔄 今すぐ同朁E/button>
+        <button class="tool-btn gold" id="cloudSaveConfigBtn">保存</button>
+        <button class="tool-btn" id="cloudSyncNowBtn">🔄 今すぐ同期</button>
       </div>
-      <div class="sync-status-line" id="cloudSyncStatus">未設宁E/div>
+      <div class="sync-status-line" id="cloudSyncStatus">未設定</div>
     </div>
     <div class="sync-platform-box" id="syncDesktopBox">
-      <h3>💻 Windows / PC�E�フォルダ同期・代替手段�E�E/h3>
-      <p>iCloud Drive for Windowsの同期フォルダを一度選ぶと、以降�E変更のた�Eに自動で書き込み・起動時に読み込みます、E/p>
+      <h3>💻 Windows / PC（フォルダ同期・代替手段）</h3>
+      <p>iCloud Drive for Windowsの同期フォルダを一度選ぶと、以降は変更のたびに自動で書き込み・起動時に読み込みます。</p>
       <div class="sync-btn-row">
-        <button class="tool-btn" id="syncConnectBtn">📁 フォルダに接綁E/button>
-        <button class="tool-btn" id="syncNowBtn">🔄 今すぐ同朁E/button>
+        <button class="tool-btn" id="syncConnectBtn">📁 フォルダに接続</button>
+        <button class="tool-btn" id="syncNowBtn">🔄 今すぐ同期</button>
       </div>
-      <div class="sync-status-line" id="syncDesktopStatus">未接綁E/div>
+      <div class="sync-status-line" id="syncDesktopStatus">未接続</div>
     </div>
     <div class="sync-platform-box" id="syncMobileBox">
-      <h3>📱 iPhone�E�手動書き�Eし�E代替手段�E�E/h3>
-      <p>書き�Eし�E「Filesに保存」でiCloud Driveを選ぶ�E�読み込み→ファイル選択でiCloud Driveから選ぶ、とぁE��手動フローです、E/p>
+      <h3>📱 iPhone（手動書き出し・代替手段）</h3>
+      <p>書き出し→「Filesに保存」でiCloud Driveを選ぶ／読み込み→ファイル選択でiCloud Driveから選ぶ、という手動フローです。</p>
       <div class="sync-btn-row">
-        <button class="tool-btn" id="syncExportBtn">⬁E��EiCloudへ書き�EぁE/button>
-        <button class="tool-btn" id="syncImportBtn">⬁E��EiCloudから読み込む</button>
+        <button class="tool-btn" id="syncExportBtn">⬆️ iCloudへ書き出す</button>
+        <button class="tool-btn" id="syncImportBtn">⬇️ iCloudから読み込む</button>
       </div>
       <div class="sync-status-line" id="syncMobileStatus"></div>
     </div>
@@ -460,7 +460,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 </div>
 
 <!-- AI LOADING -->
-<div id="aiLoading">⏳ AIが�E析中…</div>
+<div id="aiLoading">⏳ AIが分析中…</div>
 
 <!-- QUICK CAPTURE FAB -->
 <button id="quickCaptureFab" aria-label="すぐ記録">⚡</button>
@@ -469,12 +469,12 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 <div id="quickCaptureBar">
   <div class="qc-header">
     <span class="qc-title">⚡ すぐ記録</span>
-    <button class="qc-close" id="qcCloseBtn">閉じめE/button>
+    <button class="qc-close" id="qcCloseBtn">閉じる</button>
   </div>
   <div class="qc-row">
-    <textarea id="qcInput" placeholder="思いつぁE��ことをそのまま…" rows="1"></textarea>
+    <textarea id="qcInput" placeholder="思いついたことをそのまま…" rows="1"></textarea>
     <button class="qc-mic-btn" id="qcMicBtn" title="音声で記録">🎙</button>
-    <button class="qc-send-btn" id="qcSendBtn" title="ノ�Eドとして追加">�E�E/button>
+    <button class="qc-send-btn" id="qcSendBtn" title="ノードとして追加">＋</button>
   </div>
   <div class="qc-status" id="qcStatus"></div>
 </div>
@@ -485,8 +485,10 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 <script src="./shared/sync-bridge.js"></script>
 <script src="./shared/cloud-sync.js"></script>
 <script>
-// ══════════════════════════════════╁E// CONSTANTS & STATE
-// ══════════════════════════════════╁Econst LS_GRAPHS   = 'fm_graphs';
+// ═══════════════════════════════════
+// CONSTANTS & STATE
+// ═══════════════════════════════════
+const LS_GRAPHS   = 'fm_graphs';
 const LS_CURRENT  = 'fm_current';
 const LS_CLAUDE   = 'ml_claude';
 const LS_GEMINI   = 'ml_gemini';
@@ -494,7 +496,9 @@ const LS_OPENAI   = 'ml_openai';
 const LS_PROXY    = 'kansei_proxy_url';
 const LS_MODEL    = 'kansei_model';
 const LS_TRANSFER = 'is_transfer';
-// ブリチE��(quick-ref-bridge筁Eが保存�Eた�Eに自動送信する専用キー、E// 手動の「�EチE�Eタ一括転送、Eis_transfer)とは別キーなので上書き事故を避けられる、Econst LS_EMOTION_TRANSFER = 'is_emotion_transfer';
+// ブリッジ(quick-ref-bridge等)が保存のたびに自動送信する専用キー。
+// 手動の「全データ一括転送」(is_transfer)とは別キーなので上書き事故を避けられる。
+const LS_EMOTION_TRANSFER = 'is_emotion_transfer';
 
 const MODELS = {
   claude: { label:'Claude', endpoint:'https://api.anthropic.com/v1/messages', model:'claude-sonnet-4-6' },
@@ -502,38 +506,48 @@ const MODELS = {
   openai: { label:'OpenAI', endpoint:'https://api.openai.com/v1/chat/completions', model:'gpt-4o-mini' },
 };
 
-// ══════════════════════════════════╁E// 感情の物琁E��チE��  E定数�E�E階層�E�E// ══════════════════════════════════╁E// ① 電荷の減衰速度�E�時定数 ρE ms�E�Econst CHARGE_DECAY_TAU = 4000;
-// ① 発火しきぁE��
+// ═══════════════════════════════════
+// 感情の物理モデル — 定数（4階層）
+// ═══════════════════════════════════
+// ① 電荷の減衰速度（時定数 τ, ms）
+const CHARGE_DECAY_TAU = 4000;
+// ① 発火しきい値
 const FIRE_CHARGE_BOOST = 0.7;
-// ② 伝播効玁E��電流�E電場・磁場のアナロジー�E�エチE��のconductanceで増幁E��Econst PROPAGATION_FACTOR = 0.42;
-// ① Hebbian強化幁E��同時発火でconductanceが伸びる量�E�Econst HEBBIAN_STEP = 0.04;
-// ③ 同期検�Eの時間窓！Es�E� Eこ�E窓�Eの発火を「同期」とみなぁEconst SYNC_WINDOW_MS = 2200;
-// ③ 周波数帯の墁E���E�Ez相当、発火間隔から送E��した疑似周波数�E�Econst BAND_THRESH = { gamma:30, beta:13, alpha:8, theta:4 };
-// ③ 帯域ごとの色・速度�E�可視化用�E�Econst BAND_STYLE = {
-  gamma: { color:'#FF5F5F', speed:1.0, label:'γ波�E�怒り・雁E���E�E },
-  beta:  { color:'#FB923C', speed:0.7, label:'β波�E�思老E�E緊張�E�E },
-  alpha: { color:'#4AE09A', speed:0.45,label:'α波�E�リラチE��ス�E�E },
-  theta: { color:'#C084FC', speed:0.3, label:'θ波�E�不安�E記�E�E�E },
-  delta: { color:'#4A9EFF', speed:0.18,label:'δ波�E�深ぁE��動！E },
+// ② 伝播効率（電流→電場・磁場のアナロジー：エッジのconductanceで増幅）
+const PROPAGATION_FACTOR = 0.42;
+// ① Hebbian強化幅（同時発火でconductanceが伸びる量）
+const HEBBIAN_STEP = 0.04;
+// ③ 同期検出の時間窓（ms）— この窓内の発火を「同期」とみなす
+const SYNC_WINDOW_MS = 2200;
+// ③ 周波数帯の境界（Hz相当、発火間隔から逆算した疑似周波数）
+const BAND_THRESH = { gamma:30, beta:13, alpha:8, theta:4 };
+// ③ 帯域ごとの色・速度（可視化用）
+const BAND_STYLE = {
+  gamma: { color:'#FF5F5F', speed:1.0, label:'γ波（怒り・集中）' },
+  beta:  { color:'#FB923C', speed:0.7, label:'β波（思考・緊張）' },
+  alpha: { color:'#4AE09A', speed:0.45,label:'α波（リラックス）' },
+  theta: { color:'#C084FC', speed:0.3, label:'θ波（不安・記憶）' },
+  delta: { color:'#4A9EFF', speed:0.18,label:'δ波（深い情動）' },
 };
-// ④ attractor判定テーブル�E�帯埁EÁE寁E�� ÁE持続時閁EↁE感情ラベル�E�Efunction classifyAttractor(cluster) {
+// ④ attractor判定テーブル（帯域 × 密度 × 持続時間 → 感情ラベル）
+function classifyAttractor(cluster) {
   const { band, density, durationMs, size } = cluster;
   if (size < 2) return null;
   if (band === 'gamma') {
     if (density > 0.6 && durationMs > 2800) return { label:'怒り', color:BAND_STYLE.gamma.color };
-    return { label:'雁E��', color:BAND_STYLE.gamma.color };
+    return { label:'集中', color:BAND_STYLE.gamma.color };
   }
   if (band === 'beta') {
-    return durationMs > 3000 ? { label:'緊張', color:BAND_STYLE.beta.color } : { label:'思老E��', color:BAND_STYLE.beta.color };
+    return durationMs > 3000 ? { label:'緊張', color:BAND_STYLE.beta.color } : { label:'思考中', color:BAND_STYLE.beta.color };
   }
   if (band === 'alpha') {
-    return { label:'リラチE��ス', color:BAND_STYLE.alpha.color };
+    return { label:'リラックス', color:BAND_STYLE.alpha.color };
   }
   if (band === 'theta') {
-    return density > 0.5 ? { label:'不宁E, color:BAND_STYLE.theta.color } : { label:'想起', color:BAND_STYLE.theta.color };
+    return density > 0.5 ? { label:'不安', color:BAND_STYLE.theta.color } : { label:'想起', color:BAND_STYLE.theta.color };
   }
   if (band === 'delta') {
-    return durationMs > 5000 ? { label:'深ぁE��勁E, color:BAND_STYLE.delta.color } : null;
+    return durationMs > 5000 ? { label:'深い情動', color:BAND_STYLE.delta.color } : null;
   }
   return null;
 }
@@ -571,17 +585,24 @@ let animFrame = null;
 let glowPhase = 0;
 let lastFrameTime = performance.now();
 
-// 現在のattractor状態（④ クオリア層�E�Elet currentAttractor = null;
+// 現在のattractor状態（④ クオリア層）
+let currentAttractor = null;
 let currentSyncClusters = [];
-// クイチE��記録の自動接続に使ぁE��直前に発火したノ�Eド、Elet lastFiredNodeId = null;
+// クイック記録の自動接続に使う「直前に発火したノード」
+let lastFiredNodeId = null;
 
 // Node default
 const NODE_R = 38;
 let editingNodeId = null;
 let editingNodeColor = '#4A9EFF';
 
-// ══════════════════════════════════╁E// FLOWCHART LAYOUT  E常時、構造化された上�E下�Eレイアウトに整列させる
-// ══════════════════════════════════╁E// エチE��の向き(from→to)を使って吁E��ード�E「階層(level)」を決め、E// 同じ階層のノ�Eド�E横に並べる。ルーチE循環)がある場合�E、そこだぁE// 未確定�Eまま残るので、最後にまとめて末尾の階層へ配置する、Efunction applyFlowchartLayout() {
+// ═══════════════════════════════════
+// FLOWCHART LAYOUT — 常時、構造化された上→下のレイアウトに整列させる
+// ═══════════════════════════════════
+// エッジの向き(from→to)を使って各ノードの「階層(level)」を決め、
+// 同じ階層のノードは横に並べる。ループ(循環)がある場合は、そこだけ
+// 未確定のまま残るので、最後にまとめて末尾の階層へ配置する。
+function applyFlowchartLayout() {
   const g = currentGraph();
   if (!g) return;
   const ids = Object.keys(g.nodes);
@@ -610,19 +631,20 @@ let editingNodeColor = '#4A9EFF';
     });
   }
 
-  // 循環などで未確定�Eまま残ったノード�E、最大階層の次にまとめて配置
+  // 循環などで未確定のまま残ったノードは、最大階層の次にまとめて配置
   let maxLevel = 0;
   Object.values(level).forEach(l => { if (l > maxLevel) maxLevel = l; });
   ids.forEach(id => { if (level[id] === undefined) { maxLevel++; level[id] = maxLevel; } });
 
-  // 階層ごとにグルーピングして横に並べめE  const byLevel = {};
+  // 階層ごとにグルーピングして横に並べる
+  const byLevel = {};
   ids.forEach(id => {
     const l = level[id];
     (byLevel[l] = byLevel[l] || []).push(id);
   });
 
-  const LEVEL_SPACING = 190; // 上下�E間隔
-  const NODE_SPACING = 130;  // 同階層冁E�E左右間隔
+  const LEVEL_SPACING = 190; // 上下の間隔
+  const NODE_SPACING = 130;  // 同階層内の左右間隔
 
   Object.keys(byLevel).map(Number).sort((a,b) => a-b).forEach(lvl => {
     const row = byLevel[lvl];
@@ -634,32 +656,16 @@ let editingNodeColor = '#4A9EFF';
   });
 }
 
-// ══════════════════════════════════╁E// UTILS
-// ══════════════════════════════════╁Efunction uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
-
-// ���� �N���E�h����̎������[�h ��������������������������������������������
-async function loadFromCloud() {
-  if (!window.SyncBridge || !SyncBridge.isConfigured()) return;
-  const localTs = Number(localStorage.getItem("fm_cloud_last") || 0);
-  await SyncBridge.autoLoad("flow-mind", localTs, (cloudData, cloudTs) => {
-    if (!cloudData || typeof cloudData !== "object") return;
-    const msg = `?? �N���E�h�ɐV�����f�[�^������܂�\n(${new Date(cloudTs).toLocaleString("ja-JP")})\n\n�㏑�����ēǂݍ��݂܂����H`;
-    if (!confirm(msg)) return;
-    graphs = cloudData;
-    localStorage.setItem("fm_graphs", JSON.stringify(graphs));
-    localStorage.setItem("fm_cloud_last", String(cloudTs));
-    const ids = Object.keys(graphs);
-    if (ids.length > 0) { currentGraphId = ids[0]; }
-    renderAll();
-    setTimeout(loadFromCloud, 800);
-    showToast("?? �N���E�h���畜�����܂���");
-  });
-}
+// ═══════════════════════════════════
+// UTILS
+// ═══════════════════════════════════
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 
 function saveGraphs() {
-  try { localStorage.setItem(LS_GRAPHS, JSON.stringify(graphs)); } catch(e) { showToast('保存容量が不足してぁE��ぁE); }
-  // Windows/PC でフォルダ接続済みなら�E動でiCloud Driveへも書き込む�E�デバウンス済み・未接続なら何もしなぁE��E  if (window.SyncBridge) SyncBridge.autoSave('flow-mind', graphs);
-  // クラウチE全端末共送Eが設定済みならそちらにも�E動書き込み
+  try { localStorage.setItem(LS_GRAPHS, JSON.stringify(graphs)); } catch(e) { showToast('保存容量が不足しています'); }
+  // Windows/PC でフォルダ接続済みなら自動でiCloud Driveへも書き込む（デバウンス済み・未接続なら何もしない）
+  if (window.SyncBridge) SyncBridge.autoSave('flow-mind', graphs);
+  // クラウド(全端末共通)が設定済みならそちらにも自動書き込み
   if (window.CloudSync) CloudSync.cloudSave('flow-mind', graphs);
 }
 
@@ -669,10 +675,10 @@ function loadGraphs() {
     graphs = raw ? JSON.parse(raw) : {};
     currentGraphId = localStorage.getItem(LS_CURRENT) || null;
     if (!currentGraphId || !graphs[currentGraphId]) {
-      // チE��ォルトグラフ作�E
-      createGraph('はじめてのグラチE);
+      // デフォルトグラフ作成
+      createGraph('はじめてのグラフ');
     }
-  } catch(e) { graphs = {}; createGraph('グラチE'); }
+  } catch(e) { graphs = {}; createGraph('グラフ1'); }
 }
 
 function createGraph(name) {
@@ -695,7 +701,10 @@ function switchGraph(id) {
   renderGraphList();
 }
 
-// ══════════════════════════════════╁E// PAGE RANK  E重要度スコア計箁E// ══════════════════════════════════╁Efunction computeScores() {
+// ═══════════════════════════════════
+// PAGE RANK — 重要度スコア計算
+// ═══════════════════════════════════
+function computeScores() {
   const g = currentGraph();
   if (!g) return {};
   const nids = Object.keys(g.nodes);
@@ -705,12 +714,14 @@ function switchGraph(id) {
   const scores = {};
   nids.forEach(id => { scores[id] = g.nodes[id].weight || 3; });
 
-  // 反復�E�E回！E  for (let iter = 0; iter < 3; iter++) {
+  // 反復（3回）
+  for (let iter = 0; iter < 3; iter++) {
     const next = {};
-    nids.forEach(id => { next[id] = g.nodes[id].weight || 3; }); // 自己重みが�Eース
+    nids.forEach(id => { next[id] = g.nodes[id].weight || 3; }); // 自己重みがベース
     g.edges.forEach(e => {
       const w = e.weight || 1;
-      // toノ�Eド�Efromノ�Eド�Eスコアを受け取めE      if (next[e.to] !== undefined && scores[e.from] !== undefined) {
+      // toノードはfromノードのスコアを受け取る
+      if (next[e.to] !== undefined && scores[e.from] !== undefined) {
         next[e.to] += scores[e.from] * w * 0.4;
       }
     });
@@ -723,8 +734,11 @@ function switchGraph(id) {
   return scores;
 }
 
-// ══════════════════════════════════╁E// ① ② 感情の物琁E��チE��  E電荷の流れと伝播
-// ══════════════════════════════════╁E// ノ�Eドを「発火」させる�E�タチE�E�E�活動電位�E発生！Efunction fireNode(id) {
+// ═══════════════════════════════════
+// ① ② 感情の物理モデル — 電荷の流れと伝播
+// ═══════════════════════════════════
+// ノードを「発火」させる（タップ＝活動電位の発生）
+function fireNode(id) {
   const g = currentGraph();
   const n = g?.nodes[id];
   if (!n) return;
@@ -732,13 +746,14 @@ function switchGraph(id) {
   ensurePhysicsFields(n);
   const now = Date.now();
 
-  // ① 発火履歴を記録�E�直迁E件まで保持�E�E  n.fireHistory.push(now);
+  // ① 発火履歴を記録（直近8件まで保持）
+  n.fireHistory.push(now);
   if (n.fireHistory.length > 8) n.fireHistory.shift();
   n.lastFired = now;
   n.charge = Math.min(1, n.charge + FIRE_CHARGE_BOOST);
   lastFiredNodeId = id;
 
-  // ② 電流が流れめEↁE隣接ノ�Eドへ電場・磁場のように伝播
+  // ② 電流が流れる → 隣接ノードへ電場・磁場のように伝播
   const outEdges = g.edges.filter(e => e.from === id || e.to === id);
   outEdges.forEach(e => {
     ensureEdgePhysics(e);
@@ -750,7 +765,7 @@ function switchGraph(id) {
     const transferred = n.charge * (e.weight || 1) * e.conductance * PROPAGATION_FACTOR;
     other.charge = Math.min(1, other.charge + transferred);
 
-    // ① 同時発火してぁE��エチE��は伝導率�E�シナ�Eス強度�E�を強化＝Hebbian learning
+    // ① 同時発火していたエッジは伝導率（シナプス強度）を強化＝Hebbian learning
     const otherRecentlyFired = other.lastFired && (now - other.lastFired < SYNC_WINDOW_MS);
     if (otherRecentlyFired) {
       e.conductance = Math.min(2, e.conductance + HEBBIAN_STEP);
@@ -769,7 +784,8 @@ function ensureEdgePhysics(e) {
   if (e.conductance === undefined) e.conductance = 1.0;
 }
 
-// charge の時間減衰�E�フレームごとに呼ぶ�E�Efunction decayCharges(dtMs) {
+// charge の時間減衰（フレームごとに呼ぶ）
+function decayCharges(dtMs) {
   const g = currentGraph();
   if (!g) return;
   const decayFactor = Math.exp(-dtMs / CHARGE_DECAY_TAU);
@@ -779,10 +795,13 @@ function ensureEdgePhysics(e) {
   });
 }
 
-// ══════════════════════════════════╁E// ③ 神経ネチE��ワークの同期検�E�E�コヒ�Eレンス�E�E// ══════════════════════════════════╁Efunction estimateFreqBand(n) {
+// ═══════════════════════════════════
+// ③ 神経ネットワークの同期検出（コヒーレンス）
+// ═══════════════════════════════════
+function estimateFreqBand(n) {
   const h = n.fireHistory;
   if (!h || h.length < 2) return null;
-  // 直近�E発火間隔の平坁E��Es�E�EↁE疑似周波数�E�Ez�E�に変換
+  // 直近の発火間隔の平均（ms） → 疑似周波数（Hz）に変換
   const recent = h.slice(-4);
   let totalGap = 0, count = 0;
   for (let i = 1; i < recent.length; i++) {
@@ -800,7 +819,8 @@ function ensureEdgePhysics(e) {
   return 'delta';
 }
 
-// 時間窓�Eに発火してぁE��、互いに連結してぁE��ノ�Eド群をクラスタ匁Efunction detectSyncClusters() {
+// 時間窓内に発火していて、互いに連結しているノード群をクラスタ化
+function detectSyncClusters() {
   const g = currentGraph();
   if (!g) return [];
   const now = Date.now();
@@ -810,14 +830,15 @@ function ensureEdgePhysics(e) {
   });
   if (activeIds.length === 0) return [];
 
-  // 隣接マッチE  const adj = {};
+  // 隣接マップ
+  const adj = {};
   activeIds.forEach(id => adj[id] = []);
   g.edges.forEach(e => {
     if (adj[e.from] && activeIds.includes(e.to)) adj[e.from].push(e.to);
     if (adj[e.to] && activeIds.includes(e.from)) adj[e.to].push(e.from);
   });
 
-  // 連結�E刁E��探索
+  // 連結成分を探索
   const visited = new Set();
   const clusters = [];
   activeIds.forEach(start => {
@@ -833,7 +854,8 @@ function ensureEdgePhysics(e) {
     }
     if (comp.length === 0) return;
 
-    // 帯域を多数決で決宁E    const bandCounts = {};
+    // 帯域を多数決で決定
+    const bandCounts = {};
     let earliestFire = Infinity, latestFire = 0;
     comp.forEach(id => {
       const n = g.nodes[id];
@@ -849,7 +871,8 @@ function ensureEdgePhysics(e) {
     clusters.push({ nodeIds: comp, band, density, durationMs, size: comp.length });
   });
 
-  return clusters.filter(c => c.size >= 2); // 単独ノ�Eド�EクラスタとみなさなぁE}
+  return clusters.filter(c => c.size >= 2); // 単独ノードはクラスタとみなさない
+}
 
 function updateAttractorState() {
   currentSyncClusters = detectSyncClusters();
@@ -873,8 +896,10 @@ function updateAttractorBar() {
   text.textContent = currentAttractor.label;
 }
 
-// ══════════════════════════════════╁E// CANVAS RENDER
-// ══════════════════════════════════╁Efunction resizeCanvas() {
+// ═══════════════════════════════════
+// CANVAS RENDER
+// ═══════════════════════════════════
+function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 }
@@ -930,7 +955,8 @@ function drawArrow(x1, y1, x2, y2, color, weight, glow) {
   ctx.lineTo(ex, ey);
   ctx.stroke();
 
-  // 矢印ヘッチE  const hs = 10 * vpScale;
+  // 矢印ヘッド
+  const hs = 10 * vpScale;
   const angle = Math.atan2(ey-sy, ex-sx);
   ctx.fillStyle = color;
   ctx.shadowBlur = glow ? 8 : 0;
@@ -950,11 +976,12 @@ function drawEdgeWeight(x1, y1, x2, y2, w) {
   ctx.font = `bold ${11*vpScale}px -apple-system`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(`ÁE{w}`, mx, my - 10*vpScale);
+  ctx.fillText(`×${w}`, mx, my - 10*vpScale);
   ctx.restore();
 }
 
-// ② 電流が流れてぁE��様子を示すパルス�E�エチE��上を流れる�E点�E�Efunction drawCurrentPulse(x1, y1, x2, y2, charge, color) {
+// ② 電流が流れている様子を示すパルス（エッジ上を流れる光点）
+function drawCurrentPulse(x1, y1, x2, y2, charge, color) {
   if (charge < 0.05) return;
   const t = (Date.now() % 900) / 900;
   const px = x1 + (x2-x1) * t;
@@ -985,7 +1012,8 @@ function drawNode(n, id, score, phase) {
     ctx.shadowBlur = 8 + glowAmt * 24;
   }
 
-  // 外リング�E�選択�E接続！E  if (isSel || isConnFrom) {
+  // 外リング（選択・接続）
+  if (isSel || isConnFrom) {
     ctx.beginPath();
     ctx.arc(s.x, s.y, r + 5*vpScale, 0, Math.PI*2);
     ctx.strokeStyle = isConnFrom ? '#F5C842' : 'rgba(255,255,255,0.6)';
@@ -993,7 +1021,8 @@ function drawNode(n, id, score, phase) {
     ctx.stroke();
   }
 
-  // 本佁E  const grad = ctx.createRadialGradient(s.x - r*0.3, s.y - r*0.3, r*0.1, s.x, s.y, r);
+  // 本体
+  const grad = ctx.createRadialGradient(s.x - r*0.3, s.y - r*0.3, r*0.1, s.x, s.y, r);
   const col = n.color || '#4A9EFF';
   grad.addColorStop(0, col + 'CC');
   grad.addColorStop(1, col + '55');
@@ -1006,7 +1035,8 @@ function drawNode(n, id, score, phase) {
   ctx.stroke();
   ctx.shadowBlur = 0;
 
-  // ① 電荷リング�E�Eharge量を冁E�Eの光輪で表現�E�E  if (n.charge > 0.03) {
+  // ① 電荷リング（charge量を内側の光輪で表現）
+  if (n.charge > 0.03) {
     ctx.beginPath();
     ctx.arc(s.x, s.y, r * 0.7, 0, Math.PI*2);
     ctx.strokeStyle = `rgba(255,255,255,${n.charge * 0.7})`;
@@ -1014,7 +1044,8 @@ function drawNode(n, id, score, phase) {
     ctx.stroke();
   }
 
-  // スコアリング�E�重要度�E�E  if (score > 0) {
+  // スコアリング（重要度）
+  if (score > 0) {
     const pct = score;
     ctx.beginPath();
     ctx.arc(s.x, s.y, r + 3*vpScale, -Math.PI/2, -Math.PI/2 + Math.PI*2*pct);
@@ -1056,7 +1087,7 @@ function drawNode(n, id, score, phase) {
   ctx.restore();
 }
 
-// ③④ 同期クラスタの波紋エフェクト（γ波風リング�E� Eattractorの可視化
+// ③④ 同期クラスタの波紋エフェクト（γ波風リング）— attractorの可視化
 function drawSyncRipples(phase) {
   if (!currentSyncClusters.length) return;
   const g = currentGraph();
@@ -1064,7 +1095,8 @@ function drawSyncRipples(phase) {
 
   currentSyncClusters.forEach(cluster => {
     const style = BAND_STYLE[cluster.band] || BAND_STYLE.delta;
-    // クラスタの重忁E    let cx = 0, cy = 0;
+    // クラスタの重心
+    let cx = 0, cy = 0;
     cluster.nodeIds.forEach(id => {
       const n = g.nodes[id];
       cx += n.x; cy += n.y;
@@ -1072,7 +1104,7 @@ function drawSyncRipples(phase) {
     cx /= cluster.nodeIds.length; cy /= cluster.nodeIds.length;
     const center = worldToScreen(cx, cy);
 
-    // 吁E��ードを匁E�E波紋を個別に描く
+    // 各ノードを包む波紋を個別に描く
     cluster.nodeIds.forEach(id => {
       const n = g.nodes[id];
       const s = worldToScreen(n.x, n.y);
@@ -1093,7 +1125,7 @@ function drawSyncRipples(phase) {
       }
     });
 
-    // クラスタ全体を囲む薁E��帯域ラベル
+    // クラスタ全体を囲む薄い帯域ラベル
     if (cluster.nodeIds.length >= 2 && vpScale > 0.4) {
       ctx.save();
       ctx.globalAlpha = 0.85;
@@ -1133,15 +1165,17 @@ function render(now) {
     const col = isSel ? '#FF5F5F' : (from.color || '#4A9EFF');
     drawArrow(fs.x, fs.y, ts.x, ts.y, col, e.weight||1, isSel);
     if (vpScale > 0.5) drawEdgeWeight(fs.x, fs.y, ts.x, ts.y, e.weight||1);
-    // ② 電流パルス�E�Eromに電荷が乗ってぁE��ば流れて見える！E    drawCurrentPulse(fs.x, fs.y, ts.x, ts.y, from.charge||0, col);
+    // ② 電流パルス（fromに電荷が乗っていれば流れて見える）
+    drawCurrentPulse(fs.x, fs.y, ts.x, ts.y, from.charge||0, col);
   });
 
   // 接続モード中のプレビューライン
   if (mode === MODE.CONNECT && connectFrom && g.nodes[connectFrom]) {
-    // drawn dynamically in pointermove  Eskip here
+    // drawn dynamically in pointermove — skip here
   }
 
-  // ③④ 同期波紋（ノードより�Eに描いて、ノードが上に乗るように�E�E  drawSyncRipples(glowPhase);
+  // ③④ 同期波紋（ノードより先に描いて、ノードが上に乗るように）
+  drawSyncRipples(glowPhase);
 
   // Draw nodes
   Object.entries(g.nodes).forEach(([id, n]) => {
@@ -1152,10 +1186,13 @@ function render(now) {
   animFrame = requestAnimationFrame(render);
 }
 
-// attractor状態�E描画ループとは別の軽ぁE��期で再計算（重ぁE�E琁E��はなぁE��頻度を抑える�E�EsetInterval(updateAttractorState, 500);
+// attractor状態は描画ループとは別の軽い周期で再計算（重い処理ではないが頻度を抑える）
+setInterval(updateAttractorState, 500);
 
-// ══════════════════════════════════╁E// SCORE BAR
-// ══════════════════════════════════╁Efunction updateScoreBar() {
+// ═══════════════════════════════════
+// SCORE BAR
+// ═══════════════════════════════════
+function updateScoreBar() {
   const scores = computeScores();
   const g = currentGraph();
   if (!g) return;
@@ -1175,8 +1212,10 @@ function render(now) {
   }).join('');
 }
 
-// ══════════════════════════════════╁E// INPUT HANDLING
-// ══════════════════════════════════╁Efunction getPos(e) {
+// ═══════════════════════════════════
+// INPUT HANDLING
+// ═══════════════════════════════════
+function getPos(e) {
   const r = canvas.getBoundingClientRect();
   if (e.touches) {
     return { x: e.touches[0].clientX - r.left, y: e.touches[0].clientY - r.top };
@@ -1239,7 +1278,8 @@ canvas.addEventListener('pointerdown', e => {
   } else if (mode === MODE.CONNECT) {
     if (hitN) connectFrom = hitN;
   } else {
-    // ADD mode�E�ドラチE��移動�E無効。�E動レイアウトが位置を管琁E��るためE��E    if (hitN) { selectedNode = hitN; }
+    // ADD mode（ドラッグ移動は無効。自動レイアウトが位置を管理するため）
+    if (hitN) { selectedNode = hitN; }
   }
 });
 
@@ -1285,7 +1325,7 @@ canvas.addEventListener('pointerup', e => {
         const w = screenToWorld(pos.x, pos.y);
         addNode(w.x, w.y);
       } else {
-        // ① タチE�E�E�発火�E�電荷を流す�E�してからノ�Eド編雁E��開く
+        // ① タップ＝発火（電荷を流す）してからノード編集を開く
         fireNode(hitN);
         openNodeSheet(hitN);
       }
@@ -1331,13 +1371,15 @@ function pinchDist(e) {
   return Math.sqrt(dx*dx+dy*dy);
 }
 
-// ══════════════════════════════════╁E// NODE / EDGE OPERATIONS
-// ══════════════════════════════════╁Efunction addNode(wx, wy) {
+// ═══════════════════════════════════
+// NODE / EDGE OPERATIONS
+// ═══════════════════════════════════
+function addNode(wx, wy) {
   const g = currentGraph();
   if (!g) return;
   const id = uid();
   g.nodes[id] = {
-    id, label:'新しいノ�EチE,
+    id, label:'新しいノード',
     x: wx, y: wy,
     weight: 3,
     color: '#4A9EFF',
@@ -1355,8 +1397,8 @@ function pinchDist(e) {
 function addEdge(from, to) {
   const g = currentGraph();
   if (!g) return;
-  // 重褁E��ェチE��
-  if (g.edges.find(e => e.from===from && e.to===to)) { showToast('すでに接続済みでぁE); return; }
+  // 重複チェック
+  if (g.edges.find(e => e.from===from && e.to===to)) { showToast('すでに接続済みです'); return; }
   g.edges.push({ from, to, weight:1, conductance:1.0 });
   applyFlowchartLayout();
   saveGraphs();
@@ -1386,15 +1428,17 @@ function deleteEdge(e) {
   updateScoreBar();
 }
 
-// ══════════════════════════════════╁E// NODE SHEET
-// ══════════════════════════════════╁Efunction openNodeSheet(id, isNew=false) {
+// ═══════════════════════════════════
+// NODE SHEET
+// ═══════════════════════════════════
+function openNodeSheet(id, isNew=false) {
   editingNodeId = id;
   const g = currentGraph();
   const n = g?.nodes[id];
   if (!n) return;
   ensurePhysicsFields(n);
 
-  document.getElementById('nodeSheetTitle').textContent = isNew ? '新規ノーチE : 'ノ�Eド編雁E;
+  document.getElementById('nodeSheetTitle').textContent = isNew ? '新規ノード' : 'ノード編集';
   document.getElementById('nLabel').value = n.label || '';
   document.getElementById('nMemo').value = n.memo || '';
   const slider = document.getElementById('nWeight');
@@ -1407,22 +1451,22 @@ function deleteEdge(e) {
     sw.classList.toggle('active', sw.dataset.color === editingNodeColor);
   });
 
-  // エチE��惁E��
+  // エッジ情報
   const inEdges  = g.edges.filter(e => e.to===id);
   const outEdges = g.edges.filter(e => e.from===id);
   const edgeLines = [];
-  inEdges.forEach(e  => edgeLines.push(`ↁE${g.nodes[e.from]?.label||'?'} (ÁE{e.weight||1})`));
-  outEdges.forEach(e => edgeLines.push(`ↁE${g.nodes[e.to]?.label||'?'} (ÁE{e.weight||1})`));
-  document.getElementById('edgeInfo').textContent = edgeLines.join('\n') || 'なぁE;
+  inEdges.forEach(e  => edgeLines.push(`← ${g.nodes[e.from]?.label||'?'} (×${e.weight||1})`));
+  outEdges.forEach(e => edgeLines.push(`→ ${g.nodes[e.to]?.label||'?'} (×${e.weight||1})`));
+  document.getElementById('edgeInfo').textContent = edgeLines.join('\n') || 'なし';
 
-  // 物琁E��スチE�Eタス表示
+  // 物理層ステータス表示
   const band = estimateFreqBand(n);
   const bandLabel = band ? BAND_STYLE[band].label : '未発火';
   const cluster = currentSyncClusters.find(c => c.nodeIds.includes(id));
   const attr = cluster ? classifyAttractor(cluster) : null;
   document.getElementById('physicsBox').innerHTML =
-    `電荷釁E <b>${Math.round(n.charge*100)}%</b>　発火回数: <b>${n.fireHistory.length}</b><br>` +
-    `推定帯埁E <b>${bandLabel}</b><br>` +
+    `電荷量: <b>${Math.round(n.charge*100)}%</b>　発火回数: <b>${n.fireHistory.length}</b><br>` +
+    `推定帯域: <b>${bandLabel}</b><br>` +
     `同期attractor: <b>${attr ? attr.label : '未収束'}</b>`;
 
   openSheet('nodeSheet');
@@ -1444,16 +1488,20 @@ function saveNodeSheet() {
   closeSheet('nodeSheet');
 }
 
-// ══════════════════════════════════╁E// EDGE HINT
-// ══════════════════════════════════╁Efunction showEdgeHint(e) {
+// ═══════════════════════════════════
+// EDGE HINT
+// ═══════════════════════════════════
+function showEdgeHint(e) {
   const g = currentGraph();
-  const label = `${g?.nodes[e.from]?.label||'?'} ↁE${g?.nodes[e.to]?.label||'?'} (ÁE{e.weight||1}) を削除しますか�E�`;
+  const label = `${g?.nodes[e.from]?.label||'?'} → ${g?.nodes[e.to]?.label||'?'} (×${e.weight||1}) を削除しますか？`;
   document.getElementById('edgeHintLabel').textContent = label;
   document.getElementById('edgeHint').classList.add('show');
 }
 
-// ══════════════════════════════════╁E// GRAPH LIST
-// ══════════════════════════════════╁Efunction renderGraphList() {
+// ═══════════════════════════════════
+// GRAPH LIST
+// ═══════════════════════════════════
+function renderGraphList() {
   const wrap = document.getElementById('graphListWrap');
   const ids = Object.keys(graphs).sort((a,b) => (graphs[b].createdAt||0)-(graphs[a].createdAt||0));
   wrap.innerHTML = ids.map(id => {
@@ -1462,8 +1510,8 @@ function saveNodeSheet() {
     const isCur = id === currentGraphId;
     return `<div class="graph-item ${isCur?'current':''}" data-id="${id}">
       <div>
-        <div class="graph-item-name">${escHtml(g.name)}${isCur?' ✁E:''}</div>
-        <div class="graph-item-meta">ノ�EチE${nodeCount}倁E/div>
+        <div class="graph-item-name">${escHtml(g.name)}${isCur?' ✓':''}</div>
+        <div class="graph-item-meta">ノード ${nodeCount}個</div>
       </div>
       <button class="graph-item-del" data-del="${id}">🗑</button>
     </div>`;
@@ -1480,11 +1528,11 @@ function saveNodeSheet() {
     btn.addEventListener('click', e => {
       e.stopPropagation();
       const id = btn.dataset.del;
-      if (!confirm(`、E{graphs[id]?.name}」を削除しますか�E�`)) return;
+      if (!confirm(`「${graphs[id]?.name}」を削除しますか？`)) return;
       delete graphs[id];
       if (currentGraphId === id) {
         const remaining = Object.keys(graphs);
-        if (remaining.length === 0) createGraph('グラチE');
+        if (remaining.length === 0) createGraph('グラフ1');
         else switchGraph(remaining[0]);
       }
       saveGraphs();
@@ -1493,8 +1541,11 @@ function saveNodeSheet() {
   });
 }
 
-// ══════════════════════════════════╁E// is_transfer 連携
-// ══════════════════════════════════╁E// アイチE��1件を、感惁E��タチE�Eタがあれ�Eそれを反映したノ�Eドとして追加する共通�E琁Efunction addNodeFromTransferItem(item, index, total, g) {
+// ═══════════════════════════════════
+// is_transfer 連携
+// ═══════════════════════════════════
+// アイテム1件を、感情メタデータがあればそれを反映したノードとして追加する共通処理
+function addNodeFromTransferItem(item, index, total, g) {
   const angle = (index / total) * Math.PI * 2;
   const dist = 200 + Math.random() * 100;
   const id = item.id || uid();
@@ -1507,10 +1558,11 @@ function saveNodeSheet() {
 
   g.nodes[id] = {
     id,
-    label: (item.title || '無顁E).slice(0,20),
+    label: (item.title || '無題').slice(0,20),
     memo: (item.body || '').replace(/<[^>]+>/g,'').slice(0,200),
     weight: 3,
-    // 感情メタがあれ�Eそ�E帯域�E色を使ぁE��なければ従来通り虹色を割り当て、E    color: bandStyle ? bandStyle.color : cols[index % cols.length],
+    // 感情メタがあればその帯域の色を使う。なければ従来通り虹色を割り当て。
+    color: bandStyle ? bandStyle.color : cols[index % cols.length],
     x: Math.cos(angle) * dist,
     y: Math.sin(angle) * dist,
     charge: 0,
@@ -1525,10 +1577,10 @@ function saveNodeSheet() {
 function importFromTransfer() {
   try {
     const raw = localStorage.getItem(LS_TRANSFER);
-    if (!raw) { showToast('is_transferにチE�Eタがありません'); return; }
+    if (!raw) { showToast('is_transferにデータがありません'); return; }
     const payload = JSON.parse(raw);
     const items = payload.items || (Array.isArray(payload) ? payload : null);
-    if (!items || items.length === 0) { showToast('インポ�EトできるチE�Eタがありません'); return; }
+    if (!items || items.length === 0) { showToast('インポートできるデータがありません'); return; }
 
     const g = currentGraph();
     if (!g) return;
@@ -1543,16 +1595,17 @@ function importFromTransfer() {
     updateScoreBar();
     centerView();
     closeSheet('graphsSheet');
-    showToast(`${added}件のノ�Eドを追加しました`);
+    showToast(`${added}件のノードを追加しました`);
   } catch(e) {
     console.error(e);
-    showToast('インポ�Eトに失敗しました');
+    showToast('インポートに失敗しました');
   }
 }
 
-// ── ブリチE��からの自動送信(is_emotion_transfer)を静かに取り込む ──
-// quick-ref-bridge等が保存�Eた�Eに書き込む1件チE�Eタを、確認なしで
-// 因果グラフに自動追加する。既に取り込んだタイムスタンプ�E記録して重褁E��止、Elet lastEmotionTransferTs = Number(localStorage.getItem('fm_last_emotion_ts') || 0);
+// ── ブリッジからの自動送信(is_emotion_transfer)を静かに取り込む ──
+// quick-ref-bridge等が保存のたびに書き込む1件データを、確認なしで
+// 因果グラフに自動追加する。既に取り込んだタイムスタンプは記録して重複防止。
+let lastEmotionTransferTs = Number(localStorage.getItem('fm_last_emotion_ts') || 0);
 
 function checkEmotionTransfer() {
   try {
@@ -1560,7 +1613,8 @@ function checkEmotionTransfer() {
     if (!raw) return;
     const payload = JSON.parse(raw);
     if (!payload.timestamp || payload.timestamp <= lastEmotionTransferTs) return;
-    if (payload.source === 'flow-mind') return; // 自刁E�E身の書き込みは無要E    const items = payload.items;
+    if (payload.source === 'flow-mind') return; // 自分自身の書き込みは無視
+    const items = payload.items;
     if (!Array.isArray(items) || items.length === 0) return;
 
     const g = currentGraph();
@@ -1568,7 +1622,7 @@ function checkEmotionTransfer() {
 
     let added = 0, lastId = null;
     items.forEach((item, i) => {
-      // 自動受信ではitemに_emotionMetaが無ぁE��とがある�Eで、�Eイロード�E体�EemotionMetaで補う
+      // 自動受信ではitemに_emotionMetaが無いことがあるので、ペイロード全体のemotionMetaで補う
       const merged = item._emotionMeta ? item : { ...item, _emotionMeta: payload.emotionMeta };
       const id = addNodeFromTransferItem(merged, i, items.length, g);
       if (id) { added++; lastId = id; }
@@ -1587,14 +1641,16 @@ function checkEmotionTransfer() {
   }
 }
 
-// ══════════════════════════════════╁E// #import= URL HASH
-// ══════════════════════════════════╁Efunction checkImportHash() {
+// ═══════════════════════════════════
+// #import= URL HASH
+// ═══════════════════════════════════
+function checkImportHash() {
   if (!location.hash.startsWith('#import=')) return;
   try {
     const b64 = location.hash.slice(8);
     const json = decodeURIComponent(escape(atob(b64)));
     const payload = JSON.parse(json);
-    const name = payload.graphName || `インポ�EチE${new Date().toLocaleDateString()}`;
+    const name = payload.graphName || `インポート_${new Date().toLocaleDateString()}`;
     const newId = createGraph(name);
     const g = graphs[newId];
     if (payload.nodes) g.nodes = payload.nodes;
@@ -1602,20 +1658,22 @@ function checkEmotionTransfer() {
     applyFlowchartLayout();
     saveGraphs();
     switchGraph(newId);
-    showToast(`グラフ、E{name}」をインポ�Eトしました`);
+    showToast(`グラフ「${name}」をインポートしました`);
   } catch(e) { console.warn('hash import error', e); }
   finally { history.replaceState(null,'',location.pathname); }
 }
 
-// ══════════════════════════════════╁E// AI LAYER
-// ══════════════════════════════════╁Easync function callAI(prompt) {
+// ═══════════════════════════════════
+// AI LAYER
+// ═══════════════════════════════════
+async function callAI(prompt) {
   const modelKey = localStorage.getItem(LS_MODEL) || 'claude';
   const proxyUrl = localStorage.getItem(LS_PROXY) || '';
   const m = MODELS[modelKey] || MODELS.claude;
   const keyMap = { claude:LS_CLAUDE, gemini:LS_GEMINI, openai:LS_OPENAI };
   const apiKey = localStorage.getItem(keyMap[modelKey]) || '';
 
-  if (!apiKey && !proxyUrl) throw new Error(`APIキーが未設定です。quick-refの⚙️設定から�E力してください�E�E{m.label}�E�`);
+  if (!apiKey && !proxyUrl) throw new Error(`APIキーが未設定です。quick-refの⚙️設定から入力してください（${m.label}）`);
 
   if (proxyUrl) {
     const res = await fetch(proxyUrl, {
@@ -1660,7 +1718,7 @@ function checkEmotionTransfer() {
     if (!res.ok) throw new Error(d.error?.message || `OpenAI ${res.status}`);
     return d.choices?.[0]?.message?.content || '';
   }
-  throw new Error('未対応�EモチE��');
+  throw new Error('未対応のモデル');
 }
 
 function buildGraphDescription() {
@@ -1669,45 +1727,46 @@ function buildGraphDescription() {
   const scores = computeScores();
   const nodeLines = Object.entries(g.nodes)
     .sort((a,b) => (scores[b[0]]||0)-(scores[a[0]]||0))
-    .map(([id,n]) => `・${n.label}�E��E己重み:${n.weight}、E��要度スコア:${Math.round((scores[id]||0)*100)}%�E�E{n.memo?` ↁE${n.memo}`:''}`);
+    .map(([id,n]) => `・${n.label}（自己重み:${n.weight}、重要度スコア:${Math.round((scores[id]||0)*100)}%）${n.memo?` → ${n.memo}`:''}`);
   const edgeLines = g.edges.map(e =>
-    `${g.nodes[e.from]?.label||'?'} →[ÁE{e.weight||1}]ↁE${g.nodes[e.to]?.label||'?'}`);
-  return `グラフ名�E�E{g.name}\n\n【ノード】\n${nodeLines.join('\n')}\n\n【因果エチE��】\n${edgeLines.join('\n')||'なぁE}`;
+    `${g.nodes[e.from]?.label||'?'} →[×${e.weight||1}]→ ${g.nodes[e.to]?.label||'?'}`);
+  return `グラフ名：${g.name}\n\n【ノード】\n${nodeLines.join('\n')}\n\n【因果エッジ】\n${edgeLines.join('\n')||'なし'}`;
 }
 
-// ④ 同期クラスタ�E�attractor惁E��を構造化してAIに渡す（本音抽出用コンチE��スト！Efunction buildAttractorContext() {
+// ④ 同期クラスタ＝attractor情報を構造化してAIに渡す（本音抽出用コンテキスト）
+function buildAttractorContext() {
   const g = currentGraph();
   if (!g || currentSyncClusters.length === 0) {
-    return '現在、同期してぁE���E�活性化してぁE���E�ノード群はありません、E;
+    return '現在、同期している（活性化している）ノード群はありません。';
   }
   const lines = currentSyncClusters.map(c => {
     const attr = classifyAttractor(c);
     const style = BAND_STYLE[c.band];
-    const nodeLabels = c.nodeIds.map(id => g.nodes[id]?.label || '?').join('、E);
-    return `・帯埁E${style.label}�E�持綁E${Math.round(c.durationMs)}ms�E�寁E��:${Math.round(c.density*100)}%\n` +
-      `  関与ノーチE ${nodeLabels}\n` +
-      `  推定attractor: ${attr ? attr.label : '未収束�E�過渡状態！E}`;
+    const nodeLabels = c.nodeIds.map(id => g.nodes[id]?.label || '?').join('、');
+    return `・帯域:${style.label}／持続:${Math.round(c.durationMs)}ms／密度:${Math.round(c.density*100)}%\n` +
+      `  関与ノード: ${nodeLabels}\n` +
+      `  推定attractor: ${attr ? attr.label : '未収束（過渡状態）'}`;
   });
-  return `現在、以下�E神経同期パターン�E�電気振動�Eクラスタ�E�が検�EされてぁE��す：\n${lines.join('\n\n')}`;
+  return `現在、以下の神経同期パターン（電気振動のクラスタ）が検出されています：\n${lines.join('\n\n')}`;
 }
 
 async function runAnalysis(type, custom='') {
   const desc = buildGraphDescription();
-  if (!desc.includes('ノ�EチE)) { showToast('ノ�Eドを追加してから刁E��してください'); return; }
+  if (!desc.includes('ノード')) { showToast('ノードを追加してから分析してください'); return; }
 
   const attractorCtx = buildAttractorContext();
 
   const prompts = {
-    structure: `以下�E因果グラフを刁E��してください、En最重要ノード（影響力が大きいも�E�E��E琁E��、構造皁E��特徴、改喁E��案を日本語で教えてください、En\n${desc}`,
-    weak: `以下�E因果グラフ�E弱点を検�Eしてください、En孤立したノード、根拠の薁E��繋がり、論理皁E��飛躍、見落とされてぁE��関係性を日本語で持E��してください、En\n${desc}`,
-    suggest: `以下�E因果グラフを見て、追加すべきノード（概念・アイチE���E�を5つ提案してください、En吁E��案に、既存�Eどのノ�Eドと繋がるかも示してください。日本語で、En\n${desc}`,
-    honne: `あなた�E「感惁E�E物琁E��チE��」に基づぁE��本音を抽出するアシスタントです、En` +
-      `感情とは、神経ネチE��ワークの特定�E周波数帯での同期�E�コヒ�Eレンス�E�が、安定した状態！Ettractor�E�に収束したとき�E主観皁E��験だと老E��ます、En\n` +
+    structure: `以下の因果グラフを分析してください。\n最重要ノード（影響力が大きいもの）の理由、構造的な特徴、改善提案を日本語で教えてください。\n\n${desc}`,
+    weak: `以下の因果グラフの弱点を検出してください。\n孤立したノード、根拠の薄い繋がり、論理的な飛躍、見落とされている関係性を日本語で指摘してください。\n\n${desc}`,
+    suggest: `以下の因果グラフを見て、追加すべきノード（概念・アイデア）を5つ提案してください。\n各提案に、既存のどのノードと繋がるかも示してください。日本語で。\n\n${desc}`,
+    honne: `あなたは「感情の物理モデル」に基づいて本音を抽出するアシスタントです。\n` +
+      `感情とは、神経ネットワークの特定の周波数帯での同期（コヒーレンス）が、安定した状態（attractor）に収束したときの主観的体験だと考えます。\n\n` +
       `${attractorCtx}\n\n` +
-      `以下�Eこ�Eユーザーの思老E��ラフです：\n${desc}\n\n` +
-      `上記�E同期パターン�E�特にγ波�E�怒り・雁E��、θ波�E�不安、δ波�E�深ぁE��動）が、` +
-      `どのノ�Eド群を中忁E��起きてぁE��かに注目し、ユーザー自身もまだ言語化できてぁE��ぁE��本音」を断定せず仮説として1、E個、日本語で提示してください。` +
-      `根拠として、どの同期クラスタ・どのノ�Eド�E絁E��合わせからその仮説を導いたかも�E記してください。`,
+      `以下はこのユーザーの思考グラフです：\n${desc}\n\n` +
+      `上記の同期パターン（特にγ波＝怒り・集中、θ波＝不安、δ波＝深い情動）が、` +
+      `どのノード群を中心に起きているかに注目し、ユーザー自身もまだ言語化できていない「本音」を断定せず仮説として1〜3個、日本語で提示してください。` +
+      `根拠として、どの同期クラスタ・どのノードの組み合わせからその仮説を導いたかも明記してください。`,
   };
 
   const prompt = custom
@@ -1728,8 +1787,10 @@ async function runAnalysis(type, custom='') {
   }
 }
 
-// ══════════════════════════════════╁E// SHEET HELPERS
-// ══════════════════════════════════╁Efunction openSheet(id) {
+// ═══════════════════════════════════
+// SHEET HELPERS
+// ═══════════════════════════════════
+function openSheet(id) {
   document.getElementById(id).classList.add('open');
   document.getElementById('overlay').classList.add('open');
 }
@@ -1751,9 +1812,9 @@ function setMode(m) {
   document.getElementById('connectModeBtn').classList.toggle('active', m===MODE.CONNECT);
   document.getElementById('editModeBtn').classList.toggle('active', m===MODE.EDIT);
   const labels = {
-    add:'タチE�Eで新しいノ�Eドを追加 / ノ�EドをタチE�Eで編雁E�E発火',
-    connect:'接続�Eノ�EドをタチE�E ↁE接続�EをタチE�E',
-    edit:'ノ�EドをタチE�Eで編雁E/ エチE��をタチE�Eで削除�E��E置は自動整列！E,
+    add:'タップで新しいノードを追加 / ノードをタップで編集・発火',
+    connect:'接続元ノードをタップ → 接続先をタップ',
+    edit:'ノードをタップで編集 / エッジをタップで削除（配置は自動整列）',
   };
   document.getElementById('modeLabel').textContent = labels[m];
   document.getElementById('deleteNodeBtn').style.display = 'none';
@@ -1778,7 +1839,10 @@ function showToast(msg) {
   toastTimer = setTimeout(() => el.classList.remove('show'), 2300);
 }
 
-// ══════════════════════════════════╁E// QUICK CAPTURE  Eすぐ記録�E�音声 / チE��スチE/ 共有シート起動！E// ══════════════════════════════════╁Elet qcRecorder = null;
+// ═══════════════════════════════════
+// QUICK CAPTURE — すぐ記録（音声 / テキスト / 共有シート起動）
+// ═══════════════════════════════════
+let qcRecorder = null;
 let qcChunks = [];
 let qcRecording = false;
 
@@ -1807,11 +1871,13 @@ function setQcStatus(msg, busy) {
   el.classList.toggle('busy', !!busy);
 }
 
-// チE��ストからノードを即時作�Eし、直前に発火したノ�Eドへ因果エチE��で接続すめE// �E�＝孤立ノードにせず、既存�E思老E��ラフ�E中に位置づける�E�Efunction quickAddNode(text) {
+// テキストからノードを即時作成し、直前に発火したノードへ因果エッジで接続する
+// （＝孤立ノードにせず、既存の思考グラフの中に位置づける）
+function quickAddNode(text) {
   const g = currentGraph();
   if (!g) return;
   const trimmed = text.trim();
-  if (!trimmed) { showToast('冁E��を�E力してください'); return; }
+  if (!trimmed) { showToast('内容を入力してください'); return; }
 
   const connectSourceId = (lastFiredNodeId && g.nodes[lastFiredNodeId]) ? lastFiredNodeId : null;
   const basePos = connectSourceId
@@ -1826,7 +1892,8 @@ function setQcStatus(msg, busy) {
   g.nodes[id] = {
     id,
     label: firstLine || '記録',
-    memo: trimmed,                // 全斁E��忁E��メモに保持�E�省略しなぁE��E    x: pos.x, y: pos.y,
+    memo: trimmed,                // 全文を必ずメモに保持（省略しない）
+    x: pos.x, y: pos.y,
     weight: 3,
     color: '#4A9EFF',
     charge: 0,
@@ -1834,7 +1901,8 @@ function setQcStatus(msg, busy) {
     lastFired: 0,
   };
 
-  // 直前に発火したノ�Eドがあれば、因果�E連鎖として自動接綁E  if (connectSourceId) {
+  // 直前に発火したノードがあれば、因果の連鎖として自動接続
+  if (connectSourceId) {
     g.edges.push({ from: connectSourceId, to: id, weight: 1, conductance: 1.0 });
   }
 
@@ -1842,27 +1910,30 @@ function setQcStatus(msg, busy) {
   saveGraphs();
   updateScoreBar();
   closeQuickCapture();
-  fireNode(id);                   // 発火させて電荷・同期波を伝播させめE  document.getElementById('qcInput').value = '';
+  fireNode(id);                   // 発火させて電荷・同期波を伝播させる
+  document.getElementById('qcInput').value = '';
   autoGrowQc();
 
-  // 全斁E�E接続を確認できるよう、ノード編雁E��ートを自動で開く
+  // 全文・接続を確認できるよう、ノード編集シートを自動で開く
   openNodeSheet(id, true);
   showToast(connectSourceId ? '記録して接続しました' : '記録しました');
 }
 
-// ── 音声入力！EediaRecorderで録音 ↁEAI(Whisper系)で斁E��起こし�E�──
-// 補足�E�iOS Safariはブラウザ標準�E音声認譁ESpeechRecognition)に対応してぁE��ぁE��め、E// 録音してAI APIに送って斁E��起こしする方式にしてぁE��す、Efunction startQcRecording() {
+// ── 音声入力（MediaRecorderで録音 → AI(Whisper系)で文字起こし）──
+// 補足：iOS Safariはブラウザ標準の音声認識(SpeechRecognition)に対応していないため、
+// 録音してAI APIに送って文字起こしする方式にしています。
+function startQcRecording() {
   if (qcRecording) return;
   if (!window.isSecureContext) {
-    showToast('マイクはhttps環墁E��のみ使用できまぁE);
+    showToast('マイクはhttps環境でのみ使用できます');
     return;
   }
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    showToast('こ�Eブラウザ/表示モード�E録音に対応してぁE��せん');
+    showToast('このブラウザ/表示モードは録音に対応していません');
     return;
   }
   if (typeof MediaRecorder === 'undefined') {
-    showToast('こ�E環墁E�EMediaRecorderに対応してぁE��せん');
+    showToast('この環境はMediaRecorderに対応していません');
     return;
   }
   navigator.mediaDevices.getUserMedia({ audio:true }).then(stream => {
@@ -1880,11 +1951,11 @@ function setQcStatus(msg, busy) {
     qcRecorder.ondataavailable = e => { if (e.data.size > 0) qcChunks.push(e.data); };
     qcRecorder.onerror = e => {
       console.error('MediaRecorder error', e.error);
-      showToast('録音エラー: ' + (e.error?.message || e.error?.name || '不�Eなエラー'));
+      showToast('録音エラー: ' + (e.error?.message || e.error?.name || '不明なエラー'));
     };
     qcRecorder.onstop = () => {
       stream.getTracks().forEach(t => t.stop());
-      if (qcChunks.length === 0) { setQcStatus(''); showToast('録音チE�Eタが取得できませんでした'); return; }
+      if (qcChunks.length === 0) { setQcStatus(''); showToast('録音データが取得できませんでした'); return; }
       const blob = new Blob(qcChunks, { type: qcRecorder.mimeType || 'audio/webm' });
       transcribeAndFill(blob);
     };
@@ -1892,21 +1963,21 @@ function setQcStatus(msg, busy) {
     qcRecording = true;
     document.getElementById('qcMicBtn').classList.add('recording');
     document.getElementById('quickCaptureFab').classList.add('recording');
-    setQcStatus('🎙 録音中…もう一度タチE�Eで斁E��起こし', true);
+    setQcStatus('🎙 録音中…もう一度タップで文字起こし', true);
   }).catch(err => {
     console.error(err);
-    // iOSでよくある原因を判別してメチE��ージを�Eし�Eける
-    let msg = 'マイクへのアクセスが忁E��でぁE;
+    // iOSでよくある原因を判別してメッセージを出し分ける
+    let msg = 'マイクへのアクセスが必要です';
     if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-      msg = 'マイクへのアクセスが拒否されてぁE��す。設宁E> Safari(また�Eこ�Eアプリ) > マイク を確認してください';
+      msg = 'マイクへのアクセスが拒否されています。設定 > Safari(またはこのアプリ) > マイク を確認してください';
     } else if (err.name === 'NotFoundError') {
       msg = 'マイクが見つかりません';
     } else if (err.name === 'NotReadableError') {
-      msg = '他�Eアプリが�Eイクを使用中の可能性がありまぁE;
+      msg = '他のアプリがマイクを使用中の可能性があります';
     } else if (err.name === 'SecurityError') {
-      msg = 'セキュリチE��制限によりマイクを使用できません(https環墁E��確認してください)';
+      msg = 'セキュリティ制限によりマイクを使用できません(https環境か確認してください)';
     }
-    showToast(msg + `�E�E{err.name}�E�`);
+    showToast(msg + `（${err.name}）`);
   });
 }
 
@@ -1919,12 +1990,12 @@ function stopQcRecording() {
 }
 
 async function transcribeAndFill(blob) {
-  setQcStatus('⏳ 斁E��起こし中…', true);
+  setQcStatus('⏳ 文字起こし中…', true);
   const apiKey = localStorage.getItem(LS_OPENAI) || '';
   const proxyUrl = localStorage.getItem(LS_PROXY) || '';
   if (!apiKey && !proxyUrl) {
     setQcStatus('');
-    showToast('斁E��起こしにはOpenAI APIキーが忁E��です！Euick-refの⚙️設定！E);
+    showToast('文字起こしにはOpenAI APIキーが必要です（quick-refの⚙️設定）');
     return;
   }
   try {
@@ -1958,12 +2029,14 @@ async function transcribeAndFill(blob) {
   } catch(e) {
     console.error(e);
     setQcStatus('');
-    showToast('斁E��起こしに失敗しました: ' + e.message);
+    showToast('文字起こしに失敗しました: ' + e.message);
   }
 }
 
 // ── URL経由の即記録受信 ──
-// index.html#capture=<encodeURIComponent(text)> で開くと、すぐ記録バ�EにチE��ストが入った状態で起動する、E// &auto=1 を付けるとバ�Eを開かずそ�Eままノ�Eド化する�E�例：iOSショートカチE��の「�E有」アクションから�E�、Efunction checkCaptureHash() {
+// index.html#capture=<encodeURIComponent(text)> で開くと、すぐ記録バーにテキストが入った状態で起動する。
+// &auto=1 を付けるとバーを開かずそのままノード化する（例：iOSショートカットの「共有」アクションから）。
+function checkCaptureHash() {
   if (!location.hash.startsWith('#capture=')) return;
   try {
     const raw = location.hash.slice('#capture='.length);
@@ -1987,7 +2060,10 @@ function wireQuickCapture() {
   const sendBtn = document.getElementById('qcSendBtn');
   const closeBtn = document.getElementById('qcCloseBtn');
 
-  // FABはタチE�Eでバ�Eを開くだけ（録音はマイクボタンを直接タチE�Eした時だけ開始する、E  // iOSはgetUserMediaをユーザー操作�E“直接の結果”としてでなぁE��許可しなぁE��め、E  // setTimeoutを挟む長押し起動�E使わなぁE��E  fab.addEventListener('click', () => openQuickCapture());
+  // FABはタップでバーを開くだけ（録音はマイクボタンを直接タップした時だけ開始する。
+  // iOSはgetUserMediaをユーザー操作の“直接の結果”としてでないと許可しないため、
+  // setTimeoutを挟む長押し起動は使わない）
+  fab.addEventListener('click', () => openQuickCapture());
 
   closeBtn.addEventListener('click', closeQuickCapture);
 
@@ -2007,9 +2083,13 @@ function wireQuickCapture() {
   sendBtn.addEventListener('click', () => quickAddNode(input.value));
 }
 
-// ══════════════════════════════════╁E// SYNC  EWindows(File System Access API) / iPhone(手動Files連携)
-// ══════════════════════════════════╁E// ══════════════════════════════════╁E// SYNC  EWindows(File System Access API) / iPhone(手動Files連携) / クラウチE全端末共送E
-// ══════════════════════════════════╁Easync function checkCloudSyncOnLoad() {
+// ═══════════════════════════════════
+// SYNC — Windows(File System Access API) / iPhone(手動Files連携)
+// ═══════════════════════════════════
+// ═══════════════════════════════════
+// SYNC — Windows(File System Access API) / iPhone(手動Files連携) / クラウド(全端末共通)
+// ═══════════════════════════════════
+async function checkCloudSyncOnLoad() {
   if (!window.CloudSync || !CloudSync.isConfigured()) return;
   try {
     const payload = await CloudSync.cloudLoad('flow-mind');
@@ -2017,12 +2097,12 @@ function wireQuickCapture() {
     const localLastSync = CloudSync.getLastSyncedAt('flow-mind') || 0;
     if (payload.timestamp > localLastSync) {
       const when = new Date(payload.timestamp).toLocaleString('ja-JP');
-      if (confirm(`クラウド�Eに新しいチE�EタがありまぁE${when})。読み込みますか�E�\n�E�現在のグラフ�E上書きされます）`)) {
+      if (confirm(`クラウド側に新しいデータがあります(${when})。読み込みますか？\n（現在のグラフは上書きされます）`)) {
         graphs = payload.data;
         const ids = Object.keys(graphs);
         if (!graphs[currentGraphId]) {
           currentGraphId = ids[0] || null;
-          if (!currentGraphId) createGraph('はじめてのグラチE);
+          if (!currentGraphId) createGraph('はじめてのグラフ');
           else localStorage.setItem(LS_CURRENT, currentGraphId);
         }
         applyFlowchartLayout();
@@ -2041,18 +2121,18 @@ async function refreshCloudSyncStatus() {
   document.getElementById('cloudEndpointInput').value = c.endpoint || '';
   document.getElementById('cloudTokenInput').value = c.token || '';
   if (!CloudSync.isConfigured()) {
-    document.getElementById('cloudSyncStatus').textContent = '未設宁E;
+    document.getElementById('cloudSyncStatus').textContent = '未設定';
     return;
   }
   const ts = CloudSync.getLastSyncedAt('flow-mind');
   document.getElementById('cloudSyncStatus').textContent = ts
-    ? `設定済み / 最終同朁E ${new Date(ts).toLocaleString('ja-JP')}`
-    : '設定済み�E�まだ未同期�E�E;
+    ? `設定済み / 最終同期: ${new Date(ts).toLocaleString('ja-JP')}`
+    : '設定済み（まだ未同期）';
 }
 
 function wireCloudSync() {
   document.getElementById('cloudSaveConfigBtn').addEventListener('click', async () => {
-    if (!window.CloudSync) { showToast('cloud-sync.jsが読み込まれてぁE��せん'); return; }
+    if (!window.CloudSync) { showToast('cloud-sync.jsが読み込まれていません'); return; }
     const endpoint = document.getElementById('cloudEndpointInput').value;
     const token = document.getElementById('cloudTokenInput').value;
     CloudSync.setConfig(endpoint, token);
@@ -2063,7 +2143,7 @@ function wireCloudSync() {
   });
 
   document.getElementById('cloudSyncNowBtn').addEventListener('click', async () => {
-    if (!window.CloudSync || !CloudSync.isConfigured()) { showToast('先にエンド�EインチEト�Eクンを設定してください'); return; }
+    if (!window.CloudSync || !CloudSync.isConfigured()) { showToast('先にエンドポイント/トークンを設定してください'); return; }
     CloudSync.cloudSave('flow-mind', graphs);
     showToast('同期しました');
     setTimeout(refreshCloudSyncStatus, 1400);
@@ -2080,12 +2160,12 @@ async function checkCloudOnLoad() {
     const localLastSync = SyncBridge.getLastSyncedAt('flow-mind') || 0;
     if (payload.timestamp > localLastSync) {
       const when = new Date(payload.timestamp).toLocaleString('ja-JP');
-      if (confirm(`iCloud側に新しいチE�EタがありまぁE${when})。読み込みますか�E�\n�E�現在のグラフ�E上書きされます）`)) {
+      if (confirm(`iCloud側に新しいデータがあります(${when})。読み込みますか？\n（現在のグラフは上書きされます）`)) {
         graphs = payload.data;
         const ids = Object.keys(graphs);
         if (!graphs[currentGraphId]) {
           currentGraphId = ids[0] || null;
-          if (!currentGraphId) createGraph('はじめてのグラチE);
+          if (!currentGraphId) createGraph('はじめてのグラフ');
           else localStorage.setItem(LS_CURRENT, currentGraphId);
         }
         applyFlowchartLayout();
@@ -2113,13 +2193,13 @@ async function refreshSyncStatus() {
     const connected = await SyncBridge.isConnected('flow-mind');
     const ts = SyncBridge.getLastSyncedAt('flow-mind');
     document.getElementById('syncDesktopStatus').textContent = connected
-      ? `接続済み${ts ? ' / 最終同朁E ' + new Date(ts).toLocaleString('ja-JP') : ''}`
-      : '未接綁E;
+      ? `接続済み${ts ? ' / 最終同期: ' + new Date(ts).toLocaleString('ja-JP') : ''}`
+      : '未接続';
   } else {
     const ts = SyncBridge.getLastSyncedAt('flow-mind-sync');
     document.getElementById('syncMobileStatus').textContent = ts
-      ? `最終書き�EぁE ${new Date(ts).toLocaleString('ja-JP')}`
-      : 'まだ書き�EしてぁE��せん';
+      ? `最終書き出し: ${new Date(ts).toLocaleString('ja-JP')}`
+      : 'まだ書き出していません';
   }
 }
 
@@ -2129,7 +2209,7 @@ function wireSyncSheet() {
   document.getElementById('syncSheetClose').addEventListener('click', () => closeSheet('syncSheet'));
 
   document.getElementById('syncConnectBtn').addEventListener('click', async () => {
-    if (!window.SyncBridge) { showToast('同期モジュールが読み込まれてぁE��せん'); return; }
+    if (!window.SyncBridge) { showToast('同期モジュールが読み込まれていません'); return; }
     try {
       await SyncBridge.connectFolder('flow-mind');
       showToast('フォルダに接続しました');
@@ -2153,21 +2233,21 @@ function wireSyncSheet() {
   });
 
   document.getElementById('syncExportBtn').addEventListener('click', () => {
-    if (!window.SyncBridge) { showToast('同期モジュールが読み込まれてぁE��せん'); return; }
+    if (!window.SyncBridge) { showToast('同期モジュールが読み込まれていません'); return; }
     SyncBridge.exportToFiles('flow-mind-sync.json', graphs);
-    showToast('書き�Eしました。保存�EでiCloud Driveを選んでください');
+    showToast('書き出しました。保存先でiCloud Driveを選んでください');
     setTimeout(refreshSyncStatus, 300);
   });
 
   document.getElementById('syncImportBtn').addEventListener('click', async () => {
-    if (!window.SyncBridge) { showToast('同期モジュールが読み込まれてぁE��せん'); return; }
+    if (!window.SyncBridge) { showToast('同期モジュールが読み込まれていません'); return; }
     const payload = await SyncBridge.importFromFiles();
     if (!payload || !payload.data) return;
-    if (!confirm('現在のグラフを読み込んだチE�Eタで上書きします。よろしぁE��すか�E�E)) return;
+    if (!confirm('現在のグラフを読み込んだデータで上書きします。よろしいですか？')) return;
     graphs = payload.data;
     const ids = Object.keys(graphs);
     currentGraphId = ids[0] || null;
-    if (!currentGraphId) createGraph('はじめてのグラチE);
+    if (!currentGraphId) createGraph('はじめてのグラフ');
     else localStorage.setItem(LS_CURRENT, currentGraphId);
     applyFlowchartLayout();
     saveGraphs();
@@ -2178,13 +2258,17 @@ function wireSyncSheet() {
   });
 }
 
-// ══════════════════════════════════╁E// WIRE EVENTS
-// ══════════════════════════════════╁Efunction wireEvents() {
-  // モーチE  document.getElementById('addModeBtn').addEventListener('click', () => setMode(MODE.ADD));
+// ═══════════════════════════════════
+// WIRE EVENTS
+// ═══════════════════════════════════
+function wireEvents() {
+  // モード
+  document.getElementById('addModeBtn').addEventListener('click', () => setMode(MODE.ADD));
   document.getElementById('connectModeBtn').addEventListener('click', () => setMode(MODE.CONNECT));
   document.getElementById('editModeBtn').addEventListener('click', () => setMode(MODE.EDIT));
 
-  // ノ�EドシーチE  document.getElementById('nodeSheetCancel').addEventListener('click', () => closeSheet('nodeSheet'));
+  // ノードシート
+  document.getElementById('nodeSheetCancel').addEventListener('click', () => closeSheet('nodeSheet'));
   document.getElementById('nodeSheetSave').addEventListener('click', saveNodeSheet);
 
   // 重みスライダー
@@ -2194,7 +2278,7 @@ function wireSyncSheet() {
     updateSliderPct(slider);
   });
 
-  // カラースウォチE��
+  // カラースウォッチ
   document.querySelectorAll('.color-swatch').forEach(sw => {
     sw.addEventListener('click', () => {
       editingNodeColor = sw.dataset.color;
@@ -2203,15 +2287,16 @@ function wireSyncSheet() {
     });
   });
 
-  // ノ�Eド削除
+  // ノード削除
   document.getElementById('deleteNodeBtn').addEventListener('click', () => {
-    if (selectedNode && confirm('こ�Eノ�Eドを削除しますか�E�E)) deleteNode(selectedNode);
+    if (selectedNode && confirm('このノードを削除しますか？')) deleteNode(selectedNode);
   });
 
-  // リセチE��ビュー
+  // リセットビュー
   document.getElementById('resetViewBtn').addEventListener('click', () => { centerView(); });
 
-  // エチE��ヒンチE  document.getElementById('edgeDeleteBtn').addEventListener('click', () => {
+  // エッジヒント
+  document.getElementById('edgeDeleteBtn').addEventListener('click', () => {
     if (selectedEdge) { deleteEdge(selectedEdge); selectedEdge=null; }
     document.getElementById('edgeHint').classList.remove('show');
   });
@@ -2220,7 +2305,8 @@ function wireSyncSheet() {
     document.getElementById('edgeHint').classList.remove('show');
   });
 
-  // AI刁E��シーチE  document.getElementById('analyzeBtn').addEventListener('click', () => {
+  // AI分析シート
+  document.getElementById('analyzeBtn').addEventListener('click', () => {
     const modelKey = localStorage.getItem(LS_MODEL) || 'claude';
     document.getElementById('aiModelBadge').textContent = MODELS[modelKey]?.label || modelKey;
     document.getElementById('aiResultBox').classList.remove('visible');
@@ -2243,13 +2329,13 @@ function wireSyncSheet() {
   document.getElementById('graphsBtn').addEventListener('click', () => { renderGraphList(); openSheet('graphsSheet'); });
   document.getElementById('graphsSheetClose').addEventListener('click', () => closeSheet('graphsSheet'));
   document.getElementById('newGraphBtn').addEventListener('click', () => {
-    const name = prompt('グラフ名を�E力してください', '新しいグラチE);
+    const name = prompt('グラフ名を入力してください', '新しいグラフ');
     if (!name) return;
-    createGraph(name.trim() || '新しいグラチE);
+    createGraph(name.trim() || '新しいグラフ');
     renderGraphList();
     closeSheet('graphsSheet');
     centerView();
-    showToast(`、E{name}」を作�Eしました`);
+    showToast(`「${name}」を作成しました`);
   });
   document.getElementById('importTransferBtn').addEventListener('click', importFromTransfer);
 
@@ -2257,8 +2343,10 @@ function wireSyncSheet() {
   document.getElementById('overlay').addEventListener('click', closeAllSheets);
 }
 
-// ══════════════════════════════════╁E// INIT
-// ══════════════════════════════════╁Efunction init() {
+// ═══════════════════════════════════
+// INIT
+// ═══════════════════════════════════
+function init() {
   loadGraphs();
   checkImportHash();
   applyFlowchartLayout();
@@ -2273,7 +2361,7 @@ function wireSyncSheet() {
   checkEmotionTransfer();
   checkCloudOnLoad();
   checkCloudSyncOnLoad();
-  // 他アプリ(quick-ref筁Eからの自動送信を定期チェチE�� + ペ�Eジ復帰時にもチェチE��
+  // 他アプリ(quick-ref等)からの自動送信を定期チェック + ページ復帰時にもチェック
   setInterval(checkEmotionTransfer, 4000);
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) checkEmotionTransfer();
