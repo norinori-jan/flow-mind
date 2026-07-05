@@ -423,23 +423,90 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
     <button id="syncSheetClose">閉じる</button>
     <h2>☁️ iCloud同期</h2>
     <span></span>
-  </div>
+<!-- SYNC SHEET -->
+<div class="sheet" id="syncSheet">
+  <div class="sheet-handle"></div>
+
+  <div class="sheet-header">
+    <button id="syncSheetClose">閉じる</button>
+    <h2>☁️ iCloud同期</h2>
+    <span></span>
+  </div> <!-- ★ これが抜けていた -->
+
   <div class="sheet-body">
+
     <div class="sync-platform-box" id="syncCloudBox">
+
       <h3>☁️ クラウド(全端末共通・推奨)</h3>
-      <p>Cloudflare Workerのエンドポイントとトークンを1回設定すれば、iPhoneでもWindowsでも同じデータにアクセスできます。ネット接続さえあれば即座に反映されます。</p>
+      <p>
+        Cloudflare Workerのエンドポイントとトークンを1回設定すれば、
+        iPhoneでもWindowsでも同じデータにアクセスできます。
+        ネット接続さえあれば即座に反映されます。
+      </p>
+
       <label class="field-label">エンドポイントURL</label>
-      <input type="text" id="cloudEndpointInput" placeholder="https://norinori-sync.xxx.workers.dev">
+      <input
+        type="text"
+        id="cloudEndpointInput"
+        placeholder="https://norinori-sync.xxx.workers.dev"
+      >
+
       <label class="field-label">トークン</label>
-      <input type="text" id="cloudTokenInput" placeholder="wrangler secret putで設定したトークン">
+      <input
+        type="text"
+        id="cloudTokenInput"
+        placeholder="wrangler secret putで設定したトークン"
+      >
+
       <div class="sync-btn-row" style="margin-top:12px;">
         <button class="tool-btn gold" id="cloudSaveConfigBtn">保存</button>
         <button class="tool-btn" id="cloudSyncNowBtn">🔄 今すぐ同期</button>
       </div>
+
       <div class="sync-status-line" id="cloudSyncStatus">未設定</div>
-    </div>
+
+      <!-- ★ クラウド優先モード -->
+      <div class="sync-setting" style="margin-top:12px;">
+        <label class="toggle">
+          <input type="checkbox" id="cloudPriorityToggle">
+          クラウド優先モード（クラウドが新しければ自動で上書き）
+        </label>
+      </div>
+
+    </div> <!-- /syncCloudBox -->
+
+
     <div class="sync-platform-box" id="syncDesktopBox">
       <h3>💻 Windows / PC（フォルダ同期・代替手段）</h3>
+      <!-- ここに PC 用同期設定が続く -->
+    </div> <!-- /syncDesktopBox -->
+
+    <p>
+      iCloud Drive for Windowsの同期フォルダを一度選ぶと、以降は変更のたびに自動で書き込み・起動時に読み込みます。
+    </p>
+
+    <div class="sync-btn-row">
+      <button class="tool-btn" id="syncConnectBtn">📁 フォルダに接続</button>
+      <button class="tool-btn" id="syncNowBtn">🔄 今すぐ同期</button>
+    </div>
+
+    <div class="sync-status-line" id="syncDesktopStatus">未接続</div>
+
+  </div> <!-- /sheet-body -->
+</div> <!-- /syncSheet -->
+
+
+
+  <div class="sync-platform-box" id="syncDesktopBox">
+
+    <h3>💻 Windows / PC（フォルダ同期・代替手段）</h3>
+
+    <!-- ここに PC 用同期設定が続く -->
+
+  </div> <!-- /syncDesktopBox -->
+
+</div> <!-- /sheet-body -->
+  
       <p>iCloud Drive for Windowsの同期フォルダを一度選ぶと、以降は変更のたびに自動で書き込み・起動時に読み込みます。</p>
       <div class="sync-btn-row">
         <button class="tool-btn" id="syncConnectBtn">📁 フォルダに接続</button>
@@ -555,6 +622,29 @@ window.addEventListener('online', () => {
     if (window.CloudSync) CloudSync.retryPending();
 });
 
+// 起動時に設定を読み込む
+const savedPriority = localStorage.getItem("fm_cloud_priority");
+if (savedPriority !== null) {
+  CLOUD_PRIORITY = savedPriority === "true";
+}
+
+// UI に反映
+const cloudToggle = document.getElementById("cloudPriorityToggle");
+if (cloudToggle) {
+  cloudToggle.checked = CLOUD_PRIORITY;
+
+  // トグル変更時の処理
+  cloudToggle.addEventListener("change", e => {
+    CLOUD_PRIORITY = e.target.checked;
+    localStorage.setItem("fm_cloud_priority", CLOUD_PRIORITY ? "true" : "false");
+
+    showToast(
+      CLOUD_PRIORITY
+        ? "☁️ クラウド優先モード ON"
+        : "📁 ローカル優先モード ON"
+    );
+  });
+}
 
 
 // ═══════════════════════════════════
