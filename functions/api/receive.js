@@ -1,3 +1,15 @@
+export async function onRequestGet() {
+  return new Response(JSON.stringify({
+    ok: true,
+    message: "Flow‑Mind API is alive!"
+  }), {
+    headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*"
+    }
+  });
+}
+
 export async function onRequestOptions(context) {
   return new Response(null, {
     headers: {
