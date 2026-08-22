@@ -1,11 +1,2455 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>Flow‑Mind API</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0D0F14">
+<title>flow-mind</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icons/icon.svg">
+<style>
+/* ── TOKENS ── */
+:root {
+  --bg:       #0D0F14;
+  --surface:  #161A22;
+  --surface2: #1E232E;
+  --border:   rgba(255,255,255,0.08);
+  --border2:  rgba(255,255,255,0.14);
+  --gold:     #F5C842;
+  --gold-dim: rgba(245,200,66,0.18);
+  --blue:     #4A9EFF;
+  --red:      #FF5F5F;
+  --green:    #4AE09A;
+  --text:     #E8EAF0;
+  --text-dim: #6B7280;
+  --text-mid: #9CA3AF;
+  --r:        12px;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin:0; padding:0; }
+html, body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;
+  -webkit-font-smoothing:antialiased; }
+
+/* ── CANVAS LAYER ── */
+#graphCanvas {
+  position:fixed; inset:0; width:100%; height:100%; touch-action:none; cursor:default;
+}
+
+/* ── HEADER ── */
+header {
+  position:fixed; top:0; left:0; right:0; z-index:20;
+  display:flex; align-items:center; gap:10px; padding:calc(env(safe-area-inset-top)+10px) 14px 10px;
+  background:linear-gradient(to bottom, rgba(13,15,20,0.96) 70%, transparent);
+  pointer-events:none;
+}
+.app-title {
+  font-size:15px; font-weight:800; color:var(--gold); letter-spacing:.05em;
+  pointer-events:none;
+}
+.header-spacer { flex:1; }
+header button { pointer-events:auto; }
+
+.hdr-btn {
+  background:rgba(255,255,255,0.06); border:1px solid var(--border2);
+  border-radius:8px; color:var(--text); font-size:13px; font-weight:600;
+  padding:6px 12px; cursor:pointer; display:flex; align-items:center; gap:5px;
+  backdrop-filter:blur(8px); white-space:nowrap;
+}
+.hdr-btn:active { background:rgba(255,255,255,0.12); }
+.hdr-btn.gold { border-color:rgba(245,200,66,0.4); color:var(--gold); }
+.hdr-btn.gold:active { background:var(--gold-dim); }
+
+/* ── SCORE BAR (上位ノード) ── */
+#scoreBar {
+  position:fixed; top:calc(env(safe-area-inset-top)+52px); left:0; right:0; z-index:19;
+  display:flex; gap:6px; padding:0 14px; overflow-x:auto; pointer-events:none;
+  scrollbar-width:none;
+}
+#scoreBar::-webkit-scrollbar { display:none; }
+.score-chip {
+  flex-shrink:0; font-size:11px; font-weight:700; border-radius:100px;
+  padding:4px 12px; border:1px solid; white-space:nowrap; pointer-events:none;
+}
+
+/* ── ATTRACTOR BAR (感情状態表示) ── */
+#attractorBar {
+  position:fixed; top:calc(env(safe-area-inset-top)+86px); left:0; right:0; z-index:19;
+  display:flex; justify-content:center; pointer-events:none;
+}
+.attractor-chip {
+  font-size:12px; font-weight:800; border-radius:100px; padding:6px 16px;
+  border:1px solid; backdrop-filter:blur(10px); letter-spacing:.04em;
+  display:none; align-items:center; gap:6px;
+}
+.attractor-chip.show { display:flex; }
+.attractor-dot { width:7px; height:7px; border-radius:50%; }
+
+/* ── TOOLBAR (下部) ── */
+#toolbar {
+  position:fixed; bottom:0; left:0; right:0; z-index:20;
+  padding:10px 14px calc(env(safe-area-inset-bottom)+10px);
+  background:linear-gradient(to top, rgba(13,15,20,0.97) 70%, transparent);
+  display:flex; align-items:center; gap:8px;
+}
+.tool-btn {
+  background:rgba(255,255,255,0.06); border:1px solid var(--border2);
+  border-radius:10px; color:var(--text); font-size:13px; font-weight:600;
+  padding:9px 14px; cursor:pointer; display:flex; align-items:center; gap:6px;
+  backdrop-filter:blur(8px); white-space:nowrap; flex-shrink:0;
+}
+.tool-btn:active { background:rgba(255,255,255,0.12); }
+.tool-btn.active { border-color:var(--gold); color:var(--gold); background:var(--gold-dim); }
+.tool-btn.danger { border-color:rgba(255,95,95,0.4); color:var(--red); }
+.tool-btn.danger:active { background:rgba(255,95,95,0.12); }
+.tool-spacer { flex:1; }
+#modeLabel {
+  font-size:12px; color:var(--text-dim); pointer-events:none; text-align:center;
+  position:absolute; bottom:calc(env(safe-area-inset-bottom)+54px); left:0; right:0;
+}
+
+/* ── NODE SHEET ── */
+.sheet-overlay {
+  position:fixed; inset:0; z-index:30; background:rgba(0,0,0,0.55);
+  opacity:0; pointer-events:none; transition:opacity .2s;
+}
+.sheet-overlay.open { opacity:1; pointer-events:auto; }
+.sheet {
+  position:fixed; left:0; right:0; bottom:0; z-index:31;
+  background:var(--surface); border-radius:20px 20px 0 0;
+  border-top:1px solid var(--border2);
+  max-height:85vh; display:flex; flex-direction:column;
+  transform:translateY(100%); transition:transform .25s ease-out;
+  box-shadow:0 -4px 40px rgba(0,0,0,0.6);
+}
+.sheet.open { transform:translateY(0); }
+.sheet-handle { width:36px; height:4px; background:var(--border2); border-radius:2px; margin:10px auto 0; flex-shrink:0; }
+.sheet-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 16px; border-bottom:1px solid var(--border); flex-shrink:0;
+}
+.sheet-header h2 { font-size:16px; font-weight:700; }
+.sheet-header button { background:none; border:none; font-size:15px; color:var(--blue); padding:6px; cursor:pointer; font-weight:600; }
+.sheet-body { overflow-y:auto; padding:16px 16px calc(env(safe-area-inset-bottom)+24px); }
+
+.field-label { display:block; font-size:11px; color:var(--text-dim); font-weight:700;
+  text-transform:uppercase; letter-spacing:.06em; margin:16px 0 6px; }
+.field-label:first-child { margin-top:0; }
+
+input[type=text], textarea {
+  width:100%; font-size:16px; padding:10px 12px; border:1px solid var(--border2);
+  border-radius:var(--r); background:var(--surface2); color:var(--text);
+  font-family:inherit; -webkit-appearance:none;
+}
+input[type=text]:focus, textarea:focus { outline:2px solid var(--gold); border-color:var(--gold); }
+textarea { min-height:70px; resize:vertical; line-height:1.5; }
+
+/* 重みスライダー */
+.weight-row { display:flex; align-items:center; gap:12px; margin-top:4px; }
+.weight-row input[type=range] {
+  flex:1; -webkit-appearance:none; height:4px; border-radius:2px;
+  background:linear-gradient(to right, var(--gold) 0%, var(--gold) var(--pct,60%), var(--border2) var(--pct,60%));
+  outline:none; cursor:pointer;
+}
+.weight-row input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none; width:20px; height:20px; border-radius:50%;
+  background:var(--gold); border:2px solid var(--bg);
+  box-shadow:0 0 8px rgba(245,200,66,0.6);
+}
+.weight-val { font-size:18px; font-weight:800; color:var(--gold); min-width:24px; text-align:center; }
+
+/* ノードカラー選択 */
+.color-row { display:flex; gap:8px; margin-top:4px; }
+.color-swatch {
+  width:32px; height:32px; border-radius:50%; cursor:pointer;
+  border:2px solid transparent; transition:transform .15s;
+}
+.color-swatch.active { border-color:#fff; transform:scale(1.15); }
+
+/* AI分析結果 */
+.ai-result-box {
+  background:var(--surface2); border:1px solid var(--border2); border-radius:var(--r);
+  padding:14px; font-size:14px; line-height:1.75; margin-top:12px;
+  white-space:pre-wrap; display:none;
+}
+.ai-result-box.visible { display:block; }
+
+/* 物理層インジケータ（ノードシート内） */
+.physics-box {
+  background:var(--surface2); border:1px solid var(--border2); border-radius:var(--r);
+  padding:12px 14px; margin-top:8px; font-size:12px; color:var(--text-mid); line-height:1.8;
+}
+.physics-box b { color:var(--text); }
+
+/* ── GRAPH SELECTOR ── */
+#graphListWrap { margin-bottom:14px; }
+.graph-item {
+  display:flex; align-items:center; justify-content:space-between;
+  background:var(--surface2); border:1px solid var(--border); border-radius:var(--r);
+  padding:12px 14px; margin-bottom:8px; cursor:pointer;
+}
+.graph-item:active { background:var(--border); }
+.graph-item.current { border-color:var(--gold); }
+.graph-item-name { font-size:15px; font-weight:600; }
+.graph-item-meta { font-size:12px; color:var(--text-dim); margin-top:2px; }
+.graph-item-del { background:none; border:none; color:var(--red); font-size:18px; padding:4px 8px; cursor:pointer; }
+
+/* ── TOAST ── */
+.toast {
+  position:fixed; bottom:calc(env(safe-area-inset-bottom)+80px); left:50%;
+  transform:translateX(-50%) translateY(12px);
+  background:rgba(30,35,46,0.95); color:var(--text); border:1px solid var(--border2);
+  border-radius:100px; padding:9px 20px; font-size:13px; font-weight:600;
+  z-index:60; opacity:0; transition:opacity .2s, transform .2s;
+  white-space:nowrap; pointer-events:none; backdrop-filter:blur(12px);
+}
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ── AI LOADING ── */
+#aiLoading {
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+  z-index:50; background:var(--surface); border:1px solid var(--border2);
+  border-radius:16px; padding:20px 28px; font-size:14px; color:var(--text-mid);
+  display:none; text-align:center; box-shadow:0 8px 40px rgba(0,0,0,0.6);
+}
+#aiLoading.show { display:block; }
+
+/* ── EDGE DELETE HINT ── */
+#edgeHint {
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+  background:var(--surface); border:1px solid var(--border2); border-radius:14px;
+  padding:16px 20px; z-index:25; display:none; text-align:center;
+  box-shadow:0 4px 30px rgba(0,0,0,0.5);
+}
+#edgeHint.show { display:block; }
+#edgeHint p { font-size:14px; margin-bottom:12px; color:var(--text-mid); }
+#edgeHint button { margin:0 4px; padding:8px 16px; border-radius:8px; border:1px solid var(--border2);
+  font-size:14px; font-weight:600; cursor:pointer; }
+#edgeDeleteBtn { background:rgba(255,95,95,0.15); color:var(--red); border-color:rgba(255,95,95,0.3); }
+#edgeCancelBtn { background:var(--surface2); color:var(--text); }
+
+/* ── QUICK CAPTURE (すぐ記録) ── */
+#quickCaptureFab {
+  position:fixed; right:16px; bottom:calc(env(safe-area-inset-bottom)+78px); z-index:22;
+  width:58px; height:58px; border-radius:50%;
+  background:linear-gradient(145deg, var(--gold), #E0A800);
+  color:#1A1400; border:none; font-size:26px; font-weight:800;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 4px 18px rgba(245,200,66,0.45);
+  cursor:pointer;
+}
+#quickCaptureFab:active { transform:scale(0.94); }
+#quickCaptureFab.recording {
+  background:linear-gradient(145deg, var(--red), #C43A3A);
+  box-shadow:0 4px 18px rgba(255,95,95,0.5);
+  animation: qc-pulse 1.1s infinite;
+}
+@keyframes qc-pulse {
+  0%,100% { box-shadow:0 4px 18px rgba(255,95,95,0.5); }
+  50% { box-shadow:0 4px 30px rgba(255,95,95,0.85); }
+}
+
+#quickCaptureBar {
+  position:fixed; left:12px; right:12px;
+  bottom:calc(env(safe-area-inset-bottom)+10px); z-index:23;
+  background:var(--surface); border:1px solid var(--border2);
+  border-radius:18px; padding:12px 12px calc(env(safe-area-inset-bottom)+12px);
+  box-shadow:0 -6px 30px rgba(0,0,0,0.55);
+  transform:translateY(120%); transition:transform .22s ease-out;
+}
+#quickCaptureBar.open { transform:translateY(0); }
+.qc-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.qc-title { font-size:12px; font-weight:800; color:var(--gold); letter-spacing:.04em; }
+.qc-close { background:none; border:none; color:var(--text-dim); font-size:14px; padding:4px 6px; cursor:pointer; }
+.qc-row { display:flex; align-items:flex-end; gap:8px; }
+#qcInput {
+  flex:1; min-height:44px; max-height:120px; resize:none;
+  font-size:16px; padding:10px 12px; border:1px solid var(--border2);
+  border-radius:12px; background:var(--surface2); color:var(--text);
+  font-family:inherit; line-height:1.4;
+}
+#qcInput:focus { outline:2px solid var(--gold); border-color:var(--gold); }
+.qc-mic-btn, .qc-send-btn {
+  flex-shrink:0; width:44px; height:44px; border-radius:12px; border:1px solid var(--border2);
+  background:var(--surface2); color:var(--text); font-size:18px;
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+.qc-mic-btn.recording { background:rgba(255,95,95,0.18); border-color:var(--red); color:var(--red); animation: qc-pulse 1.1s infinite; }
+.qc-send-btn { background:var(--gold); border-color:var(--gold); color:#1A1400; font-weight:800; }
+.qc-send-btn:active { background:#E0A800; }
+.qc-status { font-size:12px; color:var(--text-dim); margin-top:6px; min-height:16px; }
+.qc-status.busy { color:var(--gold); }
+
+/* ── SYNC SHEET ── */
+.sync-platform-box {
+  border:1px solid var(--border2); border-radius:var(--r);
+  padding:14px; margin-bottom:12px; background:var(--surface2);
+}
+.sync-platform-box h3 { font-size:13px; font-weight:800; color:var(--gold); margin-bottom:8px; }
+.sync-platform-box p { font-size:12px; color:var(--text-mid); line-height:1.6; margin-bottom:10px; }
+.sync-status-line { font-size:12px; color:var(--text-dim); margin-top:8px; }
+.sync-btn-row { display:flex; gap:8px; flex-wrap:wrap; }
+</style>
 </head>
 <body>
-  <h1>Flow‑Mind is running!</h1>
-  <p>API endpoint: <a href="/api/receive">/api/receive</a></p>
+
+<!-- CANVAS -->
+<canvas id="graphCanvas"></canvas>
+
+<!-- HEADER -->
+<header>
+  <span class="app-title">⬡ flow-mind</span>
+  <div class="header-spacer"></div>
+  <button class="hdr-btn" id="graphsBtn">📂 グラフ</button>
+  <button class="hdr-btn" id="syncBtn">☁️</button>
+  <button class="hdr-btn gold" id="analyzeBtn">✦ AI分析</button>
+</header>
+
+<!-- SCORE BAR -->
+<div id="scoreBar"></div>
+
+<!-- ATTRACTOR BAR -->
+<div id="attractorBar"><span class="attractor-chip" id="attractorChip"><span class="attractor-dot" id="attractorDot"></span><span id="attractorText"></span></span></div>
+
+<!-- MODE LABEL -->
+<div id="modeLabel">タップで新しいノードを追加</div>
+
+<!-- TOOLBAR -->
+<div id="toolbar">
+  <button class="tool-btn" id="addModeBtn">＋ 追加</button>
+  <button class="tool-btn" id="connectModeBtn">→ 接続</button>
+  <button class="tool-btn" id="editModeBtn">✎ 編集</button>
+  <div class="tool-spacer"></div>
+  <button class="tool-btn danger" id="deleteNodeBtn" style="display:none">🗑 削除</button>
+  <button class="tool-btn" id="resetViewBtn">⊙</button>
+</div>
+
+<!-- OVERLAY -->
+<div class="sheet-overlay" id="overlay"></div>
+
+<!-- NODE EDIT SHEET -->
+<div class="sheet" id="nodeSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <button id="nodeSheetCancel">キャンセル</button>
+    <h2 id="nodeSheetTitle">ノード編集</h2>
+    <button id="nodeSheetSave" style="color:var(--gold);font-weight:800;">保存</button>
+  </div>
+  <div class="sheet-body">
+    <label class="field-label">ラベル</label>
+    <input type="text" id="nLabel" placeholder="アイデア・概念を入力" maxlength="40">
+
+    <label class="field-label">メモ</label>
+    <textarea id="nMemo" placeholder="補足・根拠など（任意）"></textarea>
+
+    <label class="field-label">自己評価の重み（確信度）</label>
+    <div class="weight-row">
+      <input type="range" id="nWeight" min="1" max="5" step="1" value="3">
+      <span class="weight-val" id="nWeightVal">3</span>
+    </div>
+
+    <label class="field-label">ノードカラー</label>
+    <div class="color-row" id="colorRow">
+      <div class="color-swatch active" data-color="#4A9EFF" style="background:#4A9EFF"></div>
+      <div class="color-swatch" data-color="#F5C842" style="background:#F5C842"></div>
+      <div class="color-swatch" data-color="#4AE09A" style="background:#4AE09A"></div>
+      <div class="color-swatch" data-color="#FF5F5F" style="background:#FF5F5F"></div>
+      <div class="color-swatch" data-color="#C084FC" style="background:#C084FC"></div>
+      <div class="color-swatch" data-color="#FB923C" style="background:#FB923C"></div>
+    </div>
+
+    <label class="field-label" style="margin-top:20px;">接続エッジ</label>
+    <div id="edgeInfo" style="font-size:13px;color:var(--text-dim);padding:4px 0;"></div>
+
+    <label class="field-label" style="margin-top:20px;">物理層ステータス</label>
+    <div class="physics-box" id="physicsBox">—</div>
+  </div>
+</div>
+
+<!-- AI ANALYSIS SHEET -->
+<div class="sheet" id="aiSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <button id="aiSheetClose">閉じる</button>
+    <h2>AI グラフ分析</h2>
+    <span id="aiModelBadge" style="font-size:11px;background:var(--gold-dim);color:var(--gold);border-radius:100px;padding:3px 12px;font-weight:700;"></span>
+  </div>
+  <div class="sheet-body">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+      <button class="tool-btn" id="aiStructureBtn">🔍 構造分析</button>
+      <button class="tool-btn" id="aiWeakBtn">⚠️ 弱点検出</button>
+      <button class="tool-btn" id="aiSuggestBtn">💡 ノード提案</button>
+      <button class="tool-btn gold" id="aiHonneBtn">🧠 本音抽出</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <input type="text" id="aiCustomInput" placeholder="カスタム質問…" style="flex:1;font-size:15px;">
+      <button class="tool-btn gold" id="aiCustomBtn">送信</button>
+    </div>
+    <div class="ai-result-box" id="aiResultBox"></div>
+  </div>
+</div>
+
+<!-- GRAPHS LIST SHEET -->
+<div class="sheet" id="graphsSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <button id="graphsSheetClose">閉じる</button>
+    <h2>グラフ一覧</h2>
+    <button id="newGraphBtn" style="color:var(--gold);font-weight:800;">＋ 新規</button>
+  </div>
+  <div class="sheet-body">
+    <div id="graphListWrap"></div>
+    <div style="margin-top:8px;border-top:1px solid var(--border);padding-top:14px;">
+      <button class="tool-btn" id="importTransferBtn" style="width:100%;justify-content:center;">
+        📥 is_transfer から受信
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- EDGE DELETE HINT -->
+<div id="edgeHint">
+  <p id="edgeHintLabel">この接続を削除しますか？</p>
+  <button id="edgeDeleteBtn">削除</button>
+  <button id="edgeCancelBtn">キャンセル</button>
+</div>
+
+<!-- SYNC SHEET -->
+<div class="sheet" id="syncSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <button id="syncSheetClose">閉じる</button>
+    <h2>☁️ iCloud同期</h2>
+    <span></span>
+  </div>
+  <div class="sheet-body">
+    <div class="sync-platform-box" id="syncCloudBox">
+      <h3>☁️ クラウド(全端末共通・推奨)</h3>
+      <p>Cloudflare Workerのエンドポイントとトークンを1回設定すれば、iPhoneでもWindowsでも同じデータにアクセスできます。ネット接続さえあれば即座に反映されます。</p>
+      <label class="field-label">エンドポイントURL</label>
+      <input type="text" id="cloudEndpointInput" placeholder="https://norinori-sync.xxx.workers.dev">
+      <label class="field-label">トークン</label>
+      <input type="text" id="cloudTokenInput" placeholder="wrangler secret putで設定したトークン">
+      <div class="sync-btn-row" style="margin-top:12px;">
+        <button class="tool-btn gold" id="cloudSaveConfigBtn">保存</button>
+        <button class="tool-btn" id="cloudSyncNowBtn">🔄 今すぐ同期</button>
+      </div>
+      <div class="sync-status-line" id="cloudSyncStatus">未設定</div>
+    </div>
+    <div class="sync-platform-box" id="syncDesktopBox">
+      <h3>💻 Windows / PC（フォルダ同期・代替手段）</h3>
+      <p>iCloud Drive for Windowsの同期フォルダを一度選ぶと、以降は変更のたびに自動で書き込み・起動時に読み込みます。</p>
+      <div class="sync-btn-row">
+        <button class="tool-btn" id="syncConnectBtn">📁 フォルダに接続</button>
+        <button class="tool-btn" id="syncNowBtn">🔄 今すぐ同期</button>
+      </div>
+      <div class="sync-status-line" id="syncDesktopStatus">未接続</div>
+    </div>
+    <div class="sync-platform-box" id="syncMobileBox">
+      <h3>📱 iPhone（手動書き出し・代替手段）</h3>
+      <p>書き出し→「Filesに保存」でiCloud Driveを選ぶ／読み込み→ファイル選択でiCloud Driveから選ぶ、という手動フローです。</p>
+      <div class="sync-btn-row">
+        <button class="tool-btn" id="syncExportBtn">⬆️ iCloudへ書き出す</button>
+        <button class="tool-btn" id="syncImportBtn">⬇️ iCloudから読み込む</button>
+      </div>
+      <div class="sync-status-line" id="syncMobileStatus"></div>
+    </div>
+  </div>
+</div>
+
+<!-- AI LOADING -->
+<div id="aiLoading">⏳ AIが分析中…</div>
+
+<!-- QUICK CAPTURE FAB -->
+<button id="quickCaptureFab" aria-label="すぐ記録">⚡</button>
+
+<!-- QUICK CAPTURE BAR -->
+<div id="quickCaptureBar">
+  <div class="qc-header">
+    <span class="qc-title">⚡ すぐ記録</span>
+    <button class="qc-close" id="qcCloseBtn">閉じる</button>
+  </div>
+  <div class="qc-row">
+    <textarea id="qcInput" placeholder="思いついたことをそのまま…" rows="1"></textarea>
+    <button class="qc-mic-btn" id="qcMicBtn" title="音声で記録">🎙</button>
+    <button class="qc-send-btn" id="qcSendBtn" title="ノードとして追加">＋</button>
+  </div>
+  <div class="qc-status" id="qcStatus"></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- 同期モジュール -->
+<script src="./shared/sync-bridge.js"></script>
+<script src="./shared/cloud-sync.js"></script>
+
+<script>
+// ─────────────────────────────────────────────
+// saveGraphs（ローカル＋クラウド自動保存）
+// ─────────────────────────────────────────────
+function saveGraphs() {
+    try { 
+        localStorage.setItem(LS_GRAPHS, JSON.stringify(graphs)); 
+    } catch (e) { 
+        showToast('ローカル保存に失敗しました'); 
+    }
+
+    if (window.SyncBridge) SyncBridge.autoSave('flow-mind', graphs);
+    if (window.CloudSync) CloudSync.cloudSave('flow-mind', graphs);
+}
+
+// ─────────────────────────────────────────────
+// 同期モード設定
+// ─────────────────────────────────────────────
+let CLOUD_PRIORITY = false;
+
+// ─────────────────────────────────────────────
+// loadFromCloud（クラウド自動ロード）
+// ─────────────────────────────────────────────
+async function loadFromCloud() {
+    if (!window.SyncBridge || !SyncBridge.isConfigured()) return;
+
+    const localTs = Number(localStorage.getItem("fm_cloud_last") || 0);
+
+    await SyncBridge.autoLoad("flow-mind", localTs, (cloudData, cloudTs) => {
+        if (!cloudData || typeof cloudData !== "object") return;
+
+        // ── クラウド優先モード ─────────────────────────────
+        if (CLOUD_PRIORITY) {
+            graphs = cloudData;
+            localStorage.setItem("fm_graphs", JSON.stringify(graphs));
+            localStorage.setItem("fm_cloud_last", String(cloudTs));
+
+            const ids = Object.keys(graphs);
+            if (ids.length > 0) currentGraphId = ids[0];
+
+            renderAll();
+            showToast("☁️ クラウド優先モード：クラウドから復元しました");
+            return;
+        }
+
+        // ── ローカル優先モード（既存の挙動） ─────────────────
+        const msg = `☁️ クラウドに新しいデータがあります\n(${new Date(cloudTs).toLocaleString("ja-JP")})\n\n上書きして読み込みますか？`;
+        if (!confirm(msg)) return;
+
+        graphs = cloudData;
+        localStorage.setItem("fm_graphs", JSON.stringify(graphs));
+        localStorage.setItem("fm_cloud_last", String(cloudTs));
+
+        const ids = Object.keys(graphs);
+        if (ids.length > 0) currentGraphId = ids[0];
+
+        renderAll();
+        showToast("☁️ クラウドから復元しました");
+    });
+}
+
+// ─────────────────────────────────────────────
+// オンライン復帰時の再送（※重複なし）
+// ─────────────────────────────────────────────
+window.addEventListener('online', () => {
+    if (window.SyncBridge) SyncBridge.retryPending();
+    if (window.CloudSync) CloudSync.retryPending();
+});
+
+
+
+// ═══════════════════════════════════
+// CONSTANTS & STATE
+// ═══════════════════════════════════
+const LS_GRAPHS   = 'fm_graphs';
+const LS_CURRENT  = 'fm_current';
+const LS_CLAUDE   = 'ml_claude';
+const LS_GEMINI   = 'ml_gemini';
+const LS_OPENAI   = 'ml_openai';
+const LS_PROXY    = 'kansei_proxy_url';
+const LS_MODEL    = 'kansei_model';
+const LS_TRANSFER = 'is_transfer';
+// ブリッジ(quick-ref-bridge等)が保存のたびに自動送信する専用キー。
+// 手動の「全データ一括転送」(is_transfer)とは別キーなので上書き事故を避けられる。
+const LS_EMOTION_TRANSFER = 'is_emotion_transfer';
+
+const MODELS = {
+  claude: { label:'Claude', endpoint:'https://api.anthropic.com/v1/messages', model:'claude-sonnet-4-6' },
+  gemini: { label:'Gemini', endpoint:'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', model:'gemini-2.0-flash' },
+  openai: { label:'OpenAI', endpoint:'https://api.openai.com/v1/chat/completions', model:'gpt-4o-mini' },
+};
+
+// ═══════════════════════════════════
+// 感情の物理モデル — 定数（4階層）
+// ═══════════════════════════════════
+// ① 電荷の減衰速度（時定数 τ, ms）
+const CHARGE_DECAY_TAU = 4000;
+// ① 発火しきい値
+const FIRE_CHARGE_BOOST = 0.7;
+// ② 伝播効率（電流→電場・磁場のアナロジー：エッジのconductanceで増幅）
+const PROPAGATION_FACTOR = 0.42;
+// ① Hebbian強化幅（同時発火でconductanceが伸びる量）
+const HEBBIAN_STEP = 0.04;
+// ③ 同期検出の時間窓（ms）— この窓内の発火を「同期」とみなす
+const SYNC_WINDOW_MS = 2200;
+// ③ 周波数帯の境界（Hz相当、発火間隔から逆算した疑似周波数）
+const BAND_THRESH = { gamma:30, beta:13, alpha:8, theta:4 };
+// ③ 帯域ごとの色・速度（可視化用）
+const BAND_STYLE = {
+  gamma: { color:'#FF5F5F', speed:1.0, label:'γ波（怒り・集中）' },
+  beta:  { color:'#FB923C', speed:0.7, label:'β波（思考・緊張）' },
+  alpha: { color:'#4AE09A', speed:0.45,label:'α波（リラックス）' },
+  theta: { color:'#C084FC', speed:0.3, label:'θ波（不安・記憶）' },
+  delta: { color:'#4A9EFF', speed:0.18,label:'δ波（深い情動）' },
+};
+// ④ attractor判定テーブル（帯域 × 密度 × 持続時間 → 感情ラベル）
+function classifyAttractor(cluster) {
+  const { band, density, durationMs, size } = cluster;
+  if (size < 2) return null;
+  if (band === 'gamma') {
+    if (density > 0.6 && durationMs > 2800) return { label:'怒り', color:BAND_STYLE.gamma.color };
+    return { label:'集中', color:BAND_STYLE.gamma.color };
+  }
+  if (band === 'beta') {
+    return durationMs > 3000 ? { label:'緊張', color:BAND_STYLE.beta.color } : { label:'思考中', color:BAND_STYLE.beta.color };
+  }
+  if (band === 'alpha') {
+    return { label:'リラックス', color:BAND_STYLE.alpha.color };
+  }
+  if (band === 'theta') {
+    return density > 0.5 ? { label:'不安', color:BAND_STYLE.theta.color } : { label:'想起', color:BAND_STYLE.theta.color };
+  }
+  if (band === 'delta') {
+    return durationMs > 5000 ? { label:'深い情動', color:BAND_STYLE.delta.color } : null;
+  }
+  return null;
+}
+
+// Canvas
+const canvas = document.getElementById('graphCanvas');
+const ctx = canvas.getContext('2d');
+
+// Viewport transform
+let vpX = 0, vpY = 0, vpScale = 1;
+
+// Graph data
+let graphs = {};      // { id: { name, nodes:{}, edges:[] } }
+let currentGraphId = null;
+
+function currentGraph() { return graphs[currentGraphId] || null; }
+function nodes() { return currentGraph()?.nodes || {}; }
+function edges() { return currentGraph()?.edges || []; }
+
+// Modes
+const MODE = { ADD:'add', CONNECT:'connect', EDIT:'edit' };
+let mode = MODE.ADD;
+let connectFrom = null;   // nodeId of connect source
+let selectedNode = null;  // nodeId
+let selectedEdge = null;  // {from,to} index
+
+// Drag
+let dragging = null;  // { nodeId, offX, offY }
+let isPanning = false;
+let panStart = { x:0, y:0, vpX:0, vpY:0 };
+let lastTap = { time:0, x:0, y:0 };
+
+// Animation
+let animFrame = null;
+let glowPhase = 0;
+let lastFrameTime = performance.now();
+
+// 現在のattractor状態（④ クオリア層）
+let currentAttractor = null;
+let currentSyncClusters = [];
+// クイック記録の自動接続に使う「直前に発火したノード」
+let lastFiredNodeId = null;
+
+// Node default
+const NODE_R = 38;
+let editingNodeId = null;
+let editingNodeColor = '#4A9EFF';
+
+// ═══════════════════════════════════
+// FLOWCHART LAYOUT — 常時、構造化された上→下のレイアウトに整列させる
+// ═══════════════════════════════════
+// エッジの向き(from→to)を使って各ノードの「階層(level)」を決め、
+// 同じ階層のノードは横に並べる。ループ(循環)がある場合は、そこだけ
+// 未確定のまま残るので、最後にまとめて末尾の階層へ配置する。
+function applyFlowchartLayout() {
+  const g = currentGraph();
+  if (!g) return;
+  const ids = Object.keys(g.nodes);
+  if (ids.length === 0) return;
+
+  const inDeg = {};
+  ids.forEach(id => { inDeg[id] = 0; });
+  g.edges.forEach(e => { if (inDeg[e.to] !== undefined) inDeg[e.to]++; });
+
+  const outAdj = {};
+  ids.forEach(id => { outAdj[id] = []; });
+  g.edges.forEach(e => { if (outAdj[e.from]) outAdj[e.from].push(e.to); });
+
+  const level = {};
+  const queue = [];
+  ids.forEach(id => { if (inDeg[id] === 0) { level[id] = 0; queue.push(id); } });
+
+  const inDegWork = Object.assign({}, inDeg);
+  let qi = 0;
+  while (qi < queue.length) {
+    const cur = queue[qi++];
+    outAdj[cur].forEach(nb => {
+      level[nb] = Math.max(level[nb] !== undefined ? level[nb] : 0, level[cur] + 1);
+      inDegWork[nb]--;
+      if (inDegWork[nb] === 0 && level[nb] !== undefined && !queue.includes(nb)) queue.push(nb);
+    });
+  }
+
+  // 循環などで未確定のまま残ったノードは、最大階層の次にまとめて配置
+  let maxLevel = 0;
+  Object.values(level).forEach(l => { if (l > maxLevel) maxLevel = l; });
+  ids.forEach(id => { if (level[id] === undefined) { maxLevel++; level[id] = maxLevel; } });
+
+  // 階層ごとにグルーピングして横に並べる
+  const byLevel = {};
+  ids.forEach(id => {
+    const l = level[id];
+    (byLevel[l] = byLevel[l] || []).push(id);
+  });
+
+  const LEVEL_SPACING = 190; // 上下の間隔
+  const NODE_SPACING = 130;  // 同階層内の左右間隔
+
+  Object.keys(byLevel).map(Number).sort((a,b) => a-b).forEach(lvl => {
+    const row = byLevel[lvl];
+    row.forEach((id, i) => {
+      const n = g.nodes[id];
+      n.x = (i - (row.length - 1) / 2) * NODE_SPACING;
+      n.y = lvl * LEVEL_SPACING;
+    });
+  });
+}
+
+// ═══════════════════════════════════
+// UTILS
+// ═══════════════════════════════════
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+function saveGraphs() {
+  try { localStorage.setItem(LS_GRAPHS, JSON.stringify(graphs)); } catch(e) { showToast('保存容量が不足しています'); }
+  // Windows/PC でフォルダ接続済みなら自動でiCloud Driveへも書き込む（デバウンス済み・未接続なら何もしない）
+  if (window.SyncBridge) SyncBridge.autoSave('flow-mind', graphs);
+  // クラウド(全端末共通)が設定済みならそちらにも自動書き込み
+  if (window.CloudSync) CloudSync.cloudSave('flow-mind', graphs);
+}
+
+function loadGraphs() {
+  try {
+    const raw = localStorage.getItem(LS_GRAPHS);
+    graphs = raw ? JSON.parse(raw) : {};
+    currentGraphId = localStorage.getItem(LS_CURRENT) || null;
+    if (!currentGraphId || !graphs[currentGraphId]) {
+      // デフォルトグラフ作成
+      createGraph('はじめてのグラフ');
+    }
+  } catch(e) { graphs = {}; createGraph('グラフ1'); }
+}
+
+function createGraph(name) {
+  const id = uid();
+  graphs[id] = { name, nodes:{}, edges:[], createdAt: Date.now() };
+  currentGraphId = id;
+  localStorage.setItem(LS_CURRENT, id);
+  saveGraphs();
+  return id;
+}
+
+function switchGraph(id) {
+  currentGraphId = id;
+  localStorage.setItem(LS_CURRENT, id);
+  connectFrom = null; selectedNode = null;
+  lastFiredNodeId = null;
+  applyFlowchartLayout();
+  centerView();
+  updateScoreBar();
+  renderGraphList();
+}
+
+// ═══════════════════════════════════
+// PAGE RANK — 重要度スコア計算
+// ═══════════════════════════════════
+function computeScores() {
+  const g = currentGraph();
+  if (!g) return {};
+  const nids = Object.keys(g.nodes);
+  if (nids.length === 0) return {};
+
+  // 初期スコア = 自己重み
+  const scores = {};
+  nids.forEach(id => { scores[id] = g.nodes[id].weight || 3; });
+
+  // 反復（3回）
+  for (let iter = 0; iter < 3; iter++) {
+    const next = {};
+    nids.forEach(id => { next[id] = g.nodes[id].weight || 3; }); // 自己重みがベース
+    g.edges.forEach(e => {
+      const w = e.weight || 1;
+      // toノードはfromノードのスコアを受け取る
+      if (next[e.to] !== undefined && scores[e.from] !== undefined) {
+        next[e.to] += scores[e.from] * w * 0.4;
+      }
+    });
+    Object.assign(scores, next);
+  }
+
+  // 正規化 [0..1]
+  const max = Math.max(...Object.values(scores));
+  if (max > 0) nids.forEach(id => { scores[id] = scores[id] / max; });
+  return scores;
+}
+
+// ═══════════════════════════════════
+// ① ② 感情の物理モデル — 電荷の流れと伝播
+// ═══════════════════════════════════
+// ノードを「発火」させる（タップ＝活動電位の発生）
+function fireNode(id) {
+  const g = currentGraph();
+  const n = g?.nodes[id];
+  if (!n) return;
+
+  ensurePhysicsFields(n);
+  const now = Date.now();
+
+  // ① 発火履歴を記録（直近8件まで保持）
+  n.fireHistory.push(now);
+  if (n.fireHistory.length > 8) n.fireHistory.shift();
+  n.lastFired = now;
+  n.charge = Math.min(1, n.charge + FIRE_CHARGE_BOOST);
+  lastFiredNodeId = id;
+
+  // ② 電流が流れる → 隣接ノードへ電場・磁場のように伝播
+  const outEdges = g.edges.filter(e => e.from === id || e.to === id);
+  outEdges.forEach(e => {
+    ensureEdgePhysics(e);
+    const otherId = e.from === id ? e.to : e.from;
+    const other = g.nodes[otherId];
+    if (!other) return;
+    ensurePhysicsFields(other);
+
+    const transferred = n.charge * (e.weight || 1) * e.conductance * PROPAGATION_FACTOR;
+    other.charge = Math.min(1, other.charge + transferred);
+
+    // ① 同時発火していたエッジは伝導率（シナプス強度）を強化＝Hebbian learning
+    const otherRecentlyFired = other.lastFired && (now - other.lastFired < SYNC_WINDOW_MS);
+    if (otherRecentlyFired) {
+      e.conductance = Math.min(2, e.conductance + HEBBIAN_STEP);
+    }
+  });
+
+  saveGraphs();
+}
+
+function ensurePhysicsFields(n) {
+  if (n.charge === undefined) n.charge = 0;
+  if (!n.fireHistory) n.fireHistory = [];
+  if (n.lastFired === undefined) n.lastFired = 0;
+}
+function ensureEdgePhysics(e) {
+  if (e.conductance === undefined) e.conductance = 1.0;
+}
+
+// charge の時間減衰（フレームごとに呼ぶ）
+function decayCharges(dtMs) {
+  const g = currentGraph();
+  if (!g) return;
+  const decayFactor = Math.exp(-dtMs / CHARGE_DECAY_TAU);
+  Object.values(g.nodes).forEach(n => {
+    if (n.charge) n.charge *= decayFactor;
+    if (n.charge < 0.01) n.charge = 0;
+  });
+}
+
+// ═══════════════════════════════════
+// ③ 神経ネットワークの同期検出（コヒーレンス）
+// ═══════════════════════════════════
+function estimateFreqBand(n) {
+  const h = n.fireHistory;
+  if (!h || h.length < 2) return null;
+  // 直近の発火間隔の平均（ms） → 疑似周波数（Hz）に変換
+  const recent = h.slice(-4);
+  let totalGap = 0, count = 0;
+  for (let i = 1; i < recent.length; i++) {
+    totalGap += recent[i] - recent[i-1];
+    count++;
+  }
+  if (count === 0) return null;
+  const avgGapMs = totalGap / count;
+  if (avgGapMs <= 0) return null;
+  const freqHz = 1000 / avgGapMs;
+  if (freqHz >= BAND_THRESH.gamma) return 'gamma';
+  if (freqHz >= BAND_THRESH.beta)  return 'beta';
+  if (freqHz >= BAND_THRESH.alpha) return 'alpha';
+  if (freqHz >= BAND_THRESH.theta) return 'theta';
+  return 'delta';
+}
+
+// 時間窓内に発火していて、互いに連結しているノード群をクラスタ化
+function detectSyncClusters() {
+  const g = currentGraph();
+  if (!g) return [];
+  const now = Date.now();
+  const activeIds = Object.keys(g.nodes).filter(id => {
+    const n = g.nodes[id];
+    return n.lastFired && (now - n.lastFired < SYNC_WINDOW_MS);
+  });
+  if (activeIds.length === 0) return [];
+
+  // 隣接マップ
+  const adj = {};
+  activeIds.forEach(id => adj[id] = []);
+  g.edges.forEach(e => {
+    if (adj[e.from] && activeIds.includes(e.to)) adj[e.from].push(e.to);
+    if (adj[e.to] && activeIds.includes(e.from)) adj[e.to].push(e.from);
+  });
+
+  // 連結成分を探索
+  const visited = new Set();
+  const clusters = [];
+  activeIds.forEach(start => {
+    if (visited.has(start)) return;
+    const stack = [start];
+    const comp = [];
+    while (stack.length) {
+      const cur = stack.pop();
+      if (visited.has(cur)) continue;
+      visited.add(cur);
+      comp.push(cur);
+      (adj[cur]||[]).forEach(nb => { if (!visited.has(nb)) stack.push(nb); });
+    }
+    if (comp.length === 0) return;
+
+    // 帯域を多数決で決定
+    const bandCounts = {};
+    let earliestFire = Infinity, latestFire = 0;
+    comp.forEach(id => {
+      const n = g.nodes[id];
+      const band = estimateFreqBand(n) || 'delta';
+      bandCounts[band] = (bandCounts[band]||0) + 1;
+      earliestFire = Math.min(earliestFire, n.fireHistory[0] || n.lastFired);
+      latestFire = Math.max(latestFire, n.lastFired);
+    });
+    const band = Object.entries(bandCounts).sort((a,b)=>b[1]-a[1])[0][0];
+    const density = comp.length / activeIds.length;
+    const durationMs = latestFire - earliestFire;
+
+    clusters.push({ nodeIds: comp, band, density, durationMs, size: comp.length });
+  });
+
+  return clusters.filter(c => c.size >= 2); // 単独ノードはクラスタとみなさない
+}
+
+function updateAttractorState() {
+  currentSyncClusters = detectSyncClusters();
+  if (currentSyncClusters.length === 0) { currentAttractor = null; updateAttractorBar(); return; }
+  // 最大クラスタを代表attractorとして採用
+  const main = currentSyncClusters.sort((a,b)=>b.size-a.size)[0];
+  currentAttractor = classifyAttractor(main);
+  updateAttractorBar();
+}
+
+function updateAttractorBar() {
+  const chip = document.getElementById('attractorChip');
+  const dot  = document.getElementById('attractorDot');
+  const text = document.getElementById('attractorText');
+  if (!currentAttractor) { chip.classList.remove('show'); return; }
+  chip.classList.add('show');
+  chip.style.color = currentAttractor.color;
+  chip.style.borderColor = currentAttractor.color + '55';
+  chip.style.background = currentAttractor.color + '15';
+  dot.style.background = currentAttractor.color;
+  text.textContent = currentAttractor.label;
+}
+
+// ═══════════════════════════════════
+// CANVAS RENDER
+// ═══════════════════════════════════
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+function worldToScreen(wx, wy) {
+  return { x: wx * vpScale + vpX, y: wy * vpScale + vpY };
+}
+function screenToWorld(sx, sy) {
+  return { x: (sx - vpX) / vpScale, y: (sy - vpY) / vpScale };
+}
+
+function centerView() {
+  const g = currentGraph();
+  if (!g) return;
+  const nids = Object.keys(g.nodes);
+  if (nids.length === 0) { vpX = canvas.width/2; vpY = canvas.height/2; vpScale = 1; return; }
+  let minX=Infinity, maxX=-Infinity, minY=Infinity, maxY=-Infinity;
+  nids.forEach(id => {
+    const n = g.nodes[id];
+    minX = Math.min(minX, n.x); maxX = Math.max(maxX, n.x);
+    minY = Math.min(minY, n.y); maxY = Math.max(maxY, n.y);
+  });
+  const cx = (minX+maxX)/2, cy = (minY+maxY)/2;
+  const margin = 120;
+  const scaleX = (canvas.width - margin*2) / Math.max(maxX-minX, 1);
+  const scaleY = (canvas.height - margin*2) / Math.max(maxY-minY, 1);
+  vpScale = Math.min(Math.min(scaleX, scaleY), 1.2);
+  vpX = canvas.width/2 - cx * vpScale;
+  vpY = canvas.height/2 - cy * vpScale;
+}
+
+function drawArrow(x1, y1, x2, y2, color, weight, glow) {
+  const dx = x2-x1, dy = y2-y1;
+  const len = Math.sqrt(dx*dx+dy*dy);
+  if (len < 1) return;
+  const ux = dx/len, uy = dy/len;
+  // 矢印の先端をノード端まで縮める
+  const r = NODE_R * vpScale;
+  const ex = x2 - ux*r, ey = y2 - uy*r;
+  const sx = x1 + ux*r, sy = y1 + uy*r;
+
+  ctx.save();
+  ctx.globalAlpha = glow ? 0.9 : 0.55;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = (1 + weight * 0.7) * vpScale;
+  ctx.lineCap = 'round';
+  if (glow) {
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 8;
+  }
+  ctx.beginPath();
+  ctx.moveTo(sx, sy);
+  ctx.lineTo(ex, ey);
+  ctx.stroke();
+
+  // 矢印ヘッド
+  const hs = 10 * vpScale;
+  const angle = Math.atan2(ey-sy, ex-sx);
+  ctx.fillStyle = color;
+  ctx.shadowBlur = glow ? 8 : 0;
+  ctx.beginPath();
+  ctx.moveTo(ex, ey);
+  ctx.lineTo(ex - hs*Math.cos(angle-0.4), ey - hs*Math.sin(angle-0.4));
+  ctx.lineTo(ex - hs*Math.cos(angle+0.4), ey - hs*Math.sin(angle+0.4));
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawEdgeWeight(x1, y1, x2, y2, w) {
+  const mx = (x1+x2)/2, my = (y1+y2)/2;
+  ctx.save();
+  ctx.fillStyle = 'rgba(245,200,66,0.9)';
+  ctx.font = `bold ${11*vpScale}px -apple-system`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(`×${w}`, mx, my - 10*vpScale);
+  ctx.restore();
+}
+
+// ② 電流が流れている様子を示すパルス（エッジ上を流れる光点）
+function drawCurrentPulse(x1, y1, x2, y2, charge, color) {
+  if (charge < 0.05) return;
+  const t = (Date.now() % 900) / 900;
+  const px = x1 + (x2-x1) * t;
+  const py = y1 + (y2-y1) * t;
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, charge);
+  ctx.fillStyle = color;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 10;
+  ctx.beginPath();
+  ctx.arc(px, py, 3.5 * vpScale, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawNode(n, id, score, phase) {
+  const s = worldToScreen(n.x, n.y);
+  const r = NODE_R * vpScale;
+  const isSel = selectedNode === id;
+  const isConnFrom = connectFrom === id;
+  const glowAmt = score * (0.5 + 0.5 * Math.sin(phase + (n.x+n.y)*0.01));
+
+  ctx.save();
+
+  // グロー
+  if (glowAmt > 0.3 || isSel || isConnFrom) {
+    ctx.shadowColor = isConnFrom ? '#F5C842' : (isSel ? '#fff' : n.color || '#4A9EFF');
+    ctx.shadowBlur = 8 + glowAmt * 24;
+  }
+
+  // 外リング（選択・接続）
+  if (isSel || isConnFrom) {
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, r + 5*vpScale, 0, Math.PI*2);
+    ctx.strokeStyle = isConnFrom ? '#F5C842' : 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 2*vpScale;
+    ctx.stroke();
+  }
+
+  // 本体
+  const grad = ctx.createRadialGradient(s.x - r*0.3, s.y - r*0.3, r*0.1, s.x, s.y, r);
+  const col = n.color || '#4A9EFF';
+  grad.addColorStop(0, col + 'CC');
+  grad.addColorStop(1, col + '55');
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, r, 0, Math.PI*2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.strokeStyle = col + 'AA';
+  ctx.lineWidth = 1.5*vpScale;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // ① 電荷リング（charge量を内側の光輪で表現）
+  if (n.charge > 0.03) {
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, r * 0.7, 0, Math.PI*2);
+    ctx.strokeStyle = `rgba(255,255,255,${n.charge * 0.7})`;
+    ctx.lineWidth = 2 * vpScale;
+    ctx.stroke();
+  }
+
+  // スコアリング（重要度）
+  if (score > 0) {
+    const pct = score;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, r + 3*vpScale, -Math.PI/2, -Math.PI/2 + Math.PI*2*pct);
+    ctx.strokeStyle = `rgba(245,200,66,${0.4 + pct*0.5})`;
+    ctx.lineWidth = 3*vpScale;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  }
+
+  // ラベル
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const fs = Math.max(10, Math.min(14, 12)) * vpScale;
+  ctx.font = `700 ${fs}px -apple-system`;
+  const maxW = r * 1.6;
+  const label = n.label || '?';
+  // 折り返し
+  const words = label.split('');
+  const lineH = fs * 1.3;
+  const lines = [];
+  let cur = '';
+  for (const ch of words) {
+    if (ctx.measureText(cur+ch).width > maxW) { lines.push(cur); cur = ch; }
+    else cur += ch;
+  }
+  if (cur) lines.push(cur);
+  const totalH = lines.length * lineH;
+  lines.forEach((line, i) => {
+    ctx.fillText(line, s.x, s.y - totalH/2 + lineH*(i+0.5));
+  });
+
+  // 重みバッジ
+  const badge = `W${n.weight||3}`;
+  ctx.font = `600 ${9*vpScale}px -apple-system`;
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fillText(badge, s.x, s.y + r * 0.7);
+
+  ctx.restore();
+}
+
+// ③④ 同期クラスタの波紋エフェクト（γ波風リング）— attractorの可視化
+function drawSyncRipples(phase) {
+  if (!currentSyncClusters.length) return;
+  const g = currentGraph();
+  if (!g) return;
+
+  currentSyncClusters.forEach(cluster => {
+    const style = BAND_STYLE[cluster.band] || BAND_STYLE.delta;
+    // クラスタの重心
+    let cx = 0, cy = 0;
+    cluster.nodeIds.forEach(id => {
+      const n = g.nodes[id];
+      cx += n.x; cy += n.y;
+    });
+    cx /= cluster.nodeIds.length; cy /= cluster.nodeIds.length;
+    const center = worldToScreen(cx, cy);
+
+    // 各ノードを包む波紋を個別に描く
+    cluster.nodeIds.forEach(id => {
+      const n = g.nodes[id];
+      const s = worldToScreen(n.x, n.y);
+      const baseR = NODE_R * vpScale;
+      for (let i = 0; i < 3; i++) {
+        const ringPhase = (phase * style.speed * 3 + i * 0.9) % 3;
+        const ringR = baseR + ringPhase * 22 * vpScale;
+        const alpha = Math.max(0, 1 - ringPhase / 3) * 0.5 * cluster.density;
+        if (alpha <= 0.01) continue;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = style.color;
+        ctx.lineWidth = 1.6 * vpScale;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, ringR, 0, Math.PI*2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    });
+
+    // クラスタ全体を囲む薄い帯域ラベル
+    if (cluster.nodeIds.length >= 2 && vpScale > 0.4) {
+      ctx.save();
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = style.color;
+      ctx.font = `700 ${11*vpScale}px -apple-system`;
+      ctx.textAlign = 'center';
+      ctx.fillText(style.label, center.x, center.y - NODE_R*vpScale - 26*vpScale);
+      ctx.restore();
+    }
+  });
+}
+
+function render(now) {
+  const dt = now ? (now - lastFrameTime) : 16;
+  lastFrameTime = now || performance.now();
+
+  resizeCanvas();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  glowPhase += 0.04;
+
+  const g = currentGraph();
+  if (!g) { animFrame = requestAnimationFrame(render); return; }
+
+  // ① 電荷の自然減衰
+  decayCharges(dt);
+
+  const scores = computeScores();
+
+  // Draw edges
+  g.edges.forEach(e => {
+    const from = g.nodes[e.from], to = g.nodes[e.to];
+    if (!from || !to) return;
+    ensureEdgePhysics(e);
+    const fs = worldToScreen(from.x, from.y);
+    const ts = worldToScreen(to.x, to.y);
+    const isSel = selectedEdge && selectedEdge.from===e.from && selectedEdge.to===e.to;
+    const col = isSel ? '#FF5F5F' : (from.color || '#4A9EFF');
+    drawArrow(fs.x, fs.y, ts.x, ts.y, col, e.weight||1, isSel);
+    if (vpScale > 0.5) drawEdgeWeight(fs.x, fs.y, ts.x, ts.y, e.weight||1);
+    // ② 電流パルス（fromに電荷が乗っていれば流れて見える）
+    drawCurrentPulse(fs.x, fs.y, ts.x, ts.y, from.charge||0, col);
+  });
+
+  // 接続モード中のプレビューライン
+  if (mode === MODE.CONNECT && connectFrom && g.nodes[connectFrom]) {
+    // drawn dynamically in pointermove — skip here
+  }
+
+  // ③④ 同期波紋（ノードより先に描いて、ノードが上に乗るように）
+  drawSyncRipples(glowPhase);
+
+  // Draw nodes
+  Object.entries(g.nodes).forEach(([id, n]) => {
+    ensurePhysicsFields(n);
+    drawNode(n, id, scores[id] || 0, glowPhase);
+  });
+
+  animFrame = requestAnimationFrame(render);
+}
+
+// attractor状態は描画ループとは別の軽い周期で再計算（重い処理ではないが頻度を抑える）
+setInterval(updateAttractorState, 500);
+
+// ═══════════════════════════════════
+// SCORE BAR
+// ═══════════════════════════════════
+function updateScoreBar() {
+  const scores = computeScores();
+  const g = currentGraph();
+  if (!g) return;
+  const sorted = Object.entries(scores)
+    .filter(([id]) => g.nodes[id])
+    .sort((a,b) => b[1]-a[1])
+    .slice(0, 5);
+
+  const bar = document.getElementById('scoreBar');
+  bar.innerHTML = sorted.map(([id, sc]) => {
+    const n = g.nodes[id];
+    const pct = Math.round(sc * 100);
+    const col = n.color || '#4A9EFF';
+    return `<span class="score-chip" style="color:${col};border-color:${col}40;background:${col}18;">
+      ${n.label || '?'} ${pct}%
+    </span>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════
+// INPUT HANDLING
+// ═══════════════════════════════════
+function getPos(e) {
+  const r = canvas.getBoundingClientRect();
+  if (e.touches) {
+    return { x: e.touches[0].clientX - r.left, y: e.touches[0].clientY - r.top };
+  }
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+function hitNode(sx, sy) {
+  const g = currentGraph();
+  if (!g) return null;
+  const w = screenToWorld(sx, sy);
+  const r = NODE_R;
+  for (const [id, n] of Object.entries(g.nodes)) {
+    const dx = n.x - w.x, dy = n.y - w.y;
+    if (dx*dx + dy*dy < r*r) return id;
+  }
+  return null;
+}
+
+function hitEdge(sx, sy) {
+  const g = currentGraph();
+  if (!g) return null;
+  const w = screenToWorld(sx, sy);
+  const thresh = 18 / vpScale;
+  for (const e of g.edges) {
+    const fn = g.nodes[e.from], tn = g.nodes[e.to];
+    if (!fn || !tn) continue;
+    const dx = tn.x - fn.x, dy = tn.y - fn.y;
+    const len = Math.sqrt(dx*dx+dy*dy);
+    if (len < 1) continue;
+    const t = Math.max(0, Math.min(1, ((w.x-fn.x)*dx+(w.y-fn.y)*dy)/(len*len)));
+    const px = fn.x + t*dx - w.x, py = fn.y + t*dy - w.y;
+    if (Math.sqrt(px*px+py*py) < thresh) return e;
+  }
+  return null;
+}
+
+// Pointer events
+let pointerDown = false;
+let pointerMoved = false;
+let pointerStartPos = { x:0, y:0 };
+
+canvas.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  pointerDown = true;
+  pointerMoved = false;
+  const pos = getPos(e);
+  pointerStartPos = pos;
+
+  const hitN = hitNode(pos.x, pos.y);
+
+  if (mode === MODE.EDIT) {
+    if (hitN) { selectedNode = hitN; }
+    else {
+      const hitE = hitEdge(pos.x, pos.y);
+      if (hitE) { selectedEdge = hitE; showEdgeHint(hitE); }
+      else { selectedNode = null; selectedEdge = null; }
+    }
+    document.getElementById('deleteNodeBtn').style.display = selectedNode ? '' : 'none';
+  } else if (mode === MODE.CONNECT) {
+    if (hitN) connectFrom = hitN;
+  } else {
+    // ADD mode（ドラッグ移動は無効。自動レイアウトが位置を管理するため）
+    if (hitN) { selectedNode = hitN; }
+  }
+});
+
+canvas.addEventListener('pointermove', e => {
+  if (!pointerDown) return;
+  const pos = getPos(e);
+  const dx = pos.x - pointerStartPos.x, dy = pos.y - pointerStartPos.y;
+  if (Math.sqrt(dx*dx+dy*dy) > 4) pointerMoved = true;
+
+  if (dragging) {
+    const w = screenToWorld(pos.x, pos.y);
+    const g = currentGraph();
+    if (g && g.nodes[dragging.nodeId]) {
+      g.nodes[dragging.nodeId].x = w.x;
+      g.nodes[dragging.nodeId].y = w.y;
+    }
+  } else if (!dragging && pointerMoved && !connectFrom) {
+    // pan
+    vpX += pos.x - (pointerStartPos.x + (pointerMoved ? 0 : dx));
+    vpY += pos.y - (pointerStartPos.y + (pointerMoved ? 0 : dy));
+    pointerStartPos = pos;
+  }
+});
+
+canvas.addEventListener('pointerup', e => {
+  if (!pointerDown) return;
+  pointerDown = false;
+  const pos = getPos(e);
+  const hitN = hitNode(pos.x, pos.y);
+
+  if (dragging) {
+    saveGraphs();
+    updateScoreBar();
+    dragging = null;
+    return;
+  }
+
+  if (!pointerMoved) {
+    // TAP
+    if (mode === MODE.ADD) {
+      if (!hitN) {
+        // 新規ノード追加
+        const w = screenToWorld(pos.x, pos.y);
+        addNode(w.x, w.y);
+      } else {
+        // ① タップ＝発火（電荷を流す）してからノード編集を開く
+        fireNode(hitN);
+        openNodeSheet(hitN);
+      }
+    } else if (mode === MODE.CONNECT) {
+      if (connectFrom && hitN && hitN !== connectFrom) {
+        addEdge(connectFrom, hitN);
+        connectFrom = null;
+      } else if (hitN) {
+        connectFrom = hitN;
+        fireNode(hitN);
+      } else {
+        connectFrom = null;
+      }
+    } else if (mode === MODE.EDIT) {
+      if (hitN) { fireNode(hitN); openNodeSheet(hitN); }
+    }
+  }
+  dragging = null;
+});
+
+// Pinch zoom
+let lastPinchDist = 0;
+canvas.addEventListener('touchstart', e => {
+  if (e.touches.length === 2) lastPinchDist = pinchDist(e);
+}, { passive:true });
+canvas.addEventListener('touchmove', e => {
+  if (e.touches.length === 2) {
+    const dist = pinchDist(e);
+    const ratio = dist / lastPinchDist;
+    const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    vpX = cx - (cx - vpX) * ratio;
+    vpY = cy - (cy - vpY) * ratio;
+    vpScale = Math.max(0.3, Math.min(3, vpScale * ratio));
+    lastPinchDist = dist;
+    e.preventDefault();
+  }
+}, { passive:false });
+
+function pinchDist(e) {
+  const dx = e.touches[0].clientX - e.touches[1].clientX;
+  const dy = e.touches[0].clientY - e.touches[1].clientY;
+  return Math.sqrt(dx*dx+dy*dy);
+}
+
+// ═══════════════════════════════════
+// NODE / EDGE OPERATIONS
+// ═══════════════════════════════════
+function addNode(wx, wy) {
+  const g = currentGraph();
+  if (!g) return;
+  const id = uid();
+  g.nodes[id] = {
+    id, label:'新しいノード',
+    x: wx, y: wy,
+    weight: 3,
+    color: '#4A9EFF',
+    memo: '',
+    charge: 0,
+    fireHistory: [],
+    lastFired: 0,
+  };
+  applyFlowchartLayout();
+  saveGraphs();
+  updateScoreBar();
+  openNodeSheet(id, true);
+}
+
+function addEdge(from, to) {
+  const g = currentGraph();
+  if (!g) return;
+  // 重複チェック
+  if (g.edges.find(e => e.from===from && e.to===to)) { showToast('すでに接続済みです'); return; }
+  g.edges.push({ from, to, weight:1, conductance:1.0 });
+  applyFlowchartLayout();
+  saveGraphs();
+  updateScoreBar();
+  showToast('接続しました');
+}
+
+function deleteNode(id) {
+  const g = currentGraph();
+  if (!g) return;
+  delete g.nodes[id];
+  g.edges = g.edges.filter(e => e.from!==id && e.to!==id);
+  selectedNode = null;
+  document.getElementById('deleteNodeBtn').style.display = 'none';
+  applyFlowchartLayout();
+  saveGraphs();
+  updateScoreBar();
+}
+
+function deleteEdge(e) {
+  const g = currentGraph();
+  if (!g) return;
+  g.edges = g.edges.filter(x => !(x.from===e.from && x.to===e.to));
+  selectedEdge = null;
+  applyFlowchartLayout();
+  saveGraphs();
+  updateScoreBar();
+}
+
+// ═══════════════════════════════════
+// NODE SHEET
+// ═══════════════════════════════════
+function openNodeSheet(id, isNew=false) {
+  editingNodeId = id;
+  const g = currentGraph();
+  const n = g?.nodes[id];
+  if (!n) return;
+  ensurePhysicsFields(n);
+
+  document.getElementById('nodeSheetTitle').textContent = isNew ? '新規ノード' : 'ノード編集';
+  document.getElementById('nLabel').value = n.label || '';
+  document.getElementById('nMemo').value = n.memo || '';
+  const slider = document.getElementById('nWeight');
+  slider.value = n.weight || 3;
+  document.getElementById('nWeightVal').textContent = n.weight || 3;
+  updateSliderPct(slider);
+
+  editingNodeColor = n.color || '#4A9EFF';
+  document.querySelectorAll('.color-swatch').forEach(sw => {
+    sw.classList.toggle('active', sw.dataset.color === editingNodeColor);
+  });
+
+  // エッジ情報
+  const inEdges  = g.edges.filter(e => e.to===id);
+  const outEdges = g.edges.filter(e => e.from===id);
+  const edgeLines = [];
+  inEdges.forEach(e  => edgeLines.push(`← ${g.nodes[e.from]?.label||'?'} (×${e.weight||1})`));
+  outEdges.forEach(e => edgeLines.push(`→ ${g.nodes[e.to]?.label||'?'} (×${e.weight||1})`));
+  document.getElementById('edgeInfo').textContent = edgeLines.join('\n') || 'なし';
+
+  // 物理層ステータス表示
+  const band = estimateFreqBand(n);
+  const bandLabel = band ? BAND_STYLE[band].label : '未発火';
+  const cluster = currentSyncClusters.find(c => c.nodeIds.includes(id));
+  const attr = cluster ? classifyAttractor(cluster) : null;
+  document.getElementById('physicsBox').innerHTML =
+    `電荷量: <b>${Math.round(n.charge*100)}%</b>　発火回数: <b>${n.fireHistory.length}</b><br>` +
+    `推定帯域: <b>${bandLabel}</b><br>` +
+    `同期attractor: <b>${attr ? attr.label : '未収束'}</b>`;
+
+  openSheet('nodeSheet');
+  setTimeout(() => {
+    if (isNew) document.getElementById('nLabel').select();
+  }, 300);
+}
+
+function saveNodeSheet() {
+  const g = currentGraph();
+  const n = g?.nodes[editingNodeId];
+  if (!n) return;
+  n.label  = document.getElementById('nLabel').value.trim() || '?';
+  n.memo   = document.getElementById('nMemo').value;
+  n.weight = parseInt(document.getElementById('nWeight').value);
+  n.color  = editingNodeColor;
+  saveGraphs();
+  updateScoreBar();
+  closeSheet('nodeSheet');
+}
+
+// ═══════════════════════════════════
+// EDGE HINT
+// ═══════════════════════════════════
+function showEdgeHint(e) {
+  const g = currentGraph();
+  const label = `${g?.nodes[e.from]?.label||'?'} → ${g?.nodes[e.to]?.label||'?'} (×${e.weight||1}) を削除しますか？`;
+  document.getElementById('edgeHintLabel').textContent = label;
+  document.getElementById('edgeHint').classList.add('show');
+}
+
+// ═══════════════════════════════════
+// GRAPH LIST
+// ═══════════════════════════════════
+function renderGraphList() {
+  const wrap = document.getElementById('graphListWrap');
+  const ids = Object.keys(graphs).sort((a,b) => (graphs[b].createdAt||0)-(graphs[a].createdAt||0));
+  wrap.innerHTML = ids.map(id => {
+    const g = graphs[id];
+    const nodeCount = Object.keys(g.nodes||{}).length;
+    const isCur = id === currentGraphId;
+    return `<div class="graph-item ${isCur?'current':''}" data-id="${id}">
+      <div>
+        <div class="graph-item-name">${escHtml(g.name)}${isCur?' ✓':''}</div>
+        <div class="graph-item-meta">ノード ${nodeCount}個</div>
+      </div>
+      <button class="graph-item-del" data-del="${id}">🗑</button>
+    </div>`;
+  }).join('') || '<div style="text-align:center;color:var(--text-dim);padding:30px;">グラフがありません</div>';
+
+  wrap.querySelectorAll('.graph-item[data-id]').forEach(el => {
+    el.addEventListener('click', ev => {
+      if (ev.target.dataset.del) return;
+      switchGraph(el.dataset.id);
+      closeSheet('graphsSheet');
+    });
+  });
+  wrap.querySelectorAll('[data-del]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = btn.dataset.del;
+      if (!confirm(`「${graphs[id]?.name}」を削除しますか？`)) return;
+      delete graphs[id];
+      if (currentGraphId === id) {
+        const remaining = Object.keys(graphs);
+        if (remaining.length === 0) createGraph('グラフ1');
+        else switchGraph(remaining[0]);
+      }
+      saveGraphs();
+      renderGraphList();
+    });
+  });
+}
+
+// ═══════════════════════════════════
+// is_transfer 連携
+// ═══════════════════════════════════
+// アイテム1件を、感情メタデータがあればそれを反映したノードとして追加する共通処理
+function addNodeFromTransferItem(item, index, total, g) {
+  const angle = (index / total) * Math.PI * 2;
+  const dist = 200 + Math.random() * 100;
+  const id = item.id || uid();
+  if (g.nodes[id]) return null;
+
+  const meta = item._emotionMeta || null;
+  const band = meta?.band || meta?.textBand || meta?.fmBand || null;
+  const bandStyle = band ? BAND_STYLE[band] : null;
+  const cols = ['#4A9EFF','#4AE09A','#F5C842','#C084FC','#FB923C','#FF5F5F'];
+
+  g.nodes[id] = {
+    id,
+    label: (item.title || '無題').slice(0,20),
+    memo: (item.body || '').replace(/<[^>]+>/g,'').slice(0,200),
+    weight: 3,
+    // 感情メタがあればその帯域の色を使う。なければ従来通り虹色を割り当て。
+    color: bandStyle ? bandStyle.color : cols[index % cols.length],
+    x: Math.cos(angle) * dist,
+    y: Math.sin(angle) * dist,
+    charge: 0,
+    fireHistory: [],
+    lastFired: 0,
+    sourceApp: item._emotionMeta ? (item.source || null) : undefined,
+    emotionBand: band || undefined,
+  };
+  return id;
+}
+
+function importFromTransfer() {
+  try {
+    const raw = localStorage.getItem(LS_TRANSFER);
+    if (!raw) { showToast('is_transferにデータがありません'); return; }
+    const payload = JSON.parse(raw);
+    const items = payload.items || (Array.isArray(payload) ? payload : null);
+    if (!items || items.length === 0) { showToast('インポートできるデータがありません'); return; }
+
+    const g = currentGraph();
+    if (!g) return;
+
+    let added = 0;
+    items.forEach((item, i) => {
+      const id = addNodeFromTransferItem(item, i, items.length, g);
+      if (id) { added++; fireNode(id); }
+    });
+    applyFlowchartLayout();
+    saveGraphs();
+    updateScoreBar();
+    centerView();
+    closeSheet('graphsSheet');
+    showToast(`${added}件のノードを追加しました`);
+  } catch(e) {
+    console.error(e);
+    showToast('インポートに失敗しました');
+  }
+}
+
+// ── ブリッジからの自動送信(is_emotion_transfer)を静かに取り込む ──
+// quick-ref-bridge等が保存のたびに書き込む1件データを、確認なしで
+// 因果グラフに自動追加する。既に取り込んだタイムスタンプは記録して重複防止。
+let lastEmotionTransferTs = Number(localStorage.getItem('fm_last_emotion_ts') || 0);
+
+function checkEmotionTransfer() {
+  try {
+    const raw = localStorage.getItem(LS_EMOTION_TRANSFER);
+    if (!raw) return;
+    const payload = JSON.parse(raw);
+    if (!payload.timestamp || payload.timestamp <= lastEmotionTransferTs) return;
+    if (payload.source === 'flow-mind') return; // 自分自身の書き込みは無視
+    const items = payload.items;
+    if (!Array.isArray(items) || items.length === 0) return;
+
+    const g = currentGraph();
+    if (!g) return;
+
+    let added = 0, lastId = null;
+    items.forEach((item, i) => {
+      // 自動受信ではitemに_emotionMetaが無いことがあるので、ペイロード全体のemotionMetaで補う
+      const merged = item._emotionMeta ? item : { ...item, _emotionMeta: payload.emotionMeta };
+      const id = addNodeFromTransferItem(merged, i, items.length, g);
+      if (id) { added++; lastId = id; }
+    });
+    if (added > 0) {
+      applyFlowchartLayout();
+      saveGraphs();
+      updateScoreBar();
+      if (lastId) fireNode(lastId);
+      showToast(`${payload.source || '他アプリ'}から${added}件を受信しました`);
+    }
+    lastEmotionTransferTs = payload.timestamp;
+    localStorage.setItem('fm_last_emotion_ts', String(lastEmotionTransferTs));
+  } catch(e) {
+    console.warn('checkEmotionTransfer error', e);
+  }
+}
+
+// ═══════════════════════════════════
+// #import= URL HASH
+// ═══════════════════════════════════
+function checkImportHash() {
+  if (!location.hash.startsWith('#import=')) return;
+  try {
+    const b64 = location.hash.slice(8);
+    const json = decodeURIComponent(escape(atob(b64)));
+    const payload = JSON.parse(json);
+    const name = payload.graphName || `インポート_${new Date().toLocaleDateString()}`;
+    const newId = createGraph(name);
+    const g = graphs[newId];
+    if (payload.nodes) g.nodes = payload.nodes;
+    if (payload.edges) g.edges = payload.edges;
+    applyFlowchartLayout();
+    saveGraphs();
+    switchGraph(newId);
+    showToast(`グラフ「${name}」をインポートしました`);
+  } catch(e) { console.warn('hash import error', e); }
+  finally { history.replaceState(null,'',location.pathname); }
+}
+
+// ═══════════════════════════════════
+// AI LAYER
+// ═══════════════════════════════════
+async function callAI(prompt) {
+  const modelKey = localStorage.getItem(LS_MODEL) || 'claude';
+  const proxyUrl = localStorage.getItem(LS_PROXY) || '';
+  const m = MODELS[modelKey] || MODELS.claude;
+  const keyMap = { claude:LS_CLAUDE, gemini:LS_GEMINI, openai:LS_OPENAI };
+  const apiKey = localStorage.getItem(keyMap[modelKey]) || '';
+
+  if (!apiKey && !proxyUrl) throw new Error(`APIキーが未設定です。quick-refの⚙️設定から入力してください（${m.label}）`);
+
+  if (proxyUrl) {
+    const res = await fetch(proxyUrl, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:modelKey, prompt }),
+    });
+    if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
+    const d = await res.json();
+    return d.text || d.content || JSON.stringify(d);
+  }
+
+  if (modelKey === 'claude') {
+    const res = await fetch(m.endpoint, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,
+        'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body: JSON.stringify({ model:m.model, max_tokens:1024,
+        messages:[{role:'user',content:prompt}] }),
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error?.message || `Claude ${res.status}`);
+    return d.content?.[0]?.text || '';
+  }
+  if (modelKey === 'gemini') {
+    const res = await fetch(`${m.endpoint}?key=${apiKey}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ contents:[{parts:[{text:prompt}]}],
+        generationConfig:{maxOutputTokens:1024} }),
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error?.message || `Gemini ${res.status}`);
+    return d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  }
+  if (modelKey === 'openai') {
+    const res = await fetch(m.endpoint, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${apiKey}`},
+      body: JSON.stringify({ model:m.model, max_tokens:1024,
+        messages:[{role:'user',content:prompt}] }),
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error?.message || `OpenAI ${res.status}`);
+    return d.choices?.[0]?.message?.content || '';
+  }
+  throw new Error('未対応のモデル');
+}
+
+function buildGraphDescription() {
+  const g = currentGraph();
+  if (!g) return '';
+  const scores = computeScores();
+  const nodeLines = Object.entries(g.nodes)
+    .sort((a,b) => (scores[b[0]]||0)-(scores[a[0]]||0))
+    .map(([id,n]) => `・${n.label}（自己重み:${n.weight}、重要度スコア:${Math.round((scores[id]||0)*100)}%）${n.memo?` → ${n.memo}`:''}`);
+  const edgeLines = g.edges.map(e =>
+    `${g.nodes[e.from]?.label||'?'} →[×${e.weight||1}]→ ${g.nodes[e.to]?.label||'?'}`);
+  return `グラフ名：${g.name}\n\n【ノード】\n${nodeLines.join('\n')}\n\n【因果エッジ】\n${edgeLines.join('\n')||'なし'}`;
+}
+
+// ④ 同期クラスタ＝attractor情報を構造化してAIに渡す（本音抽出用コンテキスト）
+function buildAttractorContext() {
+  const g = currentGraph();
+  if (!g || currentSyncClusters.length === 0) {
+    return '現在、同期している（活性化している）ノード群はありません。';
+  }
+  const lines = currentSyncClusters.map(c => {
+    const attr = classifyAttractor(c);
+    const style = BAND_STYLE[c.band];
+    const nodeLabels = c.nodeIds.map(id => g.nodes[id]?.label || '?').join('、');
+    return `・帯域:${style.label}／持続:${Math.round(c.durationMs)}ms／密度:${Math.round(c.density*100)}%\n` +
+      `  関与ノード: ${nodeLabels}\n` +
+      `  推定attractor: ${attr ? attr.label : '未収束（過渡状態）'}`;
+  });
+  return `現在、以下の神経同期パターン（電気振動のクラスタ）が検出されています：\n${lines.join('\n\n')}`;
+}
+
+async function runAnalysis(type, custom='') {
+  const desc = buildGraphDescription();
+  if (!desc.includes('ノード')) { showToast('ノードを追加してから分析してください'); return; }
+
+  const attractorCtx = buildAttractorContext();
+
+  const prompts = {
+    structure: `以下の因果グラフを分析してください。\n最重要ノード（影響力が大きいもの）の理由、構造的な特徴、改善提案を日本語で教えてください。\n\n${desc}`,
+    weak: `以下の因果グラフの弱点を検出してください。\n孤立したノード、根拠の薄い繋がり、論理的な飛躍、見落とされている関係性を日本語で指摘してください。\n\n${desc}`,
+    suggest: `以下の因果グラフを見て、追加すべきノード（概念・アイデア）を5つ提案してください。\n各提案に、既存のどのノードと繋がるかも示してください。日本語で。\n\n${desc}`,
+    honne: `あなたは「感情の物理モデル」に基づいて本音を抽出するアシスタントです。\n` +
+      `感情とは、神経ネットワークの特定の周波数帯での同期（コヒーレンス）が、安定した状態（attractor）に収束したときの主観的体験だと考えます。\n\n` +
+      `${attractorCtx}\n\n` +
+      `以下はこのユーザーの思考グラフです：\n${desc}\n\n` +
+      `上記の同期パターン（特にγ波＝怒り・集中、θ波＝不安、δ波＝深い情動）が、` +
+      `どのノード群を中心に起きているかに注目し、ユーザー自身もまだ言語化できていない「本音」を断定せず仮説として1〜3個、日本語で提示してください。` +
+      `根拠として、どの同期クラスタ・どのノードの組み合わせからその仮説を導いたかも明記してください。`,
+  };
+
+  const prompt = custom
+    ? `${custom}\n\n---\n${attractorCtx}\n\n${desc}`
+    : prompts[type];
+  const box = document.getElementById('aiResultBox');
+  box.classList.remove('visible');
+  document.getElementById('aiLoading').classList.add('show');
+
+  try {
+    const result = await callAI(prompt);
+    box.textContent = result;
+    box.classList.add('visible');
+  } catch(e) {
+    showToast(e.message);
+  } finally {
+    document.getElementById('aiLoading').classList.remove('show');
+  }
+}
+
+// ═══════════════════════════════════
+// SHEET HELPERS
+// ═══════════════════════════════════
+function openSheet(id) {
+  document.getElementById(id).classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+}
+function closeSheet(id) {
+  document.getElementById(id).classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+function closeAllSheets() {
+  ['nodeSheet','aiSheet','graphsSheet'].forEach(id => {
+    document.getElementById(id).classList.remove('open');
+  });
+  document.getElementById('overlay').classList.remove('open');
+}
+
+function setMode(m) {
+  mode = m;
+  connectFrom = null;
+  document.getElementById('addModeBtn').classList.toggle('active', m===MODE.ADD);
+  document.getElementById('connectModeBtn').classList.toggle('active', m===MODE.CONNECT);
+  document.getElementById('editModeBtn').classList.toggle('active', m===MODE.EDIT);
+  const labels = {
+    add:'タップで新しいノードを追加 / ノードをタップで編集・発火',
+    connect:'接続元ノードをタップ → 接続先をタップ',
+    edit:'ノードをタップで編集 / エッジをタップで削除（配置は自動整列）',
+  };
+  document.getElementById('modeLabel').textContent = labels[m];
+  document.getElementById('deleteNodeBtn').style.display = 'none';
+  selectedNode = null; selectedEdge = null;
+}
+
+function updateSliderPct(slider) {
+  const pct = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
+  slider.style.setProperty('--pct', pct + '%');
+}
+
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2300);
+}
+
+// ═══════════════════════════════════
+// QUICK CAPTURE — すぐ記録（音声 / テキスト / 共有シート起動）
+// ═══════════════════════════════════
+let qcRecorder = null;
+let qcChunks = [];
+let qcRecording = false;
+
+function openQuickCapture(prefillText) {
+  document.getElementById('quickCaptureBar').classList.add('open');
+  const input = document.getElementById('qcInput');
+  if (typeof prefillText === 'string') input.value = prefillText;
+  setQcStatus('');
+  setTimeout(() => { input.focus(); autoGrowQc(); }, 150);
+}
+
+function closeQuickCapture() {
+  document.getElementById('quickCaptureBar').classList.remove('open');
+  if (qcRecording) stopQcRecording();
+}
+
+function autoGrowQc() {
+  const el = document.getElementById('qcInput');
+  el.style.height = 'auto';
+  el.style.height = Math.min(120, el.scrollHeight) + 'px';
+}
+
+function setQcStatus(msg, busy) {
+  const el = document.getElementById('qcStatus');
+  el.textContent = msg || '';
+  el.classList.toggle('busy', !!busy);
+}
+
+// テキストからノードを即時作成し、直前に発火したノードへ因果エッジで接続する
+// （＝孤立ノードにせず、既存の思考グラフの中に位置づける）
+function quickAddNode(text) {
+  const g = currentGraph();
+  if (!g) return;
+  const trimmed = text.trim();
+  if (!trimmed) { showToast('内容を入力してください'); return; }
+
+  const connectSourceId = (lastFiredNodeId && g.nodes[lastFiredNodeId]) ? lastFiredNodeId : null;
+  const basePos = connectSourceId
+    ? { x: g.nodes[connectSourceId].x, y: g.nodes[connectSourceId].y }
+    : screenToWorld(canvas.width/2, canvas.height/2);
+  const angle = Math.random() * Math.PI * 2;
+  const dist = 130 + Math.random() * 40;
+  const pos = { x: basePos.x + Math.cos(angle)*dist, y: basePos.y + Math.sin(angle)*dist };
+
+  const id = uid();
+  const firstLine = trimmed.split('\n')[0].slice(0, 18);
+  g.nodes[id] = {
+    id,
+    label: firstLine || '記録',
+    memo: trimmed,                // 全文を必ずメモに保持（省略しない）
+    x: pos.x, y: pos.y,
+    weight: 3,
+    color: '#4A9EFF',
+    charge: 0,
+    fireHistory: [],
+    lastFired: 0,
+  };
+
+  // 直前に発火したノードがあれば、因果の連鎖として自動接続
+  if (connectSourceId) {
+    g.edges.push({ from: connectSourceId, to: id, weight: 1, conductance: 1.0 });
+  }
+
+  applyFlowchartLayout();
+  saveGraphs();
+  updateScoreBar();
+  closeQuickCapture();
+  fireNode(id);                   // 発火させて電荷・同期波を伝播させる
+  document.getElementById('qcInput').value = '';
+  autoGrowQc();
+
+  // 全文・接続を確認できるよう、ノード編集シートを自動で開く
+  openNodeSheet(id, true);
+  showToast(connectSourceId ? '記録して接続しました' : '記録しました');
+}
+
+// ── 音声入力（MediaRecorderで録音 → AI(Whisper系)で文字起こし）──
+// 補足：iOS Safariはブラウザ標準の音声認識(SpeechRecognition)に対応していないため、
+// 録音してAI APIに送って文字起こしする方式にしています。
+function startQcRecording() {
+  if (qcRecording) return;
+  if (!window.isSecureContext) {
+    showToast('マイクはhttps環境でのみ使用できます');
+    return;
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast('このブラウザ/表示モードは録音に対応していません');
+    return;
+  }
+  if (typeof MediaRecorder === 'undefined') {
+    showToast('この環境はMediaRecorderに対応していません');
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({ audio:true }).then(stream => {
+    qcChunks = [];
+    const mimeType = MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4'
+      : (MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : '');
+    try {
+      qcRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+    } catch (recErr) {
+      console.error(recErr);
+      showToast('録音の初期化に失敗しました: ' + recErr.message);
+      stream.getTracks().forEach(t => t.stop());
+      return;
+    }
+    qcRecorder.ondataavailable = e => { if (e.data.size > 0) qcChunks.push(e.data); };
+    qcRecorder.onerror = e => {
+      console.error('MediaRecorder error', e.error);
+      showToast('録音エラー: ' + (e.error?.message || e.error?.name || '不明なエラー'));
+    };
+    qcRecorder.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      if (qcChunks.length === 0) { setQcStatus(''); showToast('録音データが取得できませんでした'); return; }
+      const blob = new Blob(qcChunks, { type: qcRecorder.mimeType || 'audio/webm' });
+      transcribeAndFill(blob);
+    };
+    qcRecorder.start();
+    qcRecording = true;
+    document.getElementById('qcMicBtn').classList.add('recording');
+    document.getElementById('quickCaptureFab').classList.add('recording');
+    setQcStatus('🎙 録音中…もう一度タップで文字起こし', true);
+  }).catch(err => {
+    console.error(err);
+    // iOSでよくある原因を判別してメッセージを出し分ける
+    let msg = 'マイクへのアクセスが必要です';
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      msg = 'マイクへのアクセスが拒否されています。設定 > Safari(またはこのアプリ) > マイク を確認してください';
+    } else if (err.name === 'NotFoundError') {
+      msg = 'マイクが見つかりません';
+    } else if (err.name === 'NotReadableError') {
+      msg = '他のアプリがマイクを使用中の可能性があります';
+    } else if (err.name === 'SecurityError') {
+      msg = 'セキュリティ制限によりマイクを使用できません(https環境か確認してください)';
+    }
+    showToast(msg + `（${err.name}）`);
+  });
+}
+
+function stopQcRecording() {
+  if (!qcRecording || !qcRecorder) return;
+  qcRecording = false;
+  document.getElementById('qcMicBtn').classList.remove('recording');
+  document.getElementById('quickCaptureFab').classList.remove('recording');
+  if (qcRecorder.state !== 'inactive') qcRecorder.stop();
+}
+
+async function transcribeAndFill(blob) {
+  setQcStatus('⏳ 文字起こし中…', true);
+  const apiKey = localStorage.getItem(LS_OPENAI) || '';
+  const proxyUrl = localStorage.getItem(LS_PROXY) || '';
+  if (!apiKey && !proxyUrl) {
+    setQcStatus('');
+    showToast('文字起こしにはOpenAI APIキーが必要です（quick-refの⚙️設定）');
+    return;
+  }
+  try {
+    let text = '';
+    if (proxyUrl) {
+      const form = new FormData();
+      form.append('file', blob, 'audio.' + (blob.type.includes('mp4') ? 'mp4' : 'webm'));
+      form.append('purpose', 'transcription');
+      const res = await fetch(proxyUrl.replace(/\/$/, '') + '/transcribe', { method:'POST', body: form });
+      if (!res.ok) throw new Error(`Proxy transcribe error: ${res.status}`);
+      const d = await res.json();
+      text = d.text || '';
+    } else {
+      const form = new FormData();
+      form.append('file', blob, 'audio.' + (blob.type.includes('mp4') ? 'mp4' : 'webm'));
+      form.append('model', 'whisper-1');
+      form.append('language', 'ja');
+      const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method:'POST',
+        headers: { 'Authorization': `Bearer ${apiKey}` },
+        body: form,
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error?.message || `Whisper ${res.status}`);
+      text = d.text || '';
+    }
+    const input = document.getElementById('qcInput');
+    input.value = (input.value ? input.value + '\n' : '') + text.trim();
+    autoGrowQc();
+    setQcStatus('');
+  } catch(e) {
+    console.error(e);
+    setQcStatus('');
+    showToast('文字起こしに失敗しました: ' + e.message);
+  }
+}
+
+// ── URL経由の即記録受信 ──
+// index.html#capture=<encodeURIComponent(text)> で開くと、すぐ記録バーにテキストが入った状態で起動する。
+// &auto=1 を付けるとバーを開かずそのままノード化する（例：iOSショートカットの「共有」アクションから）。
+function checkCaptureHash() {
+  if (!location.hash.startsWith('#capture=')) return;
+  try {
+    const raw = location.hash.slice('#capture='.length);
+    const [encoded, ...rest] = raw.split('&');
+    const text = decodeURIComponent(encoded);
+    const auto = rest.includes('auto=1');
+    if (auto && text.trim()) {
+      quickAddNode(text);
+    } else {
+      openQuickCapture(text);
+    }
+  } catch(e) { console.warn('capture hash parse error', e); }
+  finally { history.replaceState(null, '', location.pathname); }
+}
+
+function wireQuickCapture() {
+  const fab = document.getElementById('quickCaptureFab');
+  const bar = document.getElementById('quickCaptureBar');
+  const input = document.getElementById('qcInput');
+  const micBtn = document.getElementById('qcMicBtn');
+  const sendBtn = document.getElementById('qcSendBtn');
+  const closeBtn = document.getElementById('qcCloseBtn');
+
+  // FABはタップでバーを開くだけ（録音はマイクボタンを直接タップした時だけ開始する。
+  // iOSはgetUserMediaをユーザー操作の“直接の結果”としてでないと許可しないため、
+  // setTimeoutを挟む長押し起動は使わない）
+  fab.addEventListener('click', () => openQuickCapture());
+
+  closeBtn.addEventListener('click', closeQuickCapture);
+
+  input.addEventListener('input', autoGrowQc);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      quickAddNode(input.value);
+    }
+  });
+
+  micBtn.addEventListener('click', () => {
+    if (qcRecording) stopQcRecording();
+    else startQcRecording();
+  });
+
+  sendBtn.addEventListener('click', () => quickAddNode(input.value));
+}
+
+// ═══════════════════════════════════
+// SYNC — Windows(File System Access API) / iPhone(手動Files連携)
+// ═══════════════════════════════════
+// ═══════════════════════════════════
+// SYNC — Windows(File System Access API) / iPhone(手動Files連携) / クラウド(全端末共通)
+// ═══════════════════════════════════
+async function checkCloudSyncOnLoad() {
+  if (!window.CloudSync || !CloudSync.isConfigured()) return;
+  try {
+    const payload = await CloudSync.cloudLoad('flow-mind');
+    if (!payload || !payload.data) return;
+    const localLastSync = CloudSync.getLastSyncedAt('flow-mind') || 0;
+    if (payload.timestamp > localLastSync) {
+      const when = new Date(payload.timestamp).toLocaleString('ja-JP');
+      if (confirm(`クラウド側に新しいデータがあります(${when})。読み込みますか？\n（現在のグラフは上書きされます）`)) {
+        graphs = payload.data;
+        const ids = Object.keys(graphs);
+        if (!graphs[currentGraphId]) {
+          currentGraphId = ids[0] || null;
+          if (!currentGraphId) createGraph('はじめてのグラフ');
+          else localStorage.setItem(LS_CURRENT, currentGraphId);
+        }
+        applyFlowchartLayout();
+        saveGraphs();
+        centerView();
+        updateScoreBar();
+        showToast('クラウドから読み込みました');
+      }
+    }
+  } catch(e) { console.warn('checkCloudSyncOnLoad error', e); }
+}
+
+async function refreshCloudSyncStatus() {
+  if (!window.CloudSync) return;
+  const c = CloudSync.getConfig();
+  document.getElementById('cloudEndpointInput').value = c.endpoint || '';
+  document.getElementById('cloudTokenInput').value = c.token || '';
+  if (!CloudSync.isConfigured()) {
+    document.getElementById('cloudSyncStatus').textContent = '未設定';
+    return;
+  }
+  const ts = CloudSync.getLastSyncedAt('flow-mind');
+  document.getElementById('cloudSyncStatus').textContent = ts
+    ? `設定済み / 最終同期: ${new Date(ts).toLocaleString('ja-JP')}`
+    : '設定済み（まだ未同期）';
+}
+
+function wireCloudSync() {
+  document.getElementById('cloudSaveConfigBtn').addEventListener('click', async () => {
+    if (!window.CloudSync) { showToast('cloud-sync.jsが読み込まれていません'); return; }
+    const endpoint = document.getElementById('cloudEndpointInput').value;
+    const token = document.getElementById('cloudTokenInput').value;
+    CloudSync.setConfig(endpoint, token);
+    showToast('設定を保存しました');
+    await checkCloudSyncOnLoad();
+    CloudSync.cloudSave('flow-mind', graphs); // 設定直後に一度書き込んでおく
+    refreshCloudSyncStatus();
+  });
+
+  document.getElementById('cloudSyncNowBtn').addEventListener('click', async () => {
+    if (!window.CloudSync || !CloudSync.isConfigured()) { showToast('先にエンドポイント/トークンを設定してください'); return; }
+    CloudSync.cloudSave('flow-mind', graphs);
+    showToast('同期しました');
+    setTimeout(refreshCloudSyncStatus, 1400);
+  });
+}
+
+async function checkCloudOnLoad() {
+  if (!window.SyncBridge || !SyncBridge.isDesktopCapable()) return;
+  try {
+    const connected = await SyncBridge.isConnected('flow-mind');
+    if (!connected) return;
+    const payload = await SyncBridge.autoLoad('flow-mind');
+    if (!payload || !payload.data) return;
+    const localLastSync = SyncBridge.getLastSyncedAt('flow-mind') || 0;
+    if (payload.timestamp > localLastSync) {
+      const when = new Date(payload.timestamp).toLocaleString('ja-JP');
+      if (confirm(`iCloud側に新しいデータがあります(${when})。読み込みますか？\n（現在のグラフは上書きされます）`)) {
+        graphs = payload.data;
+        const ids = Object.keys(graphs);
+        if (!graphs[currentGraphId]) {
+          currentGraphId = ids[0] || null;
+          if (!currentGraphId) createGraph('はじめてのグラフ');
+          else localStorage.setItem(LS_CURRENT, currentGraphId);
+        }
+        applyFlowchartLayout();
+        saveGraphs();
+        centerView();
+        updateScoreBar();
+        showToast('iCloudから読み込みました');
+      }
+    }
+  } catch(e) { console.warn('checkCloudOnLoad error', e); }
+}
+
+function openSyncSheet() {
+  const isDesktop = window.SyncBridge && SyncBridge.isDesktopCapable();
+  document.getElementById('syncDesktopBox').style.display = isDesktop ? '' : 'none';
+  document.getElementById('syncMobileBox').style.display = isDesktop ? 'none' : '';
+  refreshSyncStatus();
+  refreshCloudSyncStatus();
+  openSheet('syncSheet');
+}
+
+async function refreshSyncStatus() {
+  if (!window.SyncBridge) return;
+  if (SyncBridge.isDesktopCapable()) {
+    const connected = await SyncBridge.isConnected('flow-mind');
+    const ts = SyncBridge.getLastSyncedAt('flow-mind');
+    document.getElementById('syncDesktopStatus').textContent = connected
+      ? `接続済み${ts ? ' / 最終同期: ' + new Date(ts).toLocaleString('ja-JP') : ''}`
+      : '未接続';
+  } else {
+    const ts = SyncBridge.getLastSyncedAt('flow-mind-sync');
+    document.getElementById('syncMobileStatus').textContent = ts
+      ? `最終書き出し: ${new Date(ts).toLocaleString('ja-JP')}`
+      : 'まだ書き出していません';
+  }
+}
+
+function wireSyncSheet() {
+  wireCloudSync();
+  document.getElementById('syncBtn').addEventListener('click', openSyncSheet);
+  document.getElementById('syncSheetClose').addEventListener('click', () => closeSheet('syncSheet'));
+
+  document.getElementById('syncConnectBtn').addEventListener('click', async () => {
+    if (!window.SyncBridge) { showToast('同期モジュールが読み込まれていません'); return; }
+    try {
+      await SyncBridge.connectFolder('flow-mind');
+      showToast('フォルダに接続しました');
+      await checkCloudOnLoad();
+      SyncBridge.autoSave('flow-mind', graphs); // 接続直後に現在の状態を一度書き込む
+      refreshSyncStatus();
+    } catch(e) {
+      console.error(e);
+      showToast('接続に失敗しました: ' + e.message);
+    }
+  });
+
+  document.getElementById('syncNowBtn').addEventListener('click', async () => {
+    if (!window.SyncBridge || !(await SyncBridge.isConnected('flow-mind'))) {
+      showToast('先にフォルダへ接続してください');
+      return;
+    }
+    SyncBridge.autoSave('flow-mind', graphs);
+    showToast('同期しました');
+    setTimeout(refreshSyncStatus, 1400);
+  });
+
+  document.getElementById('syncExportBtn').addEventListener('click', () => {
+    if (!window.SyncBridge) { showToast('同期モジュールが読み込まれていません'); return; }
+    SyncBridge.exportToFiles('flow-mind-sync.json', graphs);
+    showToast('書き出しました。保存先でiCloud Driveを選んでください');
+    setTimeout(refreshSyncStatus, 300);
+  });
+
+  document.getElementById('syncImportBtn').addEventListener('click', async () => {
+    if (!window.SyncBridge) { showToast('同期モジュールが読み込まれていません'); return; }
+    const payload = await SyncBridge.importFromFiles();
+    if (!payload || !payload.data) return;
+    if (!confirm('現在のグラフを読み込んだデータで上書きします。よろしいですか？')) return;
+    graphs = payload.data;
+    const ids = Object.keys(graphs);
+    currentGraphId = ids[0] || null;
+    if (!currentGraphId) createGraph('はじめてのグラフ');
+    else localStorage.setItem(LS_CURRENT, currentGraphId);
+    applyFlowchartLayout();
+    saveGraphs();
+    centerView();
+    updateScoreBar();
+    renderGraphList();
+    showToast('読み込みました');
+  });
+}
+
+// ═══════════════════════════════════
+// WIRE EVENTS
+// ═══════════════════════════════════
+function wireEvents() {
+  // モード
+  document.getElementById('addModeBtn').addEventListener('click', () => setMode(MODE.ADD));
+  document.getElementById('connectModeBtn').addEventListener('click', () => setMode(MODE.CONNECT));
+  document.getElementById('editModeBtn').addEventListener('click', () => setMode(MODE.EDIT));
+
+  // ノードシート
+  document.getElementById('nodeSheetCancel').addEventListener('click', () => closeSheet('nodeSheet'));
+  document.getElementById('nodeSheetSave').addEventListener('click', saveNodeSheet);
+
+  // 重みスライダー
+  const slider = document.getElementById('nWeight');
+  slider.addEventListener('input', () => {
+    document.getElementById('nWeightVal').textContent = slider.value;
+    updateSliderPct(slider);
+  });
+
+  // カラースウォッチ
+  document.querySelectorAll('.color-swatch').forEach(sw => {
+    sw.addEventListener('click', () => {
+      editingNodeColor = sw.dataset.color;
+      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+      sw.classList.add('active');
+    });
+  });
+
+  // ノード削除
+  document.getElementById('deleteNodeBtn').addEventListener('click', () => {
+    if (selectedNode && confirm('このノードを削除しますか？')) deleteNode(selectedNode);
+  });
+
+  // リセットビュー
+  document.getElementById('resetViewBtn').addEventListener('click', () => { centerView(); });
+
+  // エッジヒント
+  document.getElementById('edgeDeleteBtn').addEventListener('click', () => {
+    if (selectedEdge) { deleteEdge(selectedEdge); selectedEdge=null; }
+    document.getElementById('edgeHint').classList.remove('show');
+  });
+  document.getElementById('edgeCancelBtn').addEventListener('click', () => {
+    selectedEdge = null;
+    document.getElementById('edgeHint').classList.remove('show');
+  });
+
+  // AI分析シート
+  document.getElementById('analyzeBtn').addEventListener('click', () => {
+    const modelKey = localStorage.getItem(LS_MODEL) || 'claude';
+    document.getElementById('aiModelBadge').textContent = MODELS[modelKey]?.label || modelKey;
+    document.getElementById('aiResultBox').classList.remove('visible');
+    openSheet('aiSheet');
+  });
+  document.getElementById('aiSheetClose').addEventListener('click', () => closeSheet('aiSheet'));
+  document.getElementById('aiStructureBtn').addEventListener('click', () => runAnalysis('structure'));
+  document.getElementById('aiWeakBtn').addEventListener('click', () => runAnalysis('weak'));
+  document.getElementById('aiSuggestBtn').addEventListener('click', () => runAnalysis('suggest'));
+  document.getElementById('aiHonneBtn').addEventListener('click', () => runAnalysis('honne'));
+  document.getElementById('aiCustomBtn').addEventListener('click', () => {
+    const v = document.getElementById('aiCustomInput').value.trim();
+    if (v) runAnalysis(null, v);
+  });
+  document.getElementById('aiCustomInput').addEventListener('keydown', e => {
+    if (e.key==='Enter') { const v=e.target.value.trim(); if(v) runAnalysis(null,v); }
+  });
+
+  // グラフ一覧
+  document.getElementById('graphsBtn').addEventListener('click', () => { renderGraphList(); openSheet('graphsSheet'); });
+  document.getElementById('graphsSheetClose').addEventListener('click', () => closeSheet('graphsSheet'));
+  document.getElementById('newGraphBtn').addEventListener('click', () => {
+    const name = prompt('グラフ名を入力してください', '新しいグラフ');
+    if (!name) return;
+    createGraph(name.trim() || '新しいグラフ');
+    renderGraphList();
+    closeSheet('graphsSheet');
+    centerView();
+    showToast(`「${name}」を作成しました`);
+  });
+  document.getElementById('importTransferBtn').addEventListener('click', importFromTransfer);
+
+  // overlay
+  document.getElementById('overlay').addEventListener('click', closeAllSheets);
+}
+
+// ═══════════════════════════════════
+// INIT
+// ═══════════════════════════════════
+function init() {
+  loadGraphs();
+  checkImportHash();
+  applyFlowchartLayout();
+  resizeCanvas();
+  centerView();
+  setMode(MODE.ADD);
+  wireEvents();
+  wireQuickCapture();
+  wireSyncSheet();
+  updateScoreBar();
+  checkCaptureHash();
+  checkEmotionTransfer();
+  checkCloudOnLoad();
+  checkCloudSyncOnLoad();
+
+  // 他アプリ(quick-ref等)からの自動送信を定期チェック + ページ復帰時にもチェック
+  setInterval(checkEmotionTransfer, 4000);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) checkEmotionTransfer();
+  });
+
+  render();
+
+  // ── クラウド自動ロード（追加） ──────────────────────
+  // SyncBridge が構成済みならクラウドの更新をチェックして反映
+  loadFromCloud();
+}
+
+window.addEventListener("resize", resizeCanvas);
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("./service-worker.js");
+init();
+</script>
 </body>
 </html>
