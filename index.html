@@ -63,6 +63,29 @@ header button { pointer-events:auto; }
 .hdr-btn:active { background:rgba(255,255,255,0.12); }
 .hdr-btn.gold { border-color:rgba(245,200,66,0.4); color:var(--gold); }
 .hdr-btn.gold:active { background:var(--gold-dim); }
+.hdr-btn { position:relative; }
+.inbox-badge {
+  position:absolute; top:-6px; right:-6px; min-width:16px; height:16px;
+  border-radius:100px; background:#FF5F5F; color:#fff; font-size:10px;
+  font-weight:800; line-height:16px; text-align:center; padding:0 3px;
+  display:none; pointer-events:none;
+}
+.inbox-badge.show { display:block; }
+
+/* ノード編集シート: 取り込み元バナー */
+.inbox-banner {
+  display:none; align-items:center; justify-content:space-between; gap:10px;
+  background:rgba(74,158,255,0.1); border:1px solid rgba(74,158,255,0.35);
+  border-radius:var(--r); padding:10px 12px; margin-bottom:14px; font-size:13px;
+}
+.inbox-banner.show { display:flex; }
+.inbox-banner-text { color:var(--text); font-weight:600; }
+.inbox-banner-text small { display:block; color:var(--text-dim); font-weight:400; margin-top:2px; }
+.inbox-banner-btn {
+  flex-shrink:0; background:var(--blue); color:#fff; border:none; border-radius:8px;
+  font-size:12px; font-weight:700; padding:7px 12px; cursor:pointer; white-space:nowrap;
+}
+.inbox-banner-btn.done { background:rgba(255,255,255,0.1); color:var(--text-dim); }
 
 /* ── SCORE BAR (上位ノード) ── */
 #scoreBar {
@@ -304,7 +327,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 <header>
   <span class="app-title">⬡ flow-mind</span>
   <div class="header-spacer"></div>
-  <button class="hdr-btn" id="graphsBtn">📂 グラフ</button>
+  <button class="hdr-btn" id="graphsBtn">📂 グラフ<span class="inbox-badge" id="inboxBadge">0</span></button>
   <button class="hdr-btn" id="syncBtn">☁️</button>
   <button class="hdr-btn gold" id="analyzeBtn">✦ AI分析</button>
   <button class="hdr-btn" id="helpBtn">？</button>
@@ -341,6 +364,14 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
     <button id="nodeSheetSave" style="color:var(--gold);font-weight:800;">保存</button>
   </div>
   <div class="sheet-body">
+    <div class="inbox-banner" id="inboxBanner">
+      <div class="inbox-banner-text">
+        📥 <span id="inboxBannerSource">他アプリ</span>から取り込み
+        <small>内容を確認したら「取り込み完了」を押してください</small>
+      </div>
+      <button type="button" class="inbox-banner-btn" id="inboxBannerBtn">取り込み完了</button>
+    </div>
+
     <label class="field-label">ラベル</label>
     <input type="text" id="nLabel" placeholder="アイデア・概念を入力" maxlength="40" list="nLabelSuggestions">
     <datalist id="nLabelSuggestions"></datalist>
@@ -807,6 +838,7 @@ function switchGraph(id) {
   applyFlowchartLayout();
   centerView();
   updateScoreBar();
+  updateInboxBadge();
   renderGraphList();
 }
 
@@ -1192,6 +1224,23 @@ function drawNode(n, id, score, phase) {
   ctx.font = `600 ${9*vpScale}px -apple-system`;
   ctx.fillStyle = 'rgba(255,255,255,0.55)';
   ctx.fillText(badge, s.x, s.y + r * 0.7);
+
+  // 未処理(inbox)バッジ — 他アプリから取り込んだまま未確認のノードに表示
+  if (n.triageStatus === 'inbox') {
+    const bx = s.x + r * 0.72, by = s.y - r * 0.72, br = 8 * vpScale;
+    ctx.beginPath();
+    ctx.arc(bx, by, br, 0, Math.PI*2);
+    ctx.fillStyle = '#FF5F5F';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(13,15,20,0.9)';
+    ctx.lineWidth = 1.5 * vpScale;
+    ctx.stroke();
+    ctx.font = `${10*vpScale}px -apple-system`;
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('📥', bx, by + 0.5*vpScale);
+  }
 
   ctx.restore();
 }
@@ -1587,6 +1636,7 @@ function openNodeSheet(id, isNew=false) {
   const n = g?.nodes[id];
   if (!n) return;
   ensurePhysicsFields(n);
+  renderInboxBanner(n);
 
   document.getElementById('nodeSheetTitle').textContent = isNew ? '新規ノード' : 'ノード編集';
   document.getElementById('nLabel').value = n.label || '';
@@ -1696,8 +1746,19 @@ function renderGraphList() {
 // ═══════════════════════════════════
 // is_transfer 連携
 // ═══════════════════════════════════
+// アプリ名 → 表示ラベル（取り込み元バナー・キャンバスバッジで使う）
+const SOURCE_APP_LABEL = {
+  'quick-ref':    'quick-ref',
+  'vocal-lab':    'vocal-lab',
+  'score-editor': 'score-editor',
+  'illust-studio':'illust-studio',
+};
+
 // アイテム1件を、感情メタデータがあればそれを反映したノードとして追加する共通処理
-function addNodeFromTransferItem(item, index, total, g) {
+// sourceApp: 呼び出し元(importFromTransfer/checkEmotionTransfer)が payload.source から明示的に渡す。
+// 従来は item.source を見ていたが、各ブリッジは payload直下にしか source を書き込まないため
+// 常にnullになっていた不具合を修正。
+function addNodeFromTransferItem(item, index, total, g, sourceApp) {
   const angle = (index / total) * Math.PI * 2;
   const dist = 200 + Math.random() * 100;
   const id = item.id || uid();
@@ -1707,6 +1768,7 @@ function addNodeFromTransferItem(item, index, total, g) {
   const band = meta?.band || meta?.textBand || meta?.fmBand || null;
   const bandStyle = band ? BAND_STYLE[band] : null;
   const cols = ['#4A9EFF','#4AE09A','#F5C842','#C084FC','#FB923C','#FF5F5F'];
+  const resolvedSource = sourceApp || item.source || null;
 
   g.nodes[id] = {
     id,
@@ -1720,10 +1782,68 @@ function addNodeFromTransferItem(item, index, total, g) {
     charge: 0,
     fireHistory: [],
     lastFired: 0,
-    sourceApp: item._emotionMeta ? (item.source || null) : undefined,
+    sourceApp: resolvedSource || undefined,
     emotionBand: band || undefined,
+    // 取り込み直後は「未処理」。ユーザーがノード編集シートで内容を確認し、
+    // 「取り込み完了」を押すと 'done' になる。手動追加ノードにはこのフィールド自体が無い。
+    triageStatus: 'inbox',
   };
   return id;
+}
+
+// 現在のグラフ内で未処理(triageStatus==='inbox')のノード数を数える
+function getInboxCount(g) {
+  g = g || currentGraph();
+  if (!g) return 0;
+  return Object.values(g.nodes).filter(n => n.triageStatus === 'inbox').length;
+}
+
+// ヘッダーの「📂 グラフ」ボタンに未処理件数バッジを反映
+function updateInboxBadge() {
+  const badge = document.getElementById('inboxBadge');
+  if (!badge) return;
+  const count = getInboxCount();
+  if (count > 0) {
+    badge.textContent = count > 99 ? '99+' : String(count);
+    badge.classList.add('show');
+  } else {
+    badge.classList.remove('show');
+  }
+}
+
+// ノードを「取り込み完了」にする（ノード編集シートのバナーから呼ぶ）
+function markNodeInboxDone(id) {
+  const g = currentGraph();
+  const n = g?.nodes[id];
+  if (!n || n.triageStatus !== 'inbox') return;
+  n.triageStatus = 'done';
+  saveGraphs();
+  updateInboxBadge();
+  renderInboxBanner(n);
+}
+
+// ノード編集シートの取り込み元バナー表示を更新
+function renderInboxBanner(n) {
+  const banner = document.getElementById('inboxBanner');
+  const sourceEl = document.getElementById('inboxBannerSource');
+  const btn = document.getElementById('inboxBannerBtn');
+  if (!banner) return;
+  if (!n.sourceApp && n.triageStatus !== 'inbox' && n.triageStatus !== 'done') {
+    banner.classList.remove('show');
+    return;
+  }
+  if (!n.triageStatus) { banner.classList.remove('show'); return; }
+  banner.classList.add('show');
+  sourceEl.textContent = SOURCE_APP_LABEL[n.sourceApp] || n.sourceApp || '他アプリ';
+  if (n.triageStatus === 'inbox') {
+    btn.textContent = '取り込み完了';
+    btn.classList.remove('done');
+    btn.disabled = false;
+  } else {
+    btn.textContent = '✓ 取り込み済み';
+    btn.classList.add('done');
+    btn.disabled = true;
+  }
 }
 
 function importFromTransfer() {
@@ -1739,12 +1859,13 @@ function importFromTransfer() {
 
     let added = 0;
     items.forEach((item, i) => {
-      const id = addNodeFromTransferItem(item, i, items.length, g);
+      const id = addNodeFromTransferItem(item, i, items.length, g, payload.source);
       if (id) { added++; fireNode(id); }
     });
     applyFlowchartLayout();
     saveGraphs();
     updateScoreBar();
+    updateInboxBadge();
     centerView();
     closeSheet('graphsSheet');
     showToast(`${added}件のノードを追加しました`);
@@ -1776,13 +1897,14 @@ function checkEmotionTransfer() {
     items.forEach((item, i) => {
       // 自動受信ではitemに_emotionMetaが無いことがあるので、ペイロード全体のemotionMetaで補う
       const merged = item._emotionMeta ? item : { ...item, _emotionMeta: payload.emotionMeta };
-      const id = addNodeFromTransferItem(merged, i, items.length, g);
+      const id = addNodeFromTransferItem(merged, i, items.length, g, payload.source);
       if (id) { added++; lastId = id; }
     });
     if (added > 0) {
       applyFlowchartLayout();
       saveGraphs();
       updateScoreBar();
+      updateInboxBadge();
       if (lastId) fireNode(lastId);
       showToast(`${payload.source || '他アプリ'}から${added}件を受信しました`);
     }
@@ -2614,6 +2736,9 @@ function wireEvents() {
   // ノードシート
   document.getElementById('nodeSheetCancel').addEventListener('click', () => closeSheet('nodeSheet'));
   document.getElementById('nodeSheetSave').addEventListener('click', saveNodeSheet);
+  document.getElementById('inboxBannerBtn').addEventListener('click', () => {
+    if (editingNodeId) markNodeInboxDone(editingNodeId);
+  });
 
   // 重みスライダー
   const slider = document.getElementById('nWeight');
@@ -2703,6 +2828,7 @@ function init() {
   wireOnboarding();
   wireCopyButtons();
   updateScoreBar();
+  updateInboxBadge();
   checkCaptureHash();
   checkEmotionTransfer();
   checkCloudOnLoad();
