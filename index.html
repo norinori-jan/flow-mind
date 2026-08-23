@@ -42,7 +42,7 @@ html, body { width:100%; height:100%; overflow:hidden; background:var(--bg); col
 /* ── HEADER ── */
 header {
   position:fixed; top:0; left:0; right:0; z-index:20;
-  display:flex; align-items:center; gap:10px; padding:calc(env(safe-area-inset-top)+10px) 14px 10px;
+  display:flex; align-items:center; gap:10px; padding:calc(env(safe-area-inset-top, 0px)+10px) 14px 10px;
   background:linear-gradient(to bottom, rgba(13,15,20,0.96) 70%, transparent);
   pointer-events:none;
 }
@@ -65,7 +65,7 @@ header button { pointer-events:auto; }
 
 /* ── SCORE BAR (上位ノード) ── */
 #scoreBar {
-  position:fixed; top:calc(env(safe-area-inset-top)+52px); left:0; right:0; z-index:19;
+  position:fixed; top:calc(env(safe-area-inset-top, 0px)+52px); left:0; right:0; z-index:19;
   display:flex; gap:6px; padding:0 14px; overflow-x:auto; pointer-events:none;
   scrollbar-width:none;
 }
@@ -77,7 +77,7 @@ header button { pointer-events:auto; }
 
 /* ── ATTRACTOR BAR (感情状態表示) ── */
 #attractorBar {
-  position:fixed; top:calc(env(safe-area-inset-top)+86px); left:0; right:0; z-index:19;
+  position:fixed; top:calc(env(safe-area-inset-top, 0px)+86px); left:0; right:0; z-index:19;
   display:flex; justify-content:center; pointer-events:none;
 }
 .attractor-chip {
@@ -91,7 +91,7 @@ header button { pointer-events:auto; }
 /* ── TOOLBAR (下部) ── */
 #toolbar {
   position:fixed; bottom:0; left:0; right:0; z-index:20;
-  padding:10px 14px calc(env(safe-area-inset-bottom)+10px);
+  padding:10px 14px calc(env(safe-area-inset-bottom, 0px)+10px);
   background:linear-gradient(to top, rgba(13,15,20,0.97) 70%, transparent);
   display:flex; align-items:center; gap:8px;
 }
@@ -108,7 +108,7 @@ header button { pointer-events:auto; }
 .tool-spacer { flex:1; }
 #modeLabel {
   font-size:12px; color:var(--text-dim); pointer-events:none; text-align:center;
-  position:absolute; bottom:calc(env(safe-area-inset-bottom)+54px); left:0; right:0;
+  position:absolute; bottom:calc(env(safe-area-inset-bottom, 0px)+54px); left:0; right:0;
 }
 
 /* ── NODE SHEET ── */
@@ -133,7 +133,7 @@ header button { pointer-events:auto; }
 }
 .sheet-header h2 { font-size:16px; font-weight:700; }
 .sheet-header button { background:none; border:none; font-size:15px; color:var(--blue); padding:6px; cursor:pointer; font-weight:600; }
-.sheet-body { overflow-y:auto; padding:16px 16px calc(env(safe-area-inset-bottom)+24px); }
+.sheet-body { overflow-y:auto; padding:16px 16px calc(env(safe-area-inset-bottom, 0px)+24px); }
 
 .field-label { display:block; font-size:11px; color:var(--text-dim); font-weight:700;
   text-transform:uppercase; letter-spacing:.06em; margin:16px 0 6px; }
@@ -199,7 +199,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 
 /* ── TOAST ── */
 .toast {
-  position:fixed; bottom:calc(env(safe-area-inset-bottom)+80px); left:50%;
+  position:fixed; bottom:calc(env(safe-area-inset-bottom, 0px)+80px); left:50%;
   transform:translateX(-50%) translateY(12px);
   background:rgba(30,35,46,0.95); color:var(--text); border:1px solid var(--border2);
   border-radius:100px; padding:9px 20px; font-size:13px; font-weight:600;
@@ -233,7 +233,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 
 /* ── QUICK CAPTURE (すぐ記録) ── */
 #quickCaptureFab {
-  position:fixed; right:16px; bottom:calc(env(safe-area-inset-bottom)+78px); z-index:22;
+  position:fixed; right:16px; top:auto; bottom:calc(env(safe-area-inset-bottom, 0px)+78px); z-index:22;
   width:58px; height:58px; border-radius:50%;
   background:linear-gradient(145deg, var(--gold), #E0A800);
   color:#1A1400; border:none; font-size:26px; font-weight:800;
@@ -254,9 +254,9 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 
 #quickCaptureBar {
   position:fixed; left:12px; right:12px;
-  bottom:calc(env(safe-area-inset-bottom)+10px); z-index:23;
+  bottom:calc(env(safe-area-inset-bottom, 0px)+10px); z-index:23;
   background:var(--surface); border:1px solid var(--border2);
-  border-radius:18px; padding:12px 12px calc(env(safe-area-inset-bottom)+12px);
+  border-radius:18px; padding:12px 12px calc(env(safe-area-inset-bottom, 0px)+12px);
   box-shadow:0 -6px 30px rgba(0,0,0,0.55);
   transform:translateY(120%); transition:transform .22s ease-out;
 }
@@ -306,6 +306,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
   <button class="hdr-btn" id="graphsBtn">📂 グラフ</button>
   <button class="hdr-btn" id="syncBtn">☁️</button>
   <button class="hdr-btn gold" id="analyzeBtn">✦ AI分析</button>
+  <button class="hdr-btn" id="helpBtn">？</button>
 </header>
 
 <!-- SCORE BAR -->
@@ -340,9 +341,13 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
   </div>
   <div class="sheet-body">
     <label class="field-label">ラベル</label>
-    <input type="text" id="nLabel" placeholder="アイデア・概念を入力" maxlength="40">
+    <input type="text" id="nLabel" placeholder="アイデア・概念を入力" maxlength="40" list="nLabelSuggestions">
+    <datalist id="nLabelSuggestions"></datalist>
 
-    <label class="field-label">メモ</label>
+    <label class="field-label" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>メモ</span>
+      <button type="button" id="nMemoCopyBtn" style="background:none;border:none;color:var(--blue);font-size:12px;font-weight:600;padding:2px 4px;cursor:pointer;">📋 コピー</button>
+    </label>
     <textarea id="nMemo" placeholder="補足・根拠など（任意）"></textarea>
 
     <label class="field-label">自己評価の重み（確信度）</label>
@@ -389,6 +394,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
       <button class="tool-btn gold" id="aiCustomBtn">送信</button>
     </div>
     <div class="ai-result-box" id="aiResultBox"></div>
+    <button class="tool-btn" id="aiResultCopyBtn" style="display:none;margin-top:10px;">📋 結果を全文コピー</button>
   </div>
 </div>
 
@@ -457,6 +463,32 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
       </div>
       <div class="sync-status-line" id="syncMobileStatus"></div>
     </div>
+    <div class="sync-platform-box" id="syncDriveKeepBox">
+      <h3>📝 Google Keep（Drive経由・双方向）</h3>
+      <p>Keep本体には接続せず、Google Drive上の専用フォルダ(flow-mind-keep-sync)をKeepの代わりに使い、ノードと双方向に同期します。アクセス範囲はこのアプリが作成したファイルのみ(drive.fileスコープ)。</p>
+      <label class="field-label">クライアントID</label>
+      <input type="text" id="driveKeepClientIdInput" placeholder="xxxxxxxxxx.apps.googleusercontent.com"
+        value="976527515292-e0kodj8bidtksuasiljj2fv64273q827.apps.googleusercontent.com">
+      <div class="sync-btn-row" style="margin-top:12px;">
+        <button class="tool-btn gold" id="driveKeepAuthorizeBtn">🔑 連携を許可</button>
+        <button class="tool-btn" id="driveKeepSyncNowBtn">🔄 今すぐ同期</button>
+      </div>
+      <div class="sync-status-line" id="driveKeepStatus">未設定</div>
+    </div>
+  </div>
+</div>
+
+<!-- ONBOARDING SHEET -->
+<div class="sheet" id="onboardingSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <button id="onboardingSkip">スキップ</button>
+    <h2>flow-mindの使い方</h2>
+    <span id="onboardingStepIndicator" style="font-size:12px;color:var(--text-dim);"></span>
+  </div>
+  <div class="sheet-body" id="onboardingBody"></div>
+  <div style="padding:0 16px calc(env(safe-area-inset-bottom, 0px)+20px);">
+    <button class="tool-btn gold" id="onboardingNextBtn" style="width:100%;justify-content:center;">次へ</button>
   </div>
 </div>
 
@@ -470,6 +502,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 <div id="quickCaptureBar">
   <div class="qc-header">
     <span class="qc-title">⚡ すぐ記録</span>
+    <button class="qc-close" id="qcCopyBtn" style="margin-right:8px;">📋 コピー</button>
     <button class="qc-close" id="qcCloseBtn">閉じる</button>
   </div>
   <div class="qc-row">
@@ -486,6 +519,8 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 <!-- 同期モジュール -->
 <script src="./shared/sync-bridge.js"></script>
 <script src="./shared/cloud-sync.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="./shared/drive-keep-sync.js"></script>
 
 <script>
 // ─────────────────────────────────────────────
@@ -1504,6 +1539,47 @@ function deleteEdge(e) {
 // ═══════════════════════════════════
 // NODE SHEET
 // ═══════════════════════════════════
+// ═══════════════════════════════════
+// ラベル候補（既存ノードのラベルからdatalistを更新）
+// ═══════════════════════════════════
+function updateLabelSuggestions(excludeId) {
+  const g = currentGraph();
+  const datalist = document.getElementById('nLabelSuggestions');
+  if (!g || !datalist) return;
+  const labels = Array.from(new Set(
+    Object.entries(g.nodes)
+      .filter(([id]) => id !== excludeId)
+      .map(([, n]) => n.label)
+      .filter(Boolean)
+  ));
+  datalist.innerHTML = labels.map(l => `<option value="${escHtml(l)}"></option>`).join('');
+}
+
+// ═══════════════════════════════════
+// コピー系ユーティリティ
+// ═══════════════════════════════════
+async function copyTextToClipboard(text, successMsg) {
+  if (!text) { showToast('コピーする内容がありません'); return; }
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast(successMsg || 'コピーしました');
+  } catch (e) {
+    showToast('コピーに失敗しました(ブラウザの権限を確認してください)');
+  }
+}
+
+function wireCopyButtons() {
+  document.getElementById('nMemoCopyBtn')?.addEventListener('click', () => {
+    copyTextToClipboard(document.getElementById('nMemo').value, 'メモをコピーしました');
+  });
+  document.getElementById('qcCopyBtn')?.addEventListener('click', () => {
+    copyTextToClipboard(document.getElementById('qcInput').value, 'コピーしました');
+  });
+  document.getElementById('aiResultCopyBtn')?.addEventListener('click', () => {
+    copyTextToClipboard(document.getElementById('aiResultBox').textContent, 'AI分析結果をコピーしました');
+  });
+}
+
 function openNodeSheet(id, isNew=false) {
   editingNodeId = id;
   const g = currentGraph();
@@ -1514,6 +1590,7 @@ function openNodeSheet(id, isNew=false) {
   document.getElementById('nodeSheetTitle').textContent = isNew ? '新規ノード' : 'ノード編集';
   document.getElementById('nLabel').value = n.label || '';
   document.getElementById('nMemo').value = n.memo || '';
+  updateLabelSuggestions(id);
   const slider = document.getElementById('nWeight');
   slider.value = n.weight || 3;
   document.getElementById('nWeightVal').textContent = n.weight || 3;
@@ -1559,6 +1636,7 @@ function saveNodeSheet() {
   saveGraphs();
   updateScoreBar();
   closeSheet('nodeSheet');
+  scheduleDriveKeepPush(n);
 }
 
 // ═══════════════════════════════════
@@ -1846,13 +1924,16 @@ async function runAnalysis(type, custom='') {
     ? `${custom}\n\n---\n${attractorCtx}\n\n${desc}`
     : prompts[type];
   const box = document.getElementById('aiResultBox');
+  const copyBtn = document.getElementById('aiResultCopyBtn');
   box.classList.remove('visible');
+  copyBtn.style.display = 'none';
   document.getElementById('aiLoading').classList.add('show');
 
   try {
     const result = await callAI(prompt);
     box.textContent = result;
     box.classList.add('visible');
+    copyBtn.style.display = '';
   } catch(e) {
     showToast(e.message);
   } finally {
@@ -1984,6 +2065,7 @@ function quickAddNode(text) {
   updateScoreBar();
   closeQuickCapture();
   fireNode(id);                   // 発火させて電荷・同期波を伝播させる
+  scheduleDriveKeepPush(g.nodes[id]);
   document.getElementById('qcInput').value = '';
   autoGrowQc();
 
@@ -2251,12 +2333,134 @@ async function checkCloudOnLoad() {
   } catch(e) { console.warn('checkCloudOnLoad error', e); }
 }
 
+// ═══════════════════════════════════
+// GOOGLE KEEP 擬似同期（Google Drive経由）
+// ═══════════════════════════════════
+// 1ノード＝1JSONファイルとしてDrive上に保存・取得する。Keep本体には触れない。
+// emotion-bridge(is_transfer/is_emotion_transfer)とは完全に独立した仕組み。
+const DRIVE_KEEP_KNOWN_IDS_KEY = 'fm_drive_keep_known_ids';
+
+function driveKeepKnownFileIds() {
+  const g = currentGraph();
+  const fromNodes = g ? Object.values(g.nodes).map(n => n.driveFileId).filter(Boolean) : [];
+  let stored = [];
+  try { stored = JSON.parse(localStorage.getItem(DRIVE_KEEP_KNOWN_IDS_KEY) || '[]'); } catch(e) {}
+  return Array.from(new Set([...fromNodes, ...stored]));
+}
+
+function rememberDriveKeepFileId(fileId) {
+  const ids = driveKeepKnownFileIds();
+  if (!ids.includes(fileId)) ids.push(fileId);
+  try { localStorage.setItem(DRIVE_KEEP_KNOWN_IDS_KEY, JSON.stringify(ids)); } catch(e) {}
+}
+
+// ノード追加・編集のたびに呼ぶ。認可済みでなければ何もしない(サイレントに無視)
+let driveKeepPushTimer = null;
+function scheduleDriveKeepPush(node) {
+  if (!node || !window.DriveKeepSync || !DriveKeepSync.isAuthorized()) return;
+  clearTimeout(driveKeepPushTimer);
+  driveKeepPushTimer = setTimeout(async () => {
+    try {
+      const fileId = await DriveKeepSync.pushNode(node);
+      if (fileId && node.driveFileId !== fileId) {
+        node.driveFileId = fileId;
+        rememberDriveKeepFileId(fileId);
+        saveGraphs();
+      }
+    } catch (e) {
+      console.warn('[drive-keep-sync] push failed', e);
+    }
+  }, 800);
+}
+
+async function pullDriveKeepNotes() {
+  if (!window.DriveKeepSync || !DriveKeepSync.isAuthorized()) return;
+  const g = currentGraph();
+  if (!g) return;
+  try {
+    const items = await DriveKeepSync.pullNewNotes(driveKeepKnownFileIds());
+    if (!items.length) return;
+
+    let added = 0, lastId = null;
+    items.forEach((item, i) => {
+      const transferItem = { title: item.title, body: item.body, source: 'google-keep' };
+      const id = addNodeFromTransferItem(transferItem, i, items.length, g);
+      if (id) {
+        g.nodes[id].driveFileId = item.fileId;
+        g.nodes[id].sourceApp = 'google-keep';
+        rememberDriveKeepFileId(item.fileId);
+        added++; lastId = id;
+      }
+    });
+    if (added > 0) {
+      applyFlowchartLayout();
+      saveGraphs();
+      updateScoreBar();
+      if (lastId) fireNode(lastId);
+      showToast(`Google Keepから${added}件を受信しました`);
+    }
+  } catch (e) {
+    console.warn('[drive-keep-sync] pull failed', e);
+  }
+}
+
+function refreshDriveKeepStatus() {
+  const statusEl = document.getElementById('driveKeepStatus');
+  if (!statusEl) return;
+  if (!window.DriveKeepSync || !DriveKeepSync.isConfigured()) {
+    statusEl.textContent = '未設定';
+    return;
+  }
+  const ts = DriveKeepSync.getLastSyncedAt();
+  statusEl.textContent = DriveKeepSync.isAuthorized()
+    ? `連携済み${ts ? ' / 最終同期: ' + new Date(ts).toLocaleString('ja-JP') : ''}`
+    : '連携未許可（「連携を許可」を押してください。ページを開き直すたびに再度必要です）';
+}
+
+function wireDriveKeepSync() {
+  const clientIdInput = document.getElementById('driveKeepClientIdInput');
+  const authorizeBtn = document.getElementById('driveKeepAuthorizeBtn');
+  const syncNowBtn = document.getElementById('driveKeepSyncNowBtn');
+  if (!clientIdInput || !authorizeBtn || !syncNowBtn) return;
+
+  if (window.DriveKeepSync && DriveKeepSync.isConfigured()) {
+    // 保存済みのクライアントIDがあれば、HTMLの初期値より優先して表示する
+    clientIdInput.value = DriveKeepSync.getClientId();
+  } else if (window.DriveKeepSync && clientIdInput.value.trim()) {
+    DriveKeepSync.setClientId(clientIdInput.value.trim());
+  }
+
+  authorizeBtn.addEventListener('click', async () => {
+    if (!window.DriveKeepSync) { showToast('drive-keep-sync.jsが読み込まれていません'); return; }
+    DriveKeepSync.setClientId(clientIdInput.value.trim());
+    try {
+      await DriveKeepSync.authorize();
+      showToast('Google Driveとの連携を許可しました');
+      refreshDriveKeepStatus();
+      pullDriveKeepNotes();
+    } catch (e) {
+      showToast('連携に失敗しました: ' + e.message);
+    }
+  });
+
+  syncNowBtn.addEventListener('click', async () => {
+    if (!window.DriveKeepSync || !DriveKeepSync.isAuthorized()) {
+      showToast('先に「連携を許可」を押してください');
+      return;
+    }
+    await pullDriveKeepNotes();
+    showToast('同期しました');
+    refreshDriveKeepStatus();
+  });
+}
+
 function openSyncSheet() {
   const isDesktop = window.SyncBridge && SyncBridge.isDesktopCapable();
   document.getElementById('syncDesktopBox').style.display = isDesktop ? '' : 'none';
   document.getElementById('syncMobileBox').style.display = isDesktop ? 'none' : '';
   refreshSyncStatus();
   refreshCloudSyncStatus();
+  refreshDriveKeepStatus();
   openSheet('syncSheet');
 }
 
@@ -2278,6 +2482,7 @@ async function refreshSyncStatus() {
 
 function wireSyncSheet() {
   wireCloudSync();
+  wireDriveKeepSync();
   document.getElementById('syncBtn').addEventListener('click', openSyncSheet);
   document.getElementById('syncSheetClose').addEventListener('click', () => closeSheet('syncSheet'));
 
@@ -2329,6 +2534,71 @@ function wireSyncSheet() {
     renderGraphList();
     showToast('読み込みました');
   });
+}
+
+// ═══════════════════════════════════
+// ONBOARDING（初回起動時の使い方案内）
+// ═══════════════════════════════════
+const LS_ONBOARDING = 'fm_onboarding_seen';
+
+const ONBOARDING_STEPS = [
+  {
+    icon: '＋',
+    title: '追加モード',
+    desc: 'キャンバスをタップすると新しいノードが追加されます。まずは思いついたことをどんどんノードにしてみましょう。',
+  },
+  {
+    icon: '→',
+    title: '接続モード',
+    desc: '接続元ノードをタップ→接続先ノードをタップで、矢印(因果関係)を引けます。ノード同士をつなぐと、自動でフローチャートのように整列します。',
+  },
+  {
+    icon: '✎',
+    title: '編集モード',
+    desc: 'ノードをタップで編集、エッジをタップで削除できます。配置は自動整列されるので、ドラッグでの位置調整は不要です。',
+  },
+];
+
+let onboardingStep = 0;
+
+function renderOnboardingStep() {
+  const s = ONBOARDING_STEPS[onboardingStep];
+  const body = document.getElementById('onboardingBody');
+  body.innerHTML = `
+    <div style="text-align:center;padding:16px 0 8px;">
+      <div style="font-size:32px;width:72px;height:72px;line-height:72px;margin:0 auto 18px;
+        border-radius:50%;background:var(--gold-dim);color:var(--gold);">${s.icon}</div>
+      <div style="font-size:17px;font-weight:800;margin-bottom:10px;">${s.title}</div>
+      <div style="font-size:14px;color:var(--text-mid);line-height:1.75;padding:0 8px;">${s.desc}</div>
+    </div>`;
+  document.getElementById('onboardingStepIndicator').textContent =
+    `${onboardingStep + 1} / ${ONBOARDING_STEPS.length}`;
+  document.getElementById('onboardingNextBtn').textContent =
+    (onboardingStep === ONBOARDING_STEPS.length - 1) ? 'はじめる' : '次へ';
+}
+
+function openOnboarding() {
+  onboardingStep = 0;
+  renderOnboardingStep();
+  openSheet('onboardingSheet');
+}
+
+function closeOnboardingAndMark() {
+  try { localStorage.setItem(LS_ONBOARDING, '1'); } catch (e) {}
+  closeSheet('onboardingSheet');
+}
+
+function wireOnboarding() {
+  document.getElementById('onboardingNextBtn').addEventListener('click', () => {
+    if (onboardingStep < ONBOARDING_STEPS.length - 1) {
+      onboardingStep++;
+      renderOnboardingStep();
+    } else {
+      closeOnboardingAndMark();
+    }
+  });
+  document.getElementById('onboardingSkip').addEventListener('click', closeOnboardingAndMark);
+  document.getElementById('helpBtn').addEventListener('click', openOnboarding);
 }
 
 // ═══════════════════════════════════
@@ -2429,6 +2699,8 @@ function init() {
   wireEvents();
   wireQuickCapture();
   wireSyncSheet();
+  wireOnboarding();
+  wireCopyButtons();
   updateScoreBar();
   checkCaptureHash();
   checkEmotionTransfer();
@@ -2441,11 +2713,19 @@ function init() {
     if (!document.hidden) checkEmotionTransfer();
   });
 
+  // Google Keep(Drive経由)の定期同期（認可済みの場合のみ実行される）
+  setInterval(pullDriveKeepNotes, 60000);
+
   render();
 
   // ── クラウド自動ロード（追加） ──────────────────────
   // SyncBridge が構成済みならクラウドの更新をチェックして反映
   loadFromCloud();
+
+  // 初回起動時のみオンボーディングを自動表示
+  if (!localStorage.getItem(LS_ONBOARDING)) {
+    openOnboarding();
+  }
 }
 
 window.addEventListener("resize", resizeCanvas);

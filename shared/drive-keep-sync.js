@@ -171,6 +171,6 @@
   }
 
   global.DriveKeepSync = {
-    setClientId, getClientId: getClientId, isConfigured, authorize, isAuthorized, pushNode, pullNewNotes, getLastSyncedAt,
+    setClientId, isConfigured, authorize, isAuthorized, pushNode, pullNewNotes, getLastSyncedAt,
   };
 })(window);
