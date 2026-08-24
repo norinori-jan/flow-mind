@@ -398,6 +398,9 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
       <div class="color-swatch" data-color="#FB923C" style="background:#FB923C"></div>
     </div>
 
+    <label class="field-label" style="margin-top:20px;">タグ</label>
+    <div id="nodeTagsWrap" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+
     <label class="field-label" style="margin-top:20px;">接続エッジ</label>
     <div id="edgeInfo" style="font-size:13px;color:var(--text-dim);padding:4px 0;"></div>
 
@@ -420,6 +423,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
       <button class="tool-btn" id="aiWeakBtn">⚠️ 弱点検出</button>
       <button class="tool-btn" id="aiSuggestBtn">💡 ノード提案</button>
       <button class="tool-btn gold" id="aiHonneBtn">🧠 本音抽出</button>
+      <button class="tool-btn" id="aiRetagBtn">🏷 タグ再抽出</button>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:10px;">
       <input type="text" id="aiCustomInput" placeholder="カスタム質問…" style="flex:1;font-size:15px;">
@@ -507,6 +511,32 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
       </div>
       <div class="sync-status-line" id="driveKeepStatus">未設定</div>
     </div>
+    <div class="sync-platform-box" id="syncSheetsBox">
+      <h3>📊 Googleスプレッドシート（クイックキャプチャ）</h3>
+      <p>電車の中などでiPhoneのGoogle Sheetsアプリに1行追加するだけで、次にflow-mindを開いたときに自動でノード化されます。ページを開き直しても再許可は不要です。</p>
+      <label class="field-label">Web AppのURL</label>
+      <input type="text" id="sheetsUrlInput" placeholder="https://script.google.com/macros/s/xxxxx/exec">
+      <label class="field-label">トークン</label>
+      <input type="text" id="sheetsTokenInput" placeholder="Code.gsのSECRET_TOKENと同じ値">
+      <div class="sync-btn-row" style="margin-top:12px;">
+        <button class="tool-btn gold" id="sheetsSaveConfigBtn">保存</button>
+        <button class="tool-btn" id="sheetsSyncNowBtn">🔄 今すぐ同期</button>
+      </div>
+      <div class="sync-status-line" id="sheetsSyncStatus">未設定</div>
+    </div>
+    <div class="sync-platform-box" id="syncEmotionBridgeBox">
+      <h3>🌉 感情ブリッジ（quick-ref・双方向）</h3>
+      <p>fm_graphs全体ではなく、現在のattractor（感情状態）だけをquick-refと双方向でやり取りします。emotion-bridge-api(Cloudflare Pages Functions)経由。</p>
+      <label class="field-label">エンドポイントURL</label>
+      <input type="text" id="ebEndpointInput" placeholder="https://emotion-bridge-api.pages.dev">
+      <label class="field-label">トークン</label>
+      <input type="text" id="ebTokenInput" placeholder="EmotionBridge_2026_Rx7mK!qL3n">
+      <div class="sync-btn-row" style="margin-top:12px;">
+        <button class="tool-btn gold" id="ebSaveConfigBtn">保存</button>
+        <button class="tool-btn" id="ebPullNowBtn">🔄 今すぐ取得</button>
+      </div>
+      <div class="sync-status-line" id="ebStatus">未設定</div>
+    </div>
   </div>
 </div>
 
@@ -553,6 +583,8 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 <script src="./shared/cloud-sync.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="./shared/drive-keep-sync.js"></script>
+<script src="./shared/sheets-sync.js"></script>
+<script src="./shared/emotion-bridge-client.js"></script>
 
 <script>
 // ─────────────────────────────────────────────
@@ -645,6 +677,28 @@ const MODELS = {
   gemini: { label:'Gemini', endpoint:'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', model:'gemini-2.0-flash' },
   openai: { label:'OpenAI', endpoint:'https://api.openai.com/v1/chat/completions', model:'gpt-4o-mini' },
 };
+
+// ═══════════════════════════════════
+// 自動タグ抽出（キーワードベース・即時／オフライン）
+// ═══════════════════════════════════
+const TAG_KEYWORD_DICT = {
+  '感情-怒り': ['怒り','イライラ','腹立','ムカ'],
+  '感情-不安': ['不安','心配','焦り','怖'],
+  '感情-喜び': ['嬉し','楽し','ワクワク','安心'],
+  '仕事':      ['仕事','業務','案件','締切','タスク'],
+  'アイデア':  ['アイデア','思いつき','ひらめき'],
+  '人間関係':  ['友人','家族','同僚','恋人','上司'],
+  '身体':      ['疲れ','眠','体調','痛'],
+};
+
+function extractTagsFromText(label, memo) {
+  const text = ((label || '') + ' ' + (memo || '')).toLowerCase();
+  const tags = [];
+  for (const [tag, kws] of Object.entries(TAG_KEYWORD_DICT)) {
+    if (kws.some(kw => text.includes(kw.toLowerCase()))) tags.push(tag);
+  }
+  return tags;
+}
 
 // ═══════════════════════════════════
 // 感情の物理モデル — 定数（4階層）
@@ -886,7 +940,6 @@ function fireNode(id) {
 
   ensurePhysicsFields(n);
   const now = Date.now();
-
   // ① 発火履歴を記録（直近8件まで保持）
   n.fireHistory.push(now);
   if (n.fireHistory.length > 8) n.fireHistory.shift();
@@ -1022,6 +1075,7 @@ function updateAttractorState() {
   const main = currentSyncClusters.sort((a,b)=>b.size-a.size)[0];
   currentAttractor = classifyAttractor(main);
   updateAttractorBar();
+  scheduleEmotionBridgePush();
 }
 
 function updateAttractorBar() {
@@ -1545,6 +1599,7 @@ function addNode(wx, wy) {
     charge: 0,
     fireHistory: [],
     lastFired: 0,
+    tags: [],
   };
   applyFlowchartLayout();
   saveGraphs();
@@ -1630,6 +1685,26 @@ function wireCopyButtons() {
   });
 }
 
+// ═══════════════════════════════════
+// タグ表示（ノードシート内チップ）
+// ═══════════════════════════════════
+function renderNodeTags(node) {
+  const wrap = document.getElementById('nodeTagsWrap');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  (node.tags || []).forEach(tag => {
+    const chip = document.createElement('span');
+    chip.textContent = tag + ' ✕';
+    chip.style.cssText = 'background:var(--gold-dim);color:var(--gold);border-radius:100px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;display:inline-block;margin:0 6px 6px 0;';
+    chip.onclick = () => {
+      node.tags = (node.tags || []).filter(t => t !== tag);
+      renderNodeTags(node);
+      saveGraphs();
+    };
+    wrap.appendChild(chip);
+  });
+}
+
 function openNodeSheet(id, isNew=false) {
   editingNodeId = id;
   const g = currentGraph();
@@ -1659,6 +1734,7 @@ function openNodeSheet(id, isNew=false) {
   inEdges.forEach(e  => edgeLines.push(`← ${g.nodes[e.from]?.label||'?'} (×${e.weight||1})`));
   outEdges.forEach(e => edgeLines.push(`→ ${g.nodes[e.to]?.label||'?'} (×${e.weight||1})`));
   document.getElementById('edgeInfo').textContent = edgeLines.join('\n') || 'なし';
+  renderNodeTags(n);
 
   // 物理層ステータス表示
   const band = estimateFreqBand(n);
@@ -1684,6 +1760,7 @@ function saveNodeSheet() {
   n.memo   = document.getElementById('nMemo').value;
   n.weight = parseInt(document.getElementById('nWeight').value);
   n.color  = editingNodeColor;
+  n.tags   = extractTagsFromText(n.label, n.memo);
   saveGraphs();
   updateScoreBar();
   closeSheet('nodeSheet');
@@ -1752,6 +1829,8 @@ const SOURCE_APP_LABEL = {
   'vocal-lab':    'vocal-lab',
   'score-editor': 'score-editor',
   'illust-studio':'illust-studio',
+  'google-keep':  'Google Keep',
+  'google-sheets':'Googleスプレッドシート',
 };
 
 // アイテム1件を、感情メタデータがあればそれを反映したノードとして追加する共通処理
@@ -1784,6 +1863,7 @@ function addNodeFromTransferItem(item, index, total, g, sourceApp) {
     lastFired: 0,
     sourceApp: resolvedSource || undefined,
     emotionBand: band || undefined,
+    tags: extractTagsFromText(item.title, item.body),
     // 取り込み直後は「未処理」。ユーザーがノード編集シートで内容を確認し、
     // 「取り込み完了」を押すと 'done' になる。手動追加ノードにはこのフィールド自体が無い。
     triageStatus: 'inbox',
@@ -2065,6 +2145,45 @@ async function runAnalysis(type, custom='') {
 }
 
 // ═══════════════════════════════════
+// AI一括タグ再抽出
+// ═══════════════════════════════════
+function buildTagPrompt(nodeList) {
+  return `以下はマインドマップアプリのノード一覧です。各ノードについて、内容を表す日本語タグを1〜3個ずつ付けてください。
+タグは既存の観点（感情・仕事・アイデア・人間関係・身体など）にとらわれず、内容に即して自由に選んでください。
+出力は必ず以下のJSON形式のみで、説明文やコードブロック記号は一切含めないでください。
+
+{"タグ結果": [{"id": "ノードID", "tags": ["タグ1", "タグ2"]}, ...]}
+
+ノード一覧:
+${nodeList.map(n => `- id:${n.id} label:${n.label} memo:${n.memo}`).join('\n')}`;
+}
+
+async function aiRetagAllNodes() {
+  const g = currentGraph();
+  if (!g) return;
+  const nodeList = Object.entries(g.nodes).map(([id, n]) => ({ id, label: n.label, memo: n.memo || '' }));
+  if (nodeList.length === 0) { showToast('ノードがありません'); return; }
+
+  document.getElementById('aiLoading').classList.add('show');
+  try {
+    const prompt = buildTagPrompt(nodeList);
+    const raw = await callAI(prompt);
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+    parsed['タグ結果'].forEach(item => {
+      if (g.nodes[item.id]) g.nodes[item.id].tags = item.tags;
+    });
+    saveGraphs();
+    if (editingNodeId && g.nodes[editingNodeId]) renderNodeTags(g.nodes[editingNodeId]);
+    showToast('🏷 AIタグ付けが完了しました');
+  } catch (e) {
+    showToast(e.message || 'タグ付けに失敗しました');
+  } finally {
+    document.getElementById('aiLoading').classList.remove('show');
+  }
+}
+
+// ═══════════════════════════════════
 // SHEET HELPERS
 // ═══════════════════════════════════
 function openSheet(id) {
@@ -2176,8 +2295,8 @@ function quickAddNode(text) {
     charge: 0,
     fireHistory: [],
     lastFired: 0,
+    tags: extractTagsFromText(firstLine, trimmed),
   };
-
   // 直前に発火したノードがあれば、因果の連鎖として自動接続
   if (connectSourceId) {
     g.edges.push({ from: connectSourceId, to: id, weight: 1, conductance: 1.0 });
@@ -2577,6 +2696,77 @@ function wireDriveKeepSync() {
   });
 }
 
+// ═══════════════════════════════════
+// GOOGLE スプレッドシート連携（クイックキャプチャ用の一方向取り込み）
+// ═══════════════════════════════════
+async function pullSheetsNotes() {
+  if (!window.SheetsSync || !SheetsSync.isConfigured()) return;
+  const g = currentGraph();
+  if (!g) return;
+  try {
+    const items = await SheetsSync.pull();
+    if (!items.length) return;
+
+    let added = 0, lastId = null;
+    items.forEach((item, i) => {
+      const id = addNodeFromTransferItem(item, i, items.length, g, 'google-sheets');
+      if (id) { added++; lastId = id; }
+    });
+    if (added > 0) {
+      applyFlowchartLayout();
+      saveGraphs();
+      updateScoreBar();
+      updateInboxBadge();
+      if (lastId) fireNode(lastId);
+      showToast(`スプレッドシートから${added}件を受信しました`);
+    }
+  } catch (e) {
+    console.warn('[sheets-sync] pull failed', e);
+  }
+}
+
+function refreshSheetsStatus() {
+  const statusEl = document.getElementById('sheetsSyncStatus');
+  if (!statusEl) return;
+  if (!window.SheetsSync || !SheetsSync.isConfigured()) {
+    statusEl.textContent = '未設定';
+    return;
+  }
+  const ts = SheetsSync.getLastSyncedAt();
+  statusEl.textContent = ts
+    ? `設定済み / 最終同期: ${new Date(ts).toLocaleString('ja-JP')}`
+    : '設定済み（まだ未同期）';
+}
+
+function wireSheetsSync() {
+  const urlInput = document.getElementById('sheetsUrlInput');
+  const tokenInput = document.getElementById('sheetsTokenInput');
+  const saveBtn = document.getElementById('sheetsSaveConfigBtn');
+  const syncNowBtn = document.getElementById('sheetsSyncNowBtn');
+  if (!urlInput || !tokenInput || !saveBtn || !syncNowBtn) return;
+
+  if (window.SheetsSync && SheetsSync.isConfigured()) {
+    const c = SheetsSync.getConfig();
+    urlInput.value = c.url;
+    tokenInput.value = c.token;
+  }
+
+  saveBtn.addEventListener('click', async () => {
+    if (!window.SheetsSync) { showToast('sheets-sync.jsが読み込まれていません'); return; }
+    SheetsSync.setConfig(urlInput.value, tokenInput.value);
+    showToast('設定を保存しました');
+    await pullSheetsNotes();
+    refreshSheetsStatus();
+  });
+
+  syncNowBtn.addEventListener('click', async () => {
+    if (!window.SheetsSync || !SheetsSync.isConfigured()) { showToast('先にURL/トークンを設定してください'); return; }
+    await pullSheetsNotes();
+    showToast('同期しました');
+    refreshSheetsStatus();
+  });
+}
+
 function openSyncSheet() {
   const isDesktop = window.SyncBridge && SyncBridge.isDesktopCapable();
   document.getElementById('syncDesktopBox').style.display = isDesktop ? '' : 'none';
@@ -2584,7 +2774,93 @@ function openSyncSheet() {
   refreshSyncStatus();
   refreshCloudSyncStatus();
   refreshDriveKeepStatus();
+  refreshSheetsStatus();
+  refreshEmotionBridgeStatus();
   openSheet('syncSheet');
+}
+
+// ═══════════════════════════════════
+// 感情ブリッジ（quick-ref・双方向、attractor状態のみ）
+// ═══════════════════════════════════
+const EB_SELF_APP = 'flow-mind';
+let ebPushTimer = null;
+let ebLastPushedLabel = null;
+
+function refreshEmotionBridgeStatus() {
+  const statusEl = document.getElementById('ebStatus');
+  if (!statusEl || !window.EmotionBridgeClient) return;
+  const c = EmotionBridgeClient.getConfig();
+  document.getElementById('ebEndpointInput').value = c.endpoint || '';
+  document.getElementById('ebTokenInput').value = c.token || '';
+  statusEl.textContent = EmotionBridgeClient.isConfigured() ? '設定済み' : '未設定';
+}
+
+// attractor（感情状態）が変わったときだけ、デバウンスして送信する
+function scheduleEmotionBridgePush() {
+  if (!window.EmotionBridgeClient || !EmotionBridgeClient.isConfigured()) return;
+  const label = currentAttractor ? currentAttractor.label : null;
+  if (label === ebLastPushedLabel) return; // 変化がなければ送らない
+  clearTimeout(ebPushTimer);
+  ebPushTimer = setTimeout(async () => {
+    try {
+      const g = currentGraph();
+      const topNodeLabels = g ? Object.values(g.nodes)
+        .filter(n => currentSyncClusters.some(c => c.nodeIds.includes(n.id)))
+        .map(n => n.label).slice(0, 5) : [];
+      await EmotionBridgeClient.push(EB_SELF_APP, {
+        attractor: currentAttractor ? currentAttractor.label : null,
+        topNodeLabels,
+        graphName: g ? g.name : null,
+      });
+      ebLastPushedLabel = label;
+    } catch (e) {
+      console.warn('[emotion-bridge] push failed', e);
+    }
+  }, 1500);
+}
+
+// quick-refから来た感情データを、取り込みノードとしてグラフに反映する
+async function pollEmotionBridge() {
+  if (!window.EmotionBridgeClient || !EmotionBridgeClient.isConfigured()) return;
+  try {
+    const record = await EmotionBridgeClient.pull(EB_SELF_APP);
+    if (!record || !record.payload) return;
+    const g = currentGraph();
+    if (!g) return;
+    const p = record.payload;
+    const title = p.title || (p.attractor ? `quick-ref: ${p.attractor}` : 'quick-refから');
+    const item = { title, body: p.body || p.summary || '', source: 'quick-ref' };
+    const id = addNodeFromTransferItem(item, 0, 1, g, 'quick-ref');
+    if (id) {
+      applyFlowchartLayout();
+      saveGraphs();
+      updateScoreBar();
+      updateInboxBadge();
+      fireNode(id);
+      showToast('quick-refから感情データを受信しました');
+    }
+  } catch (e) {
+    console.warn('[emotion-bridge] pull failed', e);
+  }
+}
+
+function wireEmotionBridge() {
+  const saveBtn = document.getElementById('ebSaveConfigBtn');
+  const pullBtn = document.getElementById('ebPullNowBtn');
+  if (!saveBtn || !pullBtn || !window.EmotionBridgeClient) return;
+
+  saveBtn.addEventListener('click', () => {
+    const endpoint = document.getElementById('ebEndpointInput').value;
+    const token = document.getElementById('ebTokenInput').value;
+    EmotionBridgeClient.setConfig(endpoint, token);
+    showToast('感情ブリッジの設定を保存しました');
+    refreshEmotionBridgeStatus();
+  });
+
+  pullBtn.addEventListener('click', async () => {
+    await pollEmotionBridge();
+    showToast('取得しました');
+  });
 }
 
 async function refreshSyncStatus() {
@@ -2606,6 +2882,7 @@ async function refreshSyncStatus() {
 function wireSyncSheet() {
   wireCloudSync();
   wireDriveKeepSync();
+  wireSheetsSync();
   document.getElementById('syncBtn').addEventListener('click', openSyncSheet);
   document.getElementById('syncSheetClose').addEventListener('click', () => closeSheet('syncSheet'));
 
@@ -2786,6 +3063,7 @@ function wireEvents() {
   document.getElementById('aiWeakBtn').addEventListener('click', () => runAnalysis('weak'));
   document.getElementById('aiSuggestBtn').addEventListener('click', () => runAnalysis('suggest'));
   document.getElementById('aiHonneBtn').addEventListener('click', () => runAnalysis('honne'));
+  document.getElementById('aiRetagBtn').addEventListener('click', aiRetagAllNodes);
   document.getElementById('aiCustomBtn').addEventListener('click', () => {
     const v = document.getElementById('aiCustomInput').value.trim();
     if (v) runAnalysis(null, v);
@@ -2827,12 +3105,14 @@ function init() {
   wireSyncSheet();
   wireOnboarding();
   wireCopyButtons();
+  wireEmotionBridge();
   updateScoreBar();
   updateInboxBadge();
   checkCaptureHash();
   checkEmotionTransfer();
   checkCloudOnLoad();
   checkCloudSyncOnLoad();
+  pullSheetsNotes(); // 設定済みなら、電車の中で書いたメモを起動時に自動で取り込む
 
   // 他アプリ(quick-ref等)からの自動送信を定期チェック + ページ復帰時にもチェック
   setInterval(checkEmotionTransfer, 4000);
@@ -2842,6 +3122,10 @@ function init() {
 
   // Google Keep(Drive経由)の定期同期（認可済みの場合のみ実行される）
   setInterval(pullDriveKeepNotes, 60000);
+
+  // 感情ブリッジ(quick-ref)の定期取得（未設定の場合は何もしない）
+  setInterval(pollEmotionBridge, 20000);
+  pollEmotionBridge();
 
   render();
 
