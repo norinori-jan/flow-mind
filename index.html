@@ -316,6 +316,46 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 .sync-platform-box p { font-size:12px; color:var(--text-mid); line-height:1.6; margin-bottom:10px; }
 .sync-status-line { font-size:12px; color:var(--text-dim); margin-top:8px; }
 .sync-btn-row { display:flex; gap:8px; flex-wrap:wrap; }
+
+/* ── SEARCH SHEET(A: グラフ横断検索) ── */
+#searchInput {
+  width:100%; background:var(--surface2); border:1px solid var(--border2);
+  border-radius:var(--r); color:var(--text); font-size:15px; padding:12px 14px;
+  margin-bottom:14px;
+}
+.search-result-item {
+  display:block; width:100%; text-align:left; background:var(--surface2);
+  border:1px solid var(--border2); border-radius:var(--r); padding:10px 12px;
+  margin-bottom:8px; cursor:pointer; color:var(--text);
+}
+.search-result-item:active { background:rgba(255,255,255,0.08); }
+.search-result-graph {
+  font-size:11px; color:var(--gold); font-weight:700; margin-bottom:2px;
+}
+.search-result-label { font-size:14px; font-weight:700; margin-bottom:2px; }
+.search-result-snippet { font-size:12px; color:var(--text-dim); line-height:1.5; }
+.search-result-tags { margin-top:6px; }
+.search-result-tags span {
+  display:inline-block; font-size:10px; font-weight:700; color:var(--gold);
+  background:var(--gold-dim); border-radius:100px; padding:2px 8px; margin-right:4px;
+}
+.search-empty { color:var(--text-dim); font-size:13px; padding:20px 0; text-align:center; }
+
+/* ── タグ階層表示(D: タグの階層化) ── */
+.tag-chip-parent { color:var(--text-dim); font-weight:600; }
+.tag-chip-child  { font-weight:800; }
+.tag-browser-group { margin-bottom:12px; }
+.tag-browser-parent {
+  font-size:12px; font-weight:800; color:var(--text-dim); margin-bottom:6px;
+  text-transform:uppercase; letter-spacing:.04em;
+}
+.tag-browser-child {
+  display:inline-flex; align-items:center; gap:4px;
+  background:var(--gold-dim); color:var(--gold); border-radius:100px;
+  padding:5px 12px; font-size:12px; font-weight:700; margin:0 6px 6px 0;
+  cursor:pointer;
+}
+.tag-browser-child .cnt { color:var(--text-dim); font-weight:600; }
 </style>
 </head>
 <body>
@@ -328,8 +368,10 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
   <span class="app-title">⬡ flow-mind</span>
   <div class="header-spacer"></div>
   <button class="hdr-btn" id="graphsBtn">📂 グラフ<span class="inbox-badge" id="inboxBadge">0</span></button>
+  <button class="hdr-btn" id="searchBtn" title="全グラフ横断検索">🔍</button>
   <button class="hdr-btn" id="syncBtn">☁️</button>
   <button class="hdr-btn gold" id="analyzeBtn">✦ AI分析</button>
+  <button class="hdr-btn" id="dailyNoteBtn" title="今日のノード">📅</button>
   <button class="hdr-btn" id="helpBtn">？</button>
 </header>
 
@@ -459,6 +501,21 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
   <button id="edgeCancelBtn">キャンセル</button>
 </div>
 
+<!-- SEARCH SHEET (A: グラフ横断検索, D: タグ階層ブラウザ) -->
+<div class="sheet" id="searchSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <button id="searchSheetClose">閉じる</button>
+    <h2>検索</h2>
+    <span style="width:44px;"></span>
+  </div>
+  <div class="sheet-body">
+    <input type="text" id="searchInput" placeholder="ラベル・メモ・タグで検索（全グラフ横断）" autocomplete="off">
+    <div id="tagBrowserWrap"></div>
+    <div id="searchResultsWrap"></div>
+  </div>
+</div>
+
 <!-- SYNC SHEET -->
 <div class="sheet" id="syncSheet">
   <div class="sheet-handle"></div>
@@ -530,7 +587,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
       <label class="field-label">エンドポイントURL</label>
       <input type="text" id="ebEndpointInput" placeholder="https://emotion-bridge-api.pages.dev">
       <label class="field-label">トークン</label>
-      <input type="text" id="ebTokenInput" placeholder="EmotionBridge_2026_Rx7mK!qL3n">
+      <input type="text" id="ebTokenInput" placeholder="BRIDGE_TOKENと同じ値">
       <div class="sync-btn-row" style="margin-top:12px;">
         <button class="tool-btn gold" id="ebSaveConfigBtn">保存</button>
         <button class="tool-btn" id="ebPullNowBtn">🔄 今すぐ取得</button>
@@ -1619,6 +1676,62 @@ function addEdge(from, to) {
   showToast('接続しました');
 }
 
+// ═══════════════════════════════════
+// デイリーノート（今日の日付ノード。前日ノードと自動で因果接続する）
+// ═══════════════════════════════════
+function todayDateStr() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+
+function openOrCreateDailyNode() {
+  const g = currentGraph();
+  if (!g) return;
+  const today = todayDateStr();
+
+  // 既に今日のデイリーノートがあれば、それを開くだけ
+  const existingId = Object.keys(g.nodes).find(id => g.nodes[id].dailyNoteDate === today);
+  if (existingId) {
+    fireNode(existingId);
+    openNodeSheet(existingId);
+    return;
+  }
+
+  // 直近のデイリーノート（今日より前で最新のもの）を探し、因果チェーンとして自動接続
+  const dailyNodes = Object.entries(g.nodes)
+    .filter(([, n]) => n.dailyNoteDate && n.dailyNoteDate < today)
+    .sort((a, b) => b[1].dailyNoteDate.localeCompare(a[1].dailyNoteDate));
+  const prevId = dailyNodes.length > 0 ? dailyNodes[0][0] : null;
+
+  const basePos = prevId
+    ? { x: g.nodes[prevId].x, y: g.nodes[prevId].y }
+    : screenToWorld(canvas.width/2, canvas.height/2);
+
+  const id = uid();
+  g.nodes[id] = {
+    id, label: today,
+    x: basePos.x, y: basePos.y + 160,
+    weight: 3,
+    color: '#4A9EFF',
+    memo: '',
+    charge: 0,
+    fireHistory: [],
+    lastFired: 0,
+    tags: ['デイリー'],
+    dailyNoteDate: today,
+  };
+  if (prevId) g.edges.push({ from: prevId, to: id, weight: 1, conductance: 1.0 });
+
+  applyFlowchartLayout();
+  saveGraphs();
+  updateScoreBar();
+  centerView();
+  fireNode(id);
+  openNodeSheet(id, true);
+  showToast(prevId ? '今日のノードを作成し、前回と接続しました' : '今日のノードを作成しました');
+}
+
 function deleteNode(id) {
   const g = currentGraph();
   if (!g) return;
@@ -1688,20 +1801,192 @@ function wireCopyButtons() {
 // ═══════════════════════════════════
 // タグ表示（ノードシート内チップ）
 // ═══════════════════════════════════
+// タグ名(例: '感情-怒り')を親/子に分解する。ハイフンが無ければ親のみ(子なし)として扱う。
+// D: タグの階層化 — TAG_KEYWORD_DICTのキー命名規則(親-子)をそのまま利用する軽量実装。
+function splitTagHierarchy(tag) {
+  const idx = tag.indexOf('-');
+  if (idx === -1) return { parent: tag, child: null };
+  return { parent: tag.slice(0, idx), child: tag.slice(idx + 1) };
+}
+
+function formatTagDisplay(tag) {
+  const { parent, child } = splitTagHierarchy(tag);
+  return child ? `${parent} / ${child}` : parent;
+}
+
 function renderNodeTags(node) {
   const wrap = document.getElementById('nodeTagsWrap');
   if (!wrap) return;
   wrap.innerHTML = '';
   (node.tags || []).forEach(tag => {
+    const { parent, child } = splitTagHierarchy(tag);
     const chip = document.createElement('span');
-    chip.textContent = tag + ' ✕';
     chip.style.cssText = 'background:var(--gold-dim);color:var(--gold);border-radius:100px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;display:inline-block;margin:0 6px 6px 0;';
+    chip.innerHTML = child
+      ? `<span class="tag-chip-parent">${parent}</span> <span class="tag-chip-child">${child}</span> ✕`
+      : `<span class="tag-chip-child">${parent}</span> ✕`;
     chip.onclick = () => {
       node.tags = (node.tags || []).filter(t => t !== tag);
       renderNodeTags(node);
       saveGraphs();
     };
     wrap.appendChild(chip);
+  });
+}
+
+// ═══════════════════════════════════
+// バックリンクパネル（クリックで参照先ノードへジャンプ）
+// ═══════════════════════════════════
+function renderBacklinkPanel(inEdges, outEdges, g) {
+  const wrap = document.getElementById('edgeInfo');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  if (inEdges.length === 0 && outEdges.length === 0) {
+    wrap.textContent = 'なし';
+    return;
+  }
+  const makeRow = (arrow, targetId, weight) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'padding:6px 0;cursor:pointer;color:var(--blue);';
+    row.textContent = `${arrow} ${g.nodes[targetId]?.label || '?'} (×${weight || 1})`;
+    row.addEventListener('click', () => {
+      if (g.nodes[targetId]) { fireNode(targetId); openNodeSheet(targetId); }
+    });
+    return row;
+  };
+  inEdges.forEach(e => wrap.appendChild(makeRow('←', e.from, e.weight)));
+  outEdges.forEach(e => wrap.appendChild(makeRow('→', e.to, e.weight)));
+}
+
+// ═══════════════════════════════════
+// A: グラフ横断検索 / D: タグ階層ブラウザ
+// ═══════════════════════════════════
+
+// 全グラフを横断してタグごとの出現件数を集計する
+function collectAllTagCounts() {
+  const counts = {}; // tag -> count
+  Object.values(graphs).forEach(g => {
+    Object.values(g.nodes).forEach(n => {
+      (n.tags || []).forEach(tag => {
+        counts[tag] = (counts[tag] || 0) + 1;
+      });
+    });
+  });
+  return counts;
+}
+
+// タグを親ごとにグループ化して一覧表示。子タグをタップすると、そのタグで即検索する。
+function renderTagBrowser() {
+  const wrap = document.getElementById('tagBrowserWrap');
+  if (!wrap) return;
+  const counts = collectAllTagCounts();
+  const groups = {}; // parent -> [{tag, child, count}]
+  Object.entries(counts).forEach(([tag, count]) => {
+    const { parent, child } = splitTagHierarchy(tag);
+    (groups[parent] = groups[parent] || []).push({ tag, child, count });
+  });
+
+  wrap.innerHTML = '';
+  const parentNames = Object.keys(groups);
+  if (parentNames.length === 0) {
+    wrap.innerHTML = '<div class="search-empty">まだタグが付いたノードがありません</div>';
+    return;
+  }
+
+  parentNames.sort((a, b) => a.localeCompare(b, 'ja')).forEach(parent => {
+    const groupEl = document.createElement('div');
+    groupEl.className = 'tag-browser-group';
+    const title = document.createElement('div');
+    title.className = 'tag-browser-parent';
+    title.textContent = parent;
+    groupEl.appendChild(title);
+
+    const row = document.createElement('div');
+    groups[parent]
+      .sort((a, b) => (a.child || '').localeCompare(b.child || '', 'ja'))
+      .forEach(({ tag, child, count }) => {
+        const chip = document.createElement('span');
+        chip.className = 'tag-browser-child';
+        chip.innerHTML = `${child || parent} <span class="cnt">${count}</span>`;
+        chip.addEventListener('click', () => {
+          document.getElementById('searchInput').value = tag;
+          runGlobalSearch(tag);
+        });
+        row.appendChild(chip);
+      });
+    groupEl.appendChild(row);
+    wrap.appendChild(groupEl);
+  });
+}
+
+// 全グラフのノードを横断して、ラベル・メモ・タグにquery(部分一致・大小無視)を検索する
+function runGlobalSearch(rawQuery) {
+  const wrap = document.getElementById('searchResultsWrap');
+  if (!wrap) return;
+  const query = (rawQuery || '').trim().toLowerCase();
+  if (!query) { wrap.innerHTML = ''; return; }
+
+  const results = [];
+  Object.entries(graphs).forEach(([graphId, g]) => {
+    Object.values(g.nodes).forEach(n => {
+      const tags = n.tags || [];
+      const haystack = [n.label || '', n.memo || '', ...tags].join(' ').toLowerCase();
+      if (haystack.includes(query)) {
+        results.push({ graphId, graphName: g.name || '無題のグラフ', node: n });
+      }
+    });
+  });
+
+  wrap.innerHTML = '';
+  if (results.length === 0) {
+    wrap.innerHTML = '<div class="search-empty">見つかりませんでした</div>';
+    return;
+  }
+
+  results.slice(0, 100).forEach(({ graphId, graphName, node }) => {
+    const item = document.createElement('div');
+    item.className = 'search-result-item';
+    const snippet = (node.memo || '').slice(0, 60);
+    const tagsHtml = (node.tags || []).map(t => `<span>${formatTagDisplay(t)}</span>`).join('');
+    item.innerHTML =
+      `<div class="search-result-graph">${graphName}</div>` +
+      `<div class="search-result-label">${node.label || '無題'}</div>` +
+      (snippet ? `<div class="search-result-snippet">${snippet}</div>` : '') +
+      (tagsHtml ? `<div class="search-result-tags">${tagsHtml}</div>` : '');
+    item.addEventListener('click', () => {
+      closeSheet('searchSheet');
+      const needSwitch = graphId !== currentGraphId;
+      if (needSwitch) switchGraph(graphId);
+      setTimeout(() => {
+        fireNode(node.id);
+        openNodeSheet(node.id);
+      }, needSwitch ? 150 : 0);
+    });
+    wrap.appendChild(item);
+  });
+}
+
+function wireSearchSheet() {
+  const btn = document.getElementById('searchBtn');
+  const closeBtn = document.getElementById('searchSheetClose');
+  const input = document.getElementById('searchInput');
+  if (!btn || !closeBtn || !input) return;
+
+  btn.addEventListener('click', () => {
+    renderTagBrowser();
+    input.value = '';
+    document.getElementById('searchResultsWrap').innerHTML = '';
+    openSheet('searchSheet');
+    setTimeout(() => input.focus(), 300);
+  });
+
+  closeBtn.addEventListener('click', () => closeSheet('searchSheet'));
+
+  let searchTimer = null;
+  input.addEventListener('input', (e) => {
+    clearTimeout(searchTimer);
+    const val = e.target.value;
+    searchTimer = setTimeout(() => runGlobalSearch(val), 150);
   });
 }
 
@@ -1727,13 +2012,10 @@ function openNodeSheet(id, isNew=false) {
     sw.classList.toggle('active', sw.dataset.color === editingNodeColor);
   });
 
-  // エッジ情報
+  // エッジ情報（クリックで参照先ノードへジャンプ＝バックリンク導線）
   const inEdges  = g.edges.filter(e => e.to===id);
   const outEdges = g.edges.filter(e => e.from===id);
-  const edgeLines = [];
-  inEdges.forEach(e  => edgeLines.push(`← ${g.nodes[e.from]?.label||'?'} (×${e.weight||1})`));
-  outEdges.forEach(e => edgeLines.push(`→ ${g.nodes[e.to]?.label||'?'} (×${e.weight||1})`));
-  document.getElementById('edgeInfo').textContent = edgeLines.join('\n') || 'なし';
+  renderBacklinkPanel(inEdges, outEdges, g);
   renderNodeTags(n);
 
   // 物理層ステータス表示
@@ -2999,6 +3281,7 @@ function wireOnboarding() {
   });
   document.getElementById('onboardingSkip').addEventListener('click', closeOnboardingAndMark);
   document.getElementById('helpBtn').addEventListener('click', openOnboarding);
+  document.getElementById('dailyNoteBtn').addEventListener('click', openOrCreateDailyNode);
 }
 
 // ═══════════════════════════════════
@@ -3106,6 +3389,7 @@ function init() {
   wireOnboarding();
   wireCopyButtons();
   wireEmotionBridge();
+  wireSearchSheet();
   updateScoreBar();
   updateInboxBadge();
   checkCaptureHash();
