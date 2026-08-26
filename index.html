@@ -43,7 +43,8 @@ html, body { width:100%; height:100%; overflow:hidden; background:var(--bg); col
 /* ── HEADER ── */
 header {
   position:fixed; top:0; left:0; right:0; z-index:20;
-  display:flex; align-items:center; gap:10px; padding:calc(env(safe-area-inset-top, 0px)+10px) 14px 10px;
+  display:flex; flex-wrap:wrap; align-items:center; row-gap:8px; gap:8px;
+  padding:calc(env(safe-area-inset-top, 0px)+10px) 14px 10px;
   background:linear-gradient(to bottom, rgba(13,15,20,0.96) 70%, transparent);
   pointer-events:none;
 }
@@ -58,7 +59,7 @@ header button { pointer-events:auto; }
   background:rgba(255,255,255,0.06); border:1px solid var(--border2);
   border-radius:8px; color:var(--text); font-size:13px; font-weight:600;
   padding:6px 12px; cursor:pointer; display:flex; align-items:center; gap:5px;
-  backdrop-filter:blur(8px); white-space:nowrap;
+  backdrop-filter:blur(8px); white-space:nowrap; flex-shrink:0;
 }
 .hdr-btn:active { background:rgba(255,255,255,0.12); }
 .hdr-btn.gold { border-color:rgba(245,200,66,0.4); color:var(--gold); }
@@ -367,12 +368,12 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 <header>
   <span class="app-title">⬡ flow-mind</span>
   <div class="header-spacer"></div>
-  <button class="hdr-btn" id="graphsBtn">📂 グラフ<span class="inbox-badge" id="inboxBadge">0</span></button>
+  <button class="hdr-btn" id="graphsBtn" title="グラフ一覧">📂<span class="inbox-badge" id="inboxBadge">0</span></button>
   <button class="hdr-btn" id="searchBtn" title="全グラフ横断検索">🔍</button>
-  <button class="hdr-btn" id="syncBtn">☁️</button>
-  <button class="hdr-btn gold" id="analyzeBtn">✦ AI分析</button>
+  <button class="hdr-btn" id="syncBtn" title="クラウド同期">☁️</button>
+  <button class="hdr-btn gold" id="analyzeBtn" title="AI分析">✦</button>
   <button class="hdr-btn" id="dailyNoteBtn" title="今日のノード">📅</button>
-  <button class="hdr-btn" id="helpBtn">？</button>
+  <button class="hdr-btn" id="helpBtn" title="ヘルプ">？</button>
 </header>
 
 <!-- SCORE BAR -->
@@ -446,6 +447,12 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
     <label class="field-label" style="margin-top:20px;">接続エッジ</label>
     <div id="edgeInfo" style="font-size:13px;color:var(--text-dim);padding:4px 0;"></div>
 
+    <label class="field-label" style="margin-top:20px;display:flex;align-items:center;justify-content:space-between;">
+      <span>🔗 埋め込み（他グラフのノード）</span>
+      <button type="button" id="addEmbedBtn" style="background:none;border:none;color:var(--blue);font-size:12px;font-weight:600;padding:2px 4px;cursor:pointer;">＋ 追加</button>
+    </label>
+    <div id="embedWrap"></div>
+
     <label class="field-label" style="margin-top:20px;">物理層ステータス</label>
     <div class="physics-box" id="physicsBox">—</div>
   </div>
@@ -506,7 +513,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
   <div class="sheet-handle"></div>
   <div class="sheet-header">
     <button id="searchSheetClose">閉じる</button>
-    <h2>検索</h2>
+    <h2 id="searchSheetTitle">検索</h2>
     <span style="width:44px;"></span>
   </div>
   <div class="sheet-body">
@@ -1476,7 +1483,7 @@ function updateScoreBar() {
     const pct = Math.round(sc * 100);
     const col = n.color || '#4A9EFF';
     return `<span class="score-chip" style="color:${col};border-color:${col}40;background:${col}18;">
-      ${n.label || '?'} ${pct}%
+      ${escHtml(n.label || '?')} ${pct}%
     </span>`;
   }).join('');
 }
@@ -1811,7 +1818,7 @@ function splitTagHierarchy(tag) {
 
 function formatTagDisplay(tag) {
   const { parent, child } = splitTagHierarchy(tag);
-  return child ? `${parent} / ${child}` : parent;
+  return child ? `${escHtml(parent)} / ${escHtml(child)}` : escHtml(parent);
 }
 
 function renderNodeTags(node) {
@@ -1823,8 +1830,8 @@ function renderNodeTags(node) {
     const chip = document.createElement('span');
     chip.style.cssText = 'background:var(--gold-dim);color:var(--gold);border-radius:100px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;display:inline-block;margin:0 6px 6px 0;';
     chip.innerHTML = child
-      ? `<span class="tag-chip-parent">${parent}</span> <span class="tag-chip-child">${child}</span> ✕`
-      : `<span class="tag-chip-child">${parent}</span> ✕`;
+      ? `<span class="tag-chip-parent">${escHtml(parent)}</span> <span class="tag-chip-child">${escHtml(child)}</span> ✕`
+      : `<span class="tag-chip-child">${escHtml(parent)}</span> ✕`;
     chip.onclick = () => {
       node.tags = (node.tags || []).filter(t => t !== tag);
       renderNodeTags(node);
@@ -1907,7 +1914,7 @@ function renderTagBrowser() {
       .forEach(({ tag, child, count }) => {
         const chip = document.createElement('span');
         chip.className = 'tag-browser-child';
-        chip.innerHTML = `${child || parent} <span class="cnt">${count}</span>`;
+        chip.innerHTML = `${escHtml(child || parent)} <span class="cnt">${count}</span>`;
         chip.addEventListener('click', () => {
           document.getElementById('searchInput').value = tag;
           runGlobalSearch(tag);
@@ -1944,16 +1951,25 @@ function runGlobalSearch(rawQuery) {
   }
 
   results.slice(0, 100).forEach(({ graphId, graphName, node }) => {
+    // 埋め込みピッカーモード中は、自分自身を候補から除外する
+    if (searchPickerCallback && graphId === currentGraphId && node.id === editingNodeId) return;
     const item = document.createElement('div');
     item.className = 'search-result-item';
     const snippet = (node.memo || '').slice(0, 60);
     const tagsHtml = (node.tags || []).map(t => `<span>${formatTagDisplay(t)}</span>`).join('');
     item.innerHTML =
-      `<div class="search-result-graph">${graphName}</div>` +
-      `<div class="search-result-label">${node.label || '無題'}</div>` +
-      (snippet ? `<div class="search-result-snippet">${snippet}</div>` : '') +
+      `<div class="search-result-graph">${escHtml(graphName)}</div>` +
+      `<div class="search-result-label">${escHtml(node.label || '無題')}</div>` +
+      (snippet ? `<div class="search-result-snippet">${escHtml(snippet)}</div>` : '') +
       (tagsHtml ? `<div class="search-result-tags">${tagsHtml}</div>` : '');
     item.addEventListener('click', () => {
+      if (searchPickerCallback) {
+        const cb = searchPickerCallback;
+        searchPickerCallback = null;
+        closeSheet('searchSheet');
+        cb(graphId, node.id);
+        return;
+      }
       closeSheet('searchSheet');
       const needSwitch = graphId !== currentGraphId;
       if (needSwitch) switchGraph(graphId);
@@ -1966,6 +1982,87 @@ function runGlobalSearch(rawQuery) {
   });
 }
 
+// ═══════════════════════════════════
+// E: グラフ間の埋め込み（他グラフのノードをミラー参照する）
+// ═══════════════════════════════════
+let searchPickerCallback = null; // null=通常の検索、関数がセットされていればピッカーモード
+
+function openSearchPicker(callback) {
+  searchPickerCallback = callback;
+  renderTagBrowser();
+  document.getElementById('searchInput').value = '';
+  document.getElementById('searchResultsWrap').innerHTML = '';
+  document.getElementById('searchSheetTitle').textContent = '埋め込むノードを選択';
+  openSheet('searchSheet');
+  setTimeout(() => document.getElementById('searchInput').focus(), 300);
+}
+
+function renderEmbeds(node) {
+  const wrap = document.getElementById('embedWrap');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const embeds = node.embeds || [];
+  if (embeds.length === 0) return;
+
+  embeds.forEach((ref, idx) => {
+    const targetGraph = graphs[ref.graphId];
+    const targetNode = targetGraph?.nodes[ref.nodeId];
+    const item = document.createElement('div');
+    item.className = 'search-result-item';
+    item.style.position = 'relative';
+    if (!targetNode) {
+      item.innerHTML = `<div class="search-result-snippet">（参照先が見つかりません・削除済みの可能性）</div>`;
+    } else {
+      const snippet = (targetNode.memo || '').slice(0, 60);
+      const tagsHtml = (targetNode.tags || []).map(t => `<span>${formatTagDisplay(t)}</span>`).join('');
+      item.innerHTML =
+        `<div class="search-result-graph">${escHtml(targetGraph.name || '無題のグラフ')}</div>` +
+        `<div class="search-result-label">${escHtml(targetNode.label || '無題')}</div>` +
+        (snippet ? `<div class="search-result-snippet">${escHtml(snippet)}</div>` : '') +
+        (tagsHtml ? `<div class="search-result-tags">${tagsHtml}</div>` : '');
+      item.addEventListener('click', () => {
+        const needSwitch = ref.graphId !== currentGraphId;
+        if (needSwitch) switchGraph(ref.graphId);
+        setTimeout(() => {
+          fireNode(ref.nodeId);
+          openNodeSheet(ref.nodeId);
+        }, needSwitch ? 150 : 0);
+      });
+    }
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = '✕';
+    removeBtn.style.cssText = 'position:absolute;top:8px;right:8px;background:none;border:none;color:var(--red);font-size:14px;font-weight:800;cursor:pointer;padding:4px;';
+    removeBtn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      node.embeds.splice(idx, 1);
+      saveGraphs();
+      renderEmbeds(node);
+    });
+    item.appendChild(removeBtn);
+    wrap.appendChild(item);
+  });
+}
+
+function wireEmbeds() {
+  document.getElementById('addEmbedBtn')?.addEventListener('click', () => {
+    const g = currentGraph();
+    const n = g?.nodes[editingNodeId];
+    if (!n) return;
+    openSearchPicker((graphId, nodeId) => {
+      if (graphId === currentGraphId && nodeId === editingNodeId) return; // 自己参照は禁止
+      n.embeds = n.embeds || [];
+      if (n.embeds.some(e => e.graphId === graphId && e.nodeId === nodeId)) {
+        showToast('既に埋め込み済みです');
+      } else {
+        n.embeds.push({ graphId, nodeId });
+        saveGraphs();
+        showToast('埋め込みました');
+      }
+      openNodeSheet(editingNodeId); // シートを再描画して埋め込みを反映
+    });
+  });
+}
+
 function wireSearchSheet() {
   const btn = document.getElementById('searchBtn');
   const closeBtn = document.getElementById('searchSheetClose');
@@ -1973,6 +2070,8 @@ function wireSearchSheet() {
   if (!btn || !closeBtn || !input) return;
 
   btn.addEventListener('click', () => {
+    searchPickerCallback = null; // 通常ボタンからは常に通常モードで開く
+    document.getElementById('searchSheetTitle').textContent = '検索';
     renderTagBrowser();
     input.value = '';
     document.getElementById('searchResultsWrap').innerHTML = '';
@@ -1980,7 +2079,10 @@ function wireSearchSheet() {
     setTimeout(() => input.focus(), 300);
   });
 
-  closeBtn.addEventListener('click', () => closeSheet('searchSheet'));
+  closeBtn.addEventListener('click', () => {
+    searchPickerCallback = null; // 閉じたらピッカーモードは常に解除
+    closeSheet('searchSheet');
+  });
 
   let searchTimer = null;
   input.addEventListener('input', (e) => {
@@ -2017,6 +2119,7 @@ function openNodeSheet(id, isNew=false) {
   const outEdges = g.edges.filter(e => e.from===id);
   renderBacklinkPanel(inEdges, outEdges, g);
   renderNodeTags(n);
+  renderEmbeds(n);
 
   // 物理層ステータス表示
   const band = estimateFreqBand(n);
@@ -2047,6 +2150,7 @@ function saveNodeSheet() {
   updateScoreBar();
   closeSheet('nodeSheet');
   scheduleDriveKeepPush(n);
+  pushNodeToEmotionBridge(n); // 保存のたびに、ノードの内容そのものを感情ブリッジへ即時push
 }
 
 // ═══════════════════════════════════
@@ -3077,6 +3181,21 @@ function refreshEmotionBridgeStatus() {
   statusEl.textContent = EmotionBridgeClient.isConfigured() ? '設定済み' : '未設定';
 }
 
+// ノード保存のたびに呼ぶ。attractorのdedupとは無関係に、内容を直接pushする
+// （quick-ref側のpushEmotionToFlowMind()と対になる、保存トリガー版）
+async function pushNodeToEmotionBridge(n) {
+  if (!window.EmotionBridgeClient || !EmotionBridgeClient.isConfigured() || !n) return;
+  try {
+    await EmotionBridgeClient.push(EB_SELF_APP, {
+      title: n.label || '',
+      body: (n.memo || '').slice(0, 400),
+      attractor: currentAttractor ? currentAttractor.label : null,
+    });
+  } catch (e) {
+    console.warn('[emotion-bridge] push on save failed', e);
+  }
+}
+
 // attractor（感情状態）が変わったときだけ、デバウンスして送信する
 function scheduleEmotionBridgePush() {
   if (!window.EmotionBridgeClient || !EmotionBridgeClient.isConfigured()) return;
@@ -3390,6 +3509,7 @@ function init() {
   wireCopyButtons();
   wireEmotionBridge();
   wireSearchSheet();
+  wireEmbeds();
   updateScoreBar();
   updateInboxBadge();
   checkCaptureHash();
