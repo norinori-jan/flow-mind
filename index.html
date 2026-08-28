@@ -601,6 +601,19 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
       </div>
       <div class="sync-status-line" id="ebStatus">未設定</div>
     </div>
+    <div class="sync-platform-box" id="syncVaultBox">
+      <h3>🔐 crypto-vault連携（タイトルのみ・一方向）</h3>
+      <p>crypto-vaultからエントリのタイトル・カテゴリのみを受信します。パスワード・ユーザー名・URL等は一切送られてきません（crypto-vault側で送信前にサーバー側も含め二重に除外されています）。</p>
+      <label class="field-label">エンドポイントURL</label>
+      <input type="text" id="vaultUrlInput" placeholder="https://vault-bridge-api.pages.dev">
+      <label class="field-label">トークン</label>
+      <input type="text" id="vaultTokenInput" placeholder="VAULT_BRIDGE_TOKENと同じ値">
+      <div class="sync-btn-row" style="margin-top:12px;">
+        <button class="tool-btn gold" id="vaultSaveConfigBtn">保存</button>
+        <button class="tool-btn" id="vaultSyncNowBtn">🔄 今すぐ取得</button>
+      </div>
+      <div class="sync-status-line" id="vaultSyncStatus">未設定</div>
+    </div>
   </div>
 </div>
 
@@ -649,6 +662,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 <script src="./shared/drive-keep-sync.js"></script>
 <script src="./shared/sheets-sync.js"></script>
 <script src="./shared/emotion-bridge-client.js"></script>
+<script src="./shared/vault-sync.js"></script>
 
 <script>
 // ─────────────────────────────────────────────
@@ -2217,6 +2231,7 @@ const SOURCE_APP_LABEL = {
   'illust-studio':'illust-studio',
   'google-keep':  'Google Keep',
   'google-sheets':'Googleスプレッドシート',
+  'crypto-vault': 'crypto-vault',
 };
 
 // アイテム1件を、感情メタデータがあればそれを反映したノードとして追加する共通処理
@@ -3153,6 +3168,85 @@ function wireSheetsSync() {
   });
 }
 
+// ═══════════════════════════════════
+// CRYPTO-VAULT連携（タイトルのみ・一方向、既知IDで重複排除）
+// ═══════════════════════════════════
+async function pullVaultNotes() {
+  if (!window.VaultSync || !VaultSync.isConfigured()) return;
+  const g = currentGraph();
+  if (!g) return;
+  try {
+    const newItems = await VaultSync.pullNew();
+    if (!newItems.length) return;
+
+    // VaultSync側の {id,title,category,updatedAt} を addNodeFromTransferItem が
+    // 期待する {id,title,body} 形式に変換する
+    const items = newItems.map(it => ({
+      id: it.id,
+      title: it.title,
+      body: it.category ? `カテゴリ: ${it.category}` : '',
+    }));
+
+    let added = 0, lastId = null;
+    items.forEach((item, i) => {
+      const id = addNodeFromTransferItem(item, i, items.length, g, 'crypto-vault');
+      if (id) { added++; lastId = id; }
+    });
+    if (added > 0) {
+      applyFlowchartLayout();
+      saveGraphs();
+      updateScoreBar();
+      updateInboxBadge();
+      if (lastId) fireNode(lastId);
+      showToast(`crypto-vaultから${added}件を受信しました`);
+    }
+  } catch (e) {
+    console.warn('[vault-sync] pull failed', e);
+  }
+}
+
+function refreshVaultStatus() {
+  const statusEl = document.getElementById('vaultSyncStatus');
+  if (!statusEl) return;
+  if (!window.VaultSync || !VaultSync.isConfigured()) {
+    statusEl.textContent = '未設定';
+    return;
+  }
+  const ts = VaultSync.getLastSyncedAt();
+  statusEl.textContent = ts
+    ? `設定済み / 最終同期: ${new Date(ts).toLocaleString('ja-JP')}`
+    : '設定済み（まだ未同期）';
+}
+
+function wireVaultSync() {
+  const urlInput = document.getElementById('vaultUrlInput');
+  const tokenInput = document.getElementById('vaultTokenInput');
+  const saveBtn = document.getElementById('vaultSaveConfigBtn');
+  const syncNowBtn = document.getElementById('vaultSyncNowBtn');
+  if (!urlInput || !tokenInput || !saveBtn || !syncNowBtn) return;
+
+  if (window.VaultSync && VaultSync.isConfigured()) {
+    const c = VaultSync.getConfig();
+    urlInput.value = c.endpoint;
+    tokenInput.value = c.token;
+  }
+
+  saveBtn.addEventListener('click', async () => {
+    if (!window.VaultSync) { showToast('vault-sync.jsが読み込まれていません'); return; }
+    VaultSync.setConfig(urlInput.value, tokenInput.value);
+    showToast('設定を保存しました');
+    await pullVaultNotes();
+    refreshVaultStatus();
+  });
+
+  syncNowBtn.addEventListener('click', async () => {
+    if (!window.VaultSync || !VaultSync.isConfigured()) { showToast('先にURL/トークンを設定してください'); return; }
+    await pullVaultNotes();
+    showToast('同期しました');
+    refreshVaultStatus();
+  });
+}
+
 function openSyncSheet() {
   const isDesktop = window.SyncBridge && SyncBridge.isDesktopCapable();
   document.getElementById('syncDesktopBox').style.display = isDesktop ? '' : 'none';
@@ -3162,6 +3256,7 @@ function openSyncSheet() {
   refreshDriveKeepStatus();
   refreshSheetsStatus();
   refreshEmotionBridgeStatus();
+  refreshVaultStatus();
   openSheet('syncSheet');
 }
 
@@ -3284,6 +3379,7 @@ function wireSyncSheet() {
   wireCloudSync();
   wireDriveKeepSync();
   wireSheetsSync();
+  wireVaultSync();
   document.getElementById('syncBtn').addEventListener('click', openSyncSheet);
   document.getElementById('syncSheetClose').addEventListener('click', () => closeSheet('syncSheet'));
 
@@ -3517,6 +3613,7 @@ function init() {
   checkCloudOnLoad();
   checkCloudSyncOnLoad();
   pullSheetsNotes(); // 設定済みなら、電車の中で書いたメモを起動時に自動で取り込む
+  pullVaultNotes(); // 設定済みなら、crypto-vaultの新規タイトルを起動時に自動で取り込む
 
   // 他アプリ(quick-ref等)からの自動送信を定期チェック + ページ復帰時にもチェック
   setInterval(checkEmotionTransfer, 4000);
