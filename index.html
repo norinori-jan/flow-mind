@@ -588,6 +588,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
       </div>
       <div class="sync-status-line" id="sheetsSyncStatus">未設定</div>
     </div>
+<!-- 感情ブリッジ -->
     <div class="sync-platform-box" id="syncEmotionBridgeBox">
       <h3>🌉 感情ブリッジ（quick-ref・双方向）</h3>
       <p>fm_graphs全体ではなく、現在のattractor（感情状態）だけをquick-refと双方向でやり取りします。emotion-bridge-api(Cloudflare Pages Functions)経由。</p>
@@ -601,6 +602,23 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
       </div>
       <div class="sync-status-line" id="ebStatus">未設定</div>
     </div>
+
+    <!-- quick-ref sync-worker 連携設定 -->
+    <div class="sync-platform-box" id="syncQuickRefBox" style="margin-top: 16px;">
+      <h3>📝 quick-ref メモ同期（sync-worker）</h3>
+      <p>quick-ref 側のメモデータを自動取得し、ノードとしてフローチャートに取り込みます。</p>
+      <label class="field-label">sync-worker エンドポイント</label>
+      <input type="text" id="qrSyncEndpointInput" placeholder="https://sync-worker.xxxx.workers.dev">
+      
+      <label class="field-label">認証 Bearer トークン</label>
+      <input type="password" id="qrSyncTokenInput" placeholder="Bearer Token...">
+      
+      <div class="sync-btn-row" style="margin-top:12px;">
+        <button class="tool-btn gold" id="qrSyncSaveConfigBtn">設定を保存</button>
+      </div>
+    </div>
+
+    <!-- crypto-vault 連携設定 -->
     <div class="sync-platform-box" id="syncVaultBox">
       <h3>🔐 crypto-vault連携（タイトルのみ・一方向）</h3>
       <p>crypto-vaultからエントリのタイトル・カテゴリのみを受信します。パスワード・ユーザー名・URL等は一切送られてきません（crypto-vault側で送信前にサーバー側も含め二重に除外されています）。</p>
@@ -3339,7 +3357,89 @@ async function pollEmotionBridge() {
     console.warn('[emotion-bridge] pull failed', e);
   }
 }
+// ── quick-ref (sync-worker) 専用の自動ノード取り込み ──
+async function pollQuickRefSync() {
+  const endpoint = localStorage.getItem('qr_sync_endpoint');
+  const token = localStorage.getItem('qr_sync_token');
+  if (!endpoint || !token) return;
 
+  try {
+    const baseUrl = endpoint.replace(/\/+$/, '');
+    const res = await fetch(`${baseUrl}/sync/quick-ref`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+
+    const res_json = await res.json();
+    const items = (res_json.data && res_json.data.items) || [];
+    if (!items.length) return;
+
+    const g = currentGraph();
+    if (!g) return;
+
+    const importedIds = JSON.parse(localStorage.getItem('flow_mind_imported_quickref_ids') || '[]');
+    const importedSet = new Set(importedIds);
+    let addedCount = 0;
+
+    const stripHtml = html => {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html || '';
+      return tmp.textContent || tmp.innerText || '';
+    };
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (!item.id || importedSet.has(item.id)) continue;
+      if (item.sensitive) { importedSet.add(item.id); continue; } // 機密メモは除外して記憶
+
+      const plainBody = stripHtml(item.body);
+      const transferItem = {
+        title: item.title || plainBody.slice(0, 20) || 'quick-ref メモ',
+        body: plainBody,
+        category: (item.tags && item.tags.length > 0) ? item.tags.join(', ') : 'quick-ref',
+        source: 'quick-ref'
+      };
+
+      const id = addNodeFromTransferItem(transferItem, i, items.length, g, 'quick-ref');
+      if (id) {
+        importedSet.add(item.id);
+        addedCount++;
+      }
+    }
+
+    if (addedCount > 0) {
+      localStorage.setItem('flow_mind_imported_quickref_ids', JSON.stringify([...importedSet]));
+      applyFlowchartLayout();
+      saveGraphs();
+      updateScoreBar();
+      updateInboxBadge();
+      showToast(`quick-refから ${addedCount} 件のメモを自動取り込みしました`);
+    }
+  } catch (e) {
+    console.warn('[quick-ref-sync] poll failed', e);
+  }
+}
+
+// 設定モーダル初期化 & 保存イベント配線
+function wireQuickRefSyncModal() {
+  const endpointInput = document.getElementById('qrSyncEndpointInput');
+  const tokenInput = document.getElementById('qrSyncTokenInput');
+  const saveBtn = document.getElementById('qrSyncSaveConfigBtn');
+
+  if (endpointInput) endpointInput.value = localStorage.getItem('qr_sync_endpoint') || '';
+  if (tokenInput) tokenInput.value = localStorage.getItem('qr_sync_token') || '';
+
+  if (saveBtn) {
+    saveBtn.addEventListener('click', () => {
+      const ep = (endpointInput ? endpointInput.value : '').trim();
+      const tk = (tokenInput ? tokenInput.value : '').trim();
+      localStorage.setItem('qr_sync_endpoint', ep);
+      localStorage.setItem('qr_sync_token', tk);
+      showToast('quick-ref同期設定を保存しました');
+      pollQuickRefSync(); // 保存直後に1回即時実行
+    });
+  }
+}
 function wireEmotionBridge() {
   const saveBtn = document.getElementById('ebSaveConfigBtn');
   const pullBtn = document.getElementById('ebPullNowBtn');
@@ -3604,6 +3704,7 @@ function init() {
   wireOnboarding();
   wireCopyButtons();
   wireEmotionBridge();
+  wireQuickRefSyncModal();
   wireSearchSheet();
   wireEmbeds();
   updateScoreBar();
