@@ -40,30 +40,42 @@
   }
 
   const timers = {};
+  const pendingData = {}; // appName -> 未送信の最新データ（オンライン復帰時に再送）
 
   /**
    * 変更のたびに呼ぶ。1.2秒デバウンスしてクラウドへPUTする。
    * 未設定の場合は何もしない（エラーにしない＝呼び出し側は気にせず常に呼んでよい）。
    */
   function cloudSave(appName, dataObj) {
+    pendingData[appName] = dataObj;
     clearTimeout(timers[appName]);
-    timers[appName] = setTimeout(async () => {
-      const c = getConfig();
-      if (!c.endpoint || !c.token) return;
-      try {
-        const res = await fetch(`${c.endpoint}/sync/${encodeURIComponent(appName)}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${c.token}` },
-          body: JSON.stringify({ data: dataObj }),
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const out = await res.json();
-        localStorage.setItem(LS_LAST_PREFIX + appName, String(out.timestamp || Date.now()));
-      } catch (e) {
-        console.warn('[cloud-sync] save failed:', e);
-      }
-    }, 1200);
+    timers[appName] = setTimeout(() => attemptSave(appName), 1200);
   }
+
+  async function attemptSave(appName) {
+    const c = getConfig();
+    if (!c.endpoint || !c.token) return;
+    if (!(appName in pendingData)) return;
+    const dataObj = pendingData[appName];
+    try {
+      const res = await fetch(`${c.endpoint}/sync/${encodeURIComponent(appName)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${c.token}` },
+        body: JSON.stringify({ data: dataObj }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const out = await res.json();
+      localStorage.setItem(LS_LAST_PREFIX + appName, String(out.timestamp || Date.now()));
+      delete pendingData[appName];
+    } catch (e) {
+      console.warn('[cloud-sync] save failed (will retry on reconnect):', e);
+    }
+  }
+
+  // オンライン復帰時、保留中のデータがあれば自動再送
+  global.addEventListener('online', () => {
+    Object.keys(pendingData).forEach(appName => attemptSave(appName));
+  });
 
   /**
    * 起動時に呼ぶ。クラウド側のデータを取得する。

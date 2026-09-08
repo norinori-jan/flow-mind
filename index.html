@@ -952,6 +952,7 @@ function applyFlowchartLayout() {
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 
 function saveGraphs() {
+  if (currentGraphId && graphs[currentGraphId]) graphs[currentGraphId].updatedAt = Date.now();
   try { localStorage.setItem(LS_GRAPHS, JSON.stringify(graphs)); } catch(e) { showToast('保存容量が不足しています'); }
   // Windows/PC でフォルダ接続済みなら自動でiCloud Driveへも書き込む（デバウンス済み・未接続なら何もしない）
   if (window.SyncBridge) SyncBridge.autoSave('flow-mind', graphs);
@@ -1603,6 +1604,7 @@ canvas.addEventListener('pointermove', e => {
     if (g && g.nodes[dragging.nodeId]) {
       g.nodes[dragging.nodeId].x = w.x;
       g.nodes[dragging.nodeId].y = w.y;
+      g.nodes[dragging.nodeId].updatedAt = Date.now();
     }
   } else if (!dragging && pointerMoved && !connectFrom) {
     // pan
@@ -1687,6 +1689,7 @@ function addNode(wx, wy) {
   if (!g) return;
   const id = uid();
   g.nodes[id] = {
+    updatedAt: Date.now(),
     id, label:'新しいノード',
     x: wx, y: wy,
     weight: 3,
@@ -1709,6 +1712,7 @@ function addEdge(from, to) {
   // 重複チェック
   if (g.edges.find(e => e.from===from && e.to===to)) { showToast('すでに接続済みです'); return; }
   g.edges.push({ from, to, weight:1, conductance:1.0 });
+  if (g.deletedEdges) delete g.deletedEdges[from + '->' + to]; // 10 再接続時はtombstoneを解除（クラウドマージで消えないように）
   applyFlowchartLayout();
   saveGraphs();
   updateScoreBar();
@@ -1749,6 +1753,7 @@ function openOrCreateDailyNode() {
 
   const id = uid();
   g.nodes[id] = {
+    updatedAt: Date.now(),
     id, label: today,
     x: basePos.x, y: basePos.y + 160,
     weight: 3,
@@ -1774,6 +1779,8 @@ function openOrCreateDailyNode() {
 function deleteNode(id) {
   const g = currentGraph();
   if (!g) return;
+  g.deletedNodeIds = g.deletedNodeIds || {};
+  g.deletedNodeIds[id] = Date.now();
   delete g.nodes[id];
   g.edges = g.edges.filter(e => e.from!==id && e.to!==id);
   selectedNode = null;
@@ -1786,6 +1793,8 @@ function deleteNode(id) {
 function deleteEdge(e) {
   const g = currentGraph();
   if (!g) return;
+  g.deletedEdges = g.deletedEdges || {};
+  g.deletedEdges[e.from + '->' + e.to] = Date.now();
   g.edges = g.edges.filter(x => !(x.from===e.from && x.to===e.to));
   selectedEdge = null;
   applyFlowchartLayout();
@@ -1866,6 +1875,7 @@ function renderNodeTags(node) {
       : `<span class="tag-chip-child">${escHtml(parent)}</span> ✕`;
     chip.onclick = () => {
       node.tags = (node.tags || []).filter(t => t !== tag);
+      node.updatedAt = Date.now();
       renderNodeTags(node);
       saveGraphs();
     };
@@ -2178,6 +2188,7 @@ function saveNodeSheet() {
   n.weight = parseInt(document.getElementById('nWeight').value);
   n.color  = editingNodeColor;
   n.tags   = extractTagsFromText(n.label, n.memo);
+  n.updatedAt = Date.now();
   saveGraphs();
   updateScoreBar();
   closeSheet('nodeSheet');
@@ -2269,6 +2280,7 @@ function addNodeFromTransferItem(item, index, total, g, sourceApp) {
   const resolvedSource = sourceApp || item.source || null;
 
   g.nodes[id] = {
+    updatedAt: Date.now(),
     id,
     label: (item.title || '無題').slice(0,20),
     memo: (item.body || '').replace(/<[^>]+>/g,'').slice(0,200),
@@ -2590,7 +2602,7 @@ async function aiRetagAllNodes() {
     const clean = raw.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
     parsed['タグ結果'].forEach(item => {
-      if (g.nodes[item.id]) g.nodes[item.id].tags = item.tags;
+      if (g.nodes[item.id]) { g.nodes[item.id].tags = item.tags; g.nodes[item.id].updatedAt = Date.now(); }
     });
     saveGraphs();
     if (editingNodeId && g.nodes[editingNodeId]) renderNodeTags(g.nodes[editingNodeId]);
@@ -2705,6 +2717,7 @@ function quickAddNode(text) {
   const id = uid();
   const firstLine = trimmed.split('\n')[0].slice(0, 18);
   g.nodes[id] = {
+    updatedAt: Date.now(),
     id,
     label: firstLine || '記録',
     memo: trimmed,                // 全文を必ずメモに保持（省略しない）
@@ -2905,30 +2918,137 @@ function wireQuickCapture() {
 // ═══════════════════════════════════
 // SYNC — Windows(File System Access API) / iPhone(手動Files連携) / クラウド(全端末共通)
 // ═══════════════════════════════════
+function mergeCloudGraphs(local, remote) {
+  const merged = structuredClone(local || {});
+  const remoteGraphs = remote || {};
+
+  for (const [graphId, rg] of Object.entries(remoteGraphs)) {
+    const lg = merged[graphId];
+
+    if (!lg) {
+      merged[graphId] = structuredClone(rg);
+      continue;
+    }
+
+    const lGraphTs = lg.updatedAt || 0;
+    const rGraphTs = rg.updatedAt || 0;
+
+    if (rGraphTs > lGraphTs) {
+      merged[graphId] = structuredClone(rg);
+      continue;
+    }
+
+    const nodes = {};
+    const localNodes = lg.nodes || {};
+    const remoteNodes = rg.nodes || {};
+
+    for (const nodeId of new Set([...Object.keys(localNodes), ...Object.keys(remoteNodes)])) {
+      const ln = localNodes[nodeId];
+      const rn = remoteNodes[nodeId];
+
+      if (!ln) {
+        nodes[nodeId] = structuredClone(rn);
+      } else if (!rn) {
+        nodes[nodeId] = structuredClone(ln);
+      } else {
+        nodes[nodeId] = structuredClone((rn.updatedAt || 0) > (ln.updatedAt || 0) ? rn : ln);
+      }
+    }
+
+    const deletedNodeIds = {};
+    for (const key of new Set([...Object.keys(lg.deletedNodeIds || {}), ...Object.keys(rg.deletedNodeIds || {})])) {
+      deletedNodeIds[key] = Math.max((lg.deletedNodeIds || {})[key] || 0, (rg.deletedNodeIds || {})[key] || 0);
+    }
+
+    for (const [nodeId, deletedAt] of Object.entries(deletedNodeIds)) {
+      if ((nodes[nodeId]?.updatedAt || 0) <= deletedAt) {
+        delete nodes[nodeId];
+      }
+    }
+
+    const edgeMap = new Map();
+    for (const e of [...(lg.edges || []), ...(rg.edges || [])]) {
+      const key = e.from + '->' + e.to;
+      if (!edgeMap.has(key)) edgeMap.set(key, structuredClone(e));
+    }
+
+    const deletedEdges = {};
+    for (const key of new Set([...Object.keys(lg.deletedEdges || {}), ...Object.keys(rg.deletedEdges || {})])) {
+      deletedEdges[key] = Math.max((lg.deletedEdges || {})[key] || 0, (rg.deletedEdges || {})[key] || 0);
+    }
+
+    const edges = [...edgeMap.entries()]
+      .filter(([key]) => {
+        const deletedAt = deletedEdges[key] || 0;
+        return deletedAt === 0;
+      })
+      .map(([, e]) => e)
+      .filter(e => nodes[e.from] && nodes[e.to]);
+
+    merged[graphId] = {
+      ...structuredClone(lg),
+      ...structuredClone(rg),
+      nodes,
+      edges,
+      deletedNodeIds,
+      deletedEdges,
+      updatedAt: Math.max(lGraphTs, rGraphTs)
+    };
+  }
+
+  return merged;
+}
+
 async function checkCloudSyncOnLoad() {
   if (!window.CloudSync || !CloudSync.isConfigured()) return;
   try {
     const payload = await CloudSync.cloudLoad('flow-mind');
     if (!payload || !payload.data) return;
-    const localLastSync = CloudSync.getLastSyncedAt('flow-mind') || 0;
-    if (payload.timestamp > localLastSync) {
-      const when = new Date(payload.timestamp).toLocaleString('ja-JP');
-      if (confirm(`クラウド側に新しいデータがあります(${when})。読み込みますか？\n（現在のグラフは上書きされます）`)) {
-        graphs = payload.data;
-        const ids = Object.keys(graphs);
-        if (!graphs[currentGraphId]) {
-          currentGraphId = ids[0] || null;
-          if (!currentGraphId) createGraph('はじめてのグラフ');
-          else localStorage.setItem(LS_CURRENT, currentGraphId);
-        }
-        applyFlowchartLayout();
-        saveGraphs();
-        centerView();
-        updateScoreBar();
-        showToast('クラウドから読み込みました');
-      }
+
+    const merged = mergeCloudGraphs(graphs, payload.data);
+    graphs = merged;
+
+    const ids = Object.keys(graphs);
+    if (!graphs[currentGraphId]) {
+      currentGraphId = ids[0] || null;
+      if (!currentGraphId) createGraph('はじめてのグラフ');
+      else localStorage.setItem(LS_CURRENT, currentGraphId);
     }
+
+    localStorage.setItem(LS_GRAPHS, JSON.stringify(graphs));
+    if (payload.timestamp) {
+      CloudSync.setLastSyncedAt('flow-mind', payload.timestamp);
+    }
+
+    applyFlowchartLayout();
+    centerView();
+    updateScoreBar();
   } catch(e) { console.warn('checkCloudSyncOnLoad error', e); }
+}
+
+async function checkCloudSyncOnResume() {
+  if (!window.CloudSync || !CloudSync.isConfigured()) return;
+  try {
+    const payload = await CloudSync.cloudLoad('flow-mind');
+    if (!payload || !payload.data) return;
+
+    const merged = mergeCloudGraphs(graphs, payload.data);
+    graphs = merged;
+
+    const ids = Object.keys(graphs);
+    if (!graphs[currentGraphId]) {
+      currentGraphId = ids[0] || null;
+      if (!currentGraphId) createGraph('はじめてのグラフ');
+      else localStorage.setItem(LS_CURRENT, currentGraphId);
+    }
+
+    localStorage.setItem(LS_GRAPHS, JSON.stringify(graphs));
+    if (payload.timestamp) {
+      CloudSync.setLastSyncedAt('flow-mind', payload.timestamp);
+    }
+
+    updateScoreBar();
+  } catch(e) { console.warn('checkCloudSyncOnResume error', e); }
 }
 
 async function refreshCloudSyncStatus() {
@@ -3718,8 +3838,16 @@ function init() {
 
   // 他アプリ(quick-ref等)からの自動送信を定期チェック + ページ復帰時にもチェック
   setInterval(checkEmotionTransfer, 4000);
+  let lastCloudCheck = 0;
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) checkEmotionTransfer();
+    if (!document.hidden) {
+      checkEmotionTransfer();
+      const now = Date.now();
+      if (now - lastCloudCheck > 5000) {
+        lastCloudCheck = now;
+        checkCloudSyncOnResume();
+      }
+    }
   });
 
   // Google Keep(Drive経由)の定期同期（認可済みの場合のみ実行される）
