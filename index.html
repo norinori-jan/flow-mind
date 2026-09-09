@@ -686,17 +686,6 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 // ─────────────────────────────────────────────
 // saveGraphs（ローカル＋クラウド自動保存）
 // ─────────────────────────────────────────────
-function saveGraphs() {
-    try { 
-        localStorage.setItem(LS_GRAPHS, JSON.stringify(graphs)); 
-    } catch (e) { 
-        showToast('ローカル保存に失敗しました'); 
-    }
-
-    if (window.SyncBridge) SyncBridge.autoSave('flow-mind', graphs);
-    if (window.CloudSync) CloudSync.cloudSave('flow-mind', graphs);
-}
-
 // ─────────────────────────────────────────────
 // 同期モード設定
 // ─────────────────────────────────────────────
