@@ -102,6 +102,10 @@
     return v ? Number(v) : null;
   }
 
+  function setLastSyncedAt(appName, timestamp) {
+    localStorage.setItem(LS_LAST_PREFIX + appName, String(timestamp));
+  }
+
   global.CloudSync = {
     getConfig,
     setConfig,
@@ -109,6 +113,7 @@
     cloudSave,
     cloudLoad,
     getLastSyncedAt,
+    setLastSyncedAt,
   };
 
   console.log('[cloud-sync] loaded');
