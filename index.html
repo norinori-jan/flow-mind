@@ -382,6 +382,10 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 
 <!-- ATTRACTOR BAR -->
 <div id="attractorBar"><span class="attractor-chip" id="attractorChip"><span class="attractor-dot" id="attractorDot"></span><span id="attractorText"></span></span></div>
+<div id="syncClusterPanel" style="position:fixed;top:60px;left:10px;z-index:15;max-width:360px;">
+  <div id="bandLegend" style="display:flex;gap:8px;flex-wrap:wrap;padding:4px 8px;font-size:10px;background:rgba(0,0,0,0.4);border-radius:8px;margin-bottom:4px;"></div>
+  <div id="syncClusterList"></div>
+</div>
 
 <!-- MODE LABEL -->
 <div id="modeLabel">タップで新しいノードを追加</div>
@@ -1157,12 +1161,40 @@ function detectSyncClusters() {
 
 function updateAttractorState() {
   currentSyncClusters = detectSyncClusters();
+  renderSyncClusterPanel();
   if (currentSyncClusters.length === 0) { currentAttractor = null; updateAttractorBar(); return; }
   // 最大クラスタを代表attractorとして採用
   const main = currentSyncClusters.sort((a,b)=>b.size-a.size)[0];
   currentAttractor = classifyAttractor(main);
   updateAttractorBar();
   scheduleEmotionBridgePush();
+}
+
+function renderBandLegend() {
+  const el = document.getElementById('bandLegend');
+  if (!el) return;
+  el.innerHTML = Object.entries(BAND_STYLE).map(([key, style]) =>
+    `<span style="display:flex;align-items:center;gap:3px;color:${style.color};white-space:nowrap;">
+      <span style="width:6px;height:6px;border-radius:50%;background:${style.color};display:inline-block;"></span>${style.label}
+    </span>`
+  ).join('');
+}
+
+function renderSyncClusterPanel() {
+  const list = document.getElementById('syncClusterList');
+  if (!list) return;
+  const g = currentGraph();
+  if (!g || currentSyncClusters.length === 0) { list.innerHTML = ''; return; }
+  list.innerHTML = currentSyncClusters.map(c => {
+    const style = BAND_STYLE[c.band] || BAND_STYLE.delta;
+    const names = c.nodeIds.map(id => g.nodes[id]?.label || '?').join('、');
+    return `<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:rgba(0,0,0,0.55);border-radius:8px;margin-bottom:3px;font-size:11px;color:#fff;">
+      <span style="width:7px;height:7px;border-radius:50%;background:${style.color};flex-shrink:0;"></span>
+      <span style="color:${style.color};font-weight:600;white-space:nowrap;">${style.label}</span>
+      <span style="opacity:0.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">${names}</span>
+      <span style="opacity:0.5;white-space:nowrap;">${Math.round(c.durationMs)}ms</span>
+    </div>`;
+  }).join('');
 }
 
 function updateAttractorBar() {
@@ -1486,6 +1518,7 @@ function render(now) {
 }
 
 // attractor状態は描画ループとは別の軽い周期で再計算（重い処理ではないが頻度を抑える）
+renderBandLegend();
 setInterval(updateAttractorState, 500);
 
 // ═══════════════════════════════════
