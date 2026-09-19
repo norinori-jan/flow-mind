@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -12,7 +12,7 @@
 
 <link rel="apple-touch-icon" href="./icons/icon.svg">
 <style>
-/* 笏笏 TOKENS 笏笏 */
+/* ── TOKENS ── */
 :root {
   --bg:       #0D0F14;
   --surface:  #161A22;
@@ -35,12 +35,12 @@ html, body { width:100%; height:100%; overflow:hidden; background:var(--bg); col
   font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;
   -webkit-font-smoothing:antialiased; }
 
-/* 笏笏 CANVAS LAYER 笏笏 */
+/* ── CANVAS LAYER ── */
 #graphCanvas {
   position:fixed; inset:0; width:100%; height:100%; touch-action:none; cursor:default;
 }
 
-/* 笏笏 HEADER 笏笏 */
+/* ── HEADER ── */
 header {
   position:fixed; top:0; left:0; right:0; z-index:20;
   display:flex; flex-wrap:wrap; align-items:center; row-gap:8px; gap:8px;
@@ -73,7 +73,7 @@ header button { pointer-events:auto; }
 }
 .inbox-badge.show { display:block; }
 
-/* 繝弱・繝臥ｷｨ髮・す繝ｼ繝・ 蜿悶ｊ霎ｼ縺ｿ蜈・ヰ繝翫・ */
+/* ノード編集シート: 取り込み元バナー */
 .inbox-banner {
   display:none; align-items:center; justify-content:space-between; gap:10px;
   background:rgba(74,158,255,0.1); border:1px solid rgba(74,158,255,0.35);
@@ -88,7 +88,7 @@ header button { pointer-events:auto; }
 }
 .inbox-banner-btn.done { background:rgba(255,255,255,0.1); color:var(--text-dim); }
 
-/* 笏笏 SCORE BAR (荳贋ｽ阪ヮ繝ｼ繝・ 笏笏 */
+/* ── SCORE BAR (上位ノード) ── */
 #scoreBar {
   position:fixed; top:calc(env(safe-area-inset-top, 0px)+52px); left:0; right:0; z-index:19;
   display:flex; gap:6px; padding:0 14px; overflow-x:auto; pointer-events:none;
@@ -100,7 +100,7 @@ header button { pointer-events:auto; }
   padding:4px 12px; border:1px solid; white-space:nowrap; pointer-events:none;
 }
 
-/* 笏笏 ATTRACTOR BAR (諢滓ュ迥ｶ諷玖｡ｨ遉ｺ) 笏笏 */
+/* ── ATTRACTOR BAR (感情状態表示) ── */
 #attractorBar {
   position:fixed; top:calc(env(safe-area-inset-top, 0px)+86px); left:0; right:0; z-index:19;
   display:flex; justify-content:center; pointer-events:none;
@@ -113,7 +113,7 @@ header button { pointer-events:auto; }
 .attractor-chip.show { display:flex; }
 .attractor-dot { width:7px; height:7px; border-radius:50%; }
 
-/* 笏笏 TOOLBAR (荳矩Κ) 笏笏 */
+/* ── TOOLBAR (下部) ── */
 #toolbar {
   position:fixed; bottom:0; left:0; right:0; z-index:20;
   padding:10px 14px calc(env(safe-area-inset-bottom, 0px)+10px);
@@ -136,7 +136,7 @@ header button { pointer-events:auto; }
   position:absolute; bottom:calc(env(safe-area-inset-bottom, 0px)+54px); left:0; right:0;
 }
 
-/* 笏笏 NODE SHEET 笏笏 */
+/* ── NODE SHEET ── */
 .sheet-overlay {
   position:fixed; inset:0; z-index:30; background:rgba(0,0,0,0.55);
   opacity:0; pointer-events:none; transition:opacity .2s;
@@ -172,7 +172,7 @@ input[type=text], textarea {
 input[type=text]:focus, textarea:focus { outline:2px solid var(--gold); border-color:var(--gold); }
 textarea { min-height:70px; resize:vertical; line-height:1.5; }
 
-/* 驥阪∩繧ｹ繝ｩ繧､繝繝ｼ */
+/* 重みスライダー */
 .weight-row { display:flex; align-items:center; gap:12px; margin-top:4px; }
 .weight-row input[type=range] {
   flex:1; -webkit-appearance:none; height:4px; border-radius:2px;
@@ -186,7 +186,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 }
 .weight-val { font-size:18px; font-weight:800; color:var(--gold); min-width:24px; text-align:center; }
 
-/* 繝弱・繝峨き繝ｩ繝ｼ驕ｸ謚・*/
+/* ノードカラー選択 */
 .color-row { display:flex; gap:8px; margin-top:4px; }
 .color-swatch {
   width:32px; height:32px; border-radius:50%; cursor:pointer;
@@ -194,7 +194,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 }
 .color-swatch.active { border-color:#fff; transform:scale(1.15); }
 
-/* AI蛻・梵邨先棡 */
+/* AI分析結果 */
 .ai-result-box {
   background:var(--surface2); border:1px solid var(--border2); border-radius:var(--r);
   padding:14px; font-size:14px; line-height:1.75; margin-top:12px;
@@ -202,14 +202,14 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 }
 .ai-result-box.visible { display:block; }
 
-/* 迚ｩ逅・ｱ､繧､繝ｳ繧ｸ繧ｱ繝ｼ繧ｿ・医ヮ繝ｼ繝峨す繝ｼ繝亥・・・*/
+/* 物理層インジケータ（ノードシート内） */
 .physics-box {
   background:var(--surface2); border:1px solid var(--border2); border-radius:var(--r);
   padding:12px 14px; margin-top:8px; font-size:12px; color:var(--text-mid); line-height:1.8;
 }
 .physics-box b { color:var(--text); }
 
-/* 笏笏 GRAPH SELECTOR 笏笏 */
+/* ── GRAPH SELECTOR ── */
 #graphListWrap { margin-bottom:14px; }
 .graph-item {
   display:flex; align-items:center; justify-content:space-between;
@@ -222,7 +222,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 .graph-item-meta { font-size:12px; color:var(--text-dim); margin-top:2px; }
 .graph-item-del { background:none; border:none; color:var(--red); font-size:18px; padding:4px 8px; cursor:pointer; }
 
-/* 笏笏 TOAST 笏笏 */
+/* ── TOAST ── */
 .toast {
   position:fixed; bottom:calc(env(safe-area-inset-bottom, 0px)+80px); left:50%;
   transform:translateX(-50%) translateY(12px);
@@ -233,7 +233,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 }
 .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
-/* 笏笏 AI LOADING 笏笏 */
+/* ── AI LOADING ── */
 #aiLoading {
   position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
   z-index:50; background:var(--surface); border:1px solid var(--border2);
@@ -242,7 +242,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 }
 #aiLoading.show { display:block; }
 
-/* 笏笏 EDGE DELETE HINT 笏笏 */
+/* ── EDGE DELETE HINT ── */
 #edgeHint {
   position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
   background:var(--surface); border:1px solid var(--border2); border-radius:14px;
@@ -256,7 +256,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 #edgeDeleteBtn { background:rgba(255,95,95,0.15); color:var(--red); border-color:rgba(255,95,95,0.3); }
 #edgeCancelBtn { background:var(--surface2); color:var(--text); }
 
-/* 笏笏 QUICK CAPTURE (縺吶＄險倬鹸) 笏笏 */
+/* ── QUICK CAPTURE (すぐ記録) ── */
 #quickCaptureFab {
   position:fixed; right:16px; top:auto; bottom:calc(env(safe-area-inset-bottom, 0px)+78px); z-index:22;
   width:58px; height:58px; border-radius:50%;
@@ -308,7 +308,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 .qc-status { font-size:12px; color:var(--text-dim); margin-top:6px; min-height:16px; }
 .qc-status.busy { color:var(--gold); }
 
-/* 笏笏 SYNC SHEET 笏笏 */
+/* ── SYNC SHEET ── */
 .sync-platform-box {
   border:1px solid var(--border2); border-radius:var(--r);
   padding:14px; margin-bottom:12px; background:var(--surface2);
@@ -318,7 +318,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 .sync-status-line { font-size:12px; color:var(--text-dim); margin-top:8px; }
 .sync-btn-row { display:flex; gap:8px; flex-wrap:wrap; }
 
-/* 笏笏 SEARCH SHEET(A: 繧ｰ繝ｩ繝墓ｨｪ譁ｭ讀懃ｴ｢) 笏笏 */
+/* ── SEARCH SHEET(A: グラフ横断検索) ── */
 #searchInput {
   width:100%; background:var(--surface2); border:1px solid var(--border2);
   border-radius:var(--r); color:var(--text); font-size:15px; padding:12px 14px;
@@ -342,7 +342,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 }
 .search-empty { color:var(--text-dim); font-size:13px; padding:20px 0; text-align:center; }
 
-/* 笏笏 繧ｿ繧ｰ髫主ｱ､陦ｨ遉ｺ(D: 繧ｿ繧ｰ縺ｮ髫主ｱ､蛹・ 笏笏 */
+/* ── タグ階層表示(D: タグの階層化) ── */
 .tag-chip-parent { color:var(--text-dim); font-weight:600; }
 .tag-chip-child  { font-weight:800; }
 .tag-browser-group { margin-bottom:12px; }
@@ -367,14 +367,14 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 
 <!-- HEADER -->
 <header>
-  <span class="app-title">筮｡ flow-mind</span>
+  <span class="app-title">⬡ flow-mind</span>
   <div class="header-spacer"></div>
-  <button class="hdr-btn" id="graphsBtn" title="繧ｰ繝ｩ繝穂ｸ隕ｧ">唐<span class="inbox-badge" id="inboxBadge">0</span></button>
-  <button class="hdr-btn" id="searchBtn" title="蜈ｨ繧ｰ繝ｩ繝墓ｨｪ譁ｭ讀懃ｴ｢">剥</button>
-  <button class="hdr-btn" id="syncBtn" title="繧ｯ繝ｩ繧ｦ繝牙酔譛・>笘・ｸ・/button>
-  <button class="hdr-btn gold" id="analyzeBtn" title="AI蛻・梵">笨ｦ</button>
-  <button class="hdr-btn" id="dailyNoteBtn" title="莉頑律縺ｮ繝弱・繝・>套</button>
-  <button class="hdr-btn" id="helpBtn" title="繝倥Ν繝・>・・/button>
+  <button class="hdr-btn" id="graphsBtn" title="グラフ一覧">📂<span class="inbox-badge" id="inboxBadge">0</span></button>
+  <button class="hdr-btn" id="searchBtn" title="全グラフ横断検索">🔍</button>
+  <button class="hdr-btn" id="syncBtn" title="クラウド同期">☁️</button>
+  <button class="hdr-btn gold" id="analyzeBtn" title="AI分析">✦</button>
+  <button class="hdr-btn" id="dailyNoteBtn" title="今日のノード">📅</button>
+  <button class="hdr-btn" id="helpBtn" title="ヘルプ">？</button>
 </header>
 
 <!-- SCORE BAR -->
@@ -388,16 +388,16 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 </div>
 
 <!-- MODE LABEL -->
-<div id="modeLabel">繧ｿ繝・・縺ｧ譁ｰ縺励＞繝弱・繝峨ｒ霑ｽ蜉</div>
+<div id="modeLabel">タップで新しいノードを追加</div>
 
 <!-- TOOLBAR -->
 <div id="toolbar">
-  <button class="tool-btn" id="addModeBtn">・・霑ｽ蜉</button>
-  <button class="tool-btn" id="connectModeBtn">竊・謗･邯・/button>
-  <button class="tool-btn" id="editModeBtn">笨・邱ｨ髮・/button>
+  <button class="tool-btn" id="addModeBtn">＋ 追加</button>
+  <button class="tool-btn" id="connectModeBtn">→ 接続</button>
+  <button class="tool-btn" id="editModeBtn">✎ 編集</button>
   <div class="tool-spacer"></div>
-  <button class="tool-btn danger" id="deleteNodeBtn" style="display:none">卵 蜑企勁</button>
-  <button class="tool-btn" id="resetViewBtn">竓・/button>
+  <button class="tool-btn danger" id="deleteNodeBtn" style="display:none">🗑 削除</button>
+  <button class="tool-btn" id="resetViewBtn">⊙</button>
 </div>
 
 <!-- OVERLAY -->
@@ -407,36 +407,36 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 <div class="sheet" id="nodeSheet">
   <div class="sheet-handle"></div>
   <div class="sheet-header">
-    <button id="nodeSheetCancel">繧ｭ繝｣繝ｳ繧ｻ繝ｫ</button>
-    <h2 id="nodeSheetTitle">繝弱・繝臥ｷｨ髮・/h2>
-    <button id="nodeSheetSave" style="color:var(--gold);font-weight:800;">菫晏ｭ・/button>
+    <button id="nodeSheetCancel">キャンセル</button>
+    <h2 id="nodeSheetTitle">ノード編集</h2>
+    <button id="nodeSheetSave" style="color:var(--gold);font-weight:800;">保存</button>
   </div>
   <div class="sheet-body">
     <div class="inbox-banner" id="inboxBanner">
       <div class="inbox-banner-text">
-        踏 <span id="inboxBannerSource">莉悶い繝励Μ</span>縺九ｉ蜿悶ｊ霎ｼ縺ｿ
-        <small>蜀・ｮｹ繧堤｢ｺ隱阪＠縺溘ｉ縲悟叙繧願ｾｼ縺ｿ螳御ｺ・阪ｒ謚ｼ縺励※縺上□縺輔＞</small>
+        📥 <span id="inboxBannerSource">他アプリ</span>から取り込み
+        <small>内容を確認したら「取り込み完了」を押してください</small>
       </div>
-      <button type="button" class="inbox-banner-btn" id="inboxBannerBtn">蜿悶ｊ霎ｼ縺ｿ螳御ｺ・/button>
+      <button type="button" class="inbox-banner-btn" id="inboxBannerBtn">取り込み完了</button>
     </div>
 
-    <label class="field-label">繝ｩ繝吶Ν</label>
-    <input type="text" id="nLabel" placeholder="繧｢繧､繝・い繝ｻ讎ょｿｵ繧貞・蜉・ maxlength="40" list="nLabelSuggestions">
+    <label class="field-label">ラベル</label>
+    <input type="text" id="nLabel" placeholder="アイデア・概念を入力" maxlength="40" list="nLabelSuggestions">
     <datalist id="nLabelSuggestions"></datalist>
 
     <label class="field-label" style="display:flex;align-items:center;justify-content:space-between;">
-      <span>繝｡繝｢</span>
-      <button type="button" id="nMemoCopyBtn" style="background:none;border:none;color:var(--blue);font-size:12px;font-weight:600;padding:2px 4px;cursor:pointer;">搭 繧ｳ繝斐・</button>
+      <span>メモ</span>
+      <button type="button" id="nMemoCopyBtn" style="background:none;border:none;color:var(--blue);font-size:12px;font-weight:600;padding:2px 4px;cursor:pointer;">📋 コピー</button>
     </label>
-    <textarea id="nMemo" placeholder="陬懆ｶｳ繝ｻ譬ｹ諡縺ｪ縺ｩ・井ｻｻ諢擾ｼ・></textarea>
+    <textarea id="nMemo" placeholder="補足・根拠など（任意）"></textarea>
 
-    <label class="field-label">閾ｪ蟾ｱ隧穂ｾ｡縺ｮ驥阪∩・育｢ｺ菫｡蠎ｦ・・/label>
+    <label class="field-label">自己評価の重み（確信度）</label>
     <div class="weight-row">
       <input type="range" id="nWeight" min="1" max="5" step="1" value="3">
       <span class="weight-val" id="nWeightVal">3</span>
     </div>
 
-    <label class="field-label">繝弱・繝峨き繝ｩ繝ｼ</label>
+    <label class="field-label">ノードカラー</label>
     <div class="color-row" id="colorRow">
       <div class="color-swatch active" data-color="#4A9EFF" style="background:#4A9EFF"></div>
       <div class="color-swatch" data-color="#F5C842" style="background:#F5C842"></div>
@@ -446,20 +446,20 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
       <div class="color-swatch" data-color="#FB923C" style="background:#FB923C"></div>
     </div>
 
-    <label class="field-label" style="margin-top:20px;">繧ｿ繧ｰ</label>
+    <label class="field-label" style="margin-top:20px;">タグ</label>
     <div id="nodeTagsWrap" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
 
-    <label class="field-label" style="margin-top:20px;">謗･邯壹お繝・ず</label>
+    <label class="field-label" style="margin-top:20px;">接続エッジ</label>
     <div id="edgeInfo" style="font-size:13px;color:var(--text-dim);padding:4px 0;"></div>
 
     <label class="field-label" style="margin-top:20px;display:flex;align-items:center;justify-content:space-between;">
-      <span>迫 蝓九ａ霎ｼ縺ｿ・井ｻ悶げ繝ｩ繝輔・繝弱・繝会ｼ・/span>
-      <button type="button" id="addEmbedBtn" style="background:none;border:none;color:var(--blue);font-size:12px;font-weight:600;padding:2px 4px;cursor:pointer;">・・霑ｽ蜉</button>
+      <span>🔗 埋め込み（他グラフのノード）</span>
+      <button type="button" id="addEmbedBtn" style="background:none;border:none;color:var(--blue);font-size:12px;font-weight:600;padding:2px 4px;cursor:pointer;">＋ 追加</button>
     </label>
     <div id="embedWrap"></div>
 
-    <label class="field-label" style="margin-top:20px;">迚ｩ逅・ｱ､繧ｹ繝・・繧ｿ繧ｹ</label>
-    <div class="physics-box" id="physicsBox">窶・/div>
+    <label class="field-label" style="margin-top:20px;">物理層ステータス</label>
+    <div class="physics-box" id="physicsBox">—</div>
   </div>
 </div>
 
@@ -467,24 +467,24 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 <div class="sheet" id="aiSheet">
   <div class="sheet-handle"></div>
   <div class="sheet-header">
-    <button id="aiSheetClose">髢峨§繧・/button>
-    <h2>AI 繧ｰ繝ｩ繝募・譫・/h2>
+    <button id="aiSheetClose">閉じる</button>
+    <h2>AI グラフ分析</h2>
     <span id="aiModelBadge" style="font-size:11px;background:var(--gold-dim);color:var(--gold);border-radius:100px;padding:3px 12px;font-weight:700;"></span>
   </div>
   <div class="sheet-body">
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
-      <button class="tool-btn" id="aiStructureBtn">剥 讒矩蛻・梵</button>
-      <button class="tool-btn" id="aiWeakBtn">笞・・蠑ｱ轤ｹ讀懷・</button>
-      <button class="tool-btn" id="aiSuggestBtn">庁 繝弱・繝画署譯・/button>
-      <button class="tool-btn gold" id="aiHonneBtn">ｧ 譛ｬ髻ｳ謚ｽ蜃ｺ</button>
-      <button class="tool-btn" id="aiRetagBtn">捷 繧ｿ繧ｰ蜀肴歓蜃ｺ</button>
+      <button class="tool-btn" id="aiStructureBtn">🔍 構造分析</button>
+      <button class="tool-btn" id="aiWeakBtn">⚠️ 弱点検出</button>
+      <button class="tool-btn" id="aiSuggestBtn">💡 ノード提案</button>
+      <button class="tool-btn gold" id="aiHonneBtn">🧠 本音抽出</button>
+      <button class="tool-btn" id="aiRetagBtn">🏷 タグ再抽出</button>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:10px;">
-      <input type="text" id="aiCustomInput" placeholder="繧ｫ繧ｹ繧ｿ繝雉ｪ蝠鞘ｦ" style="flex:1;font-size:15px;">
-      <button class="tool-btn gold" id="aiCustomBtn">騾∽ｿ｡</button>
+      <input type="text" id="aiCustomInput" placeholder="カスタム質問…" style="flex:1;font-size:15px;">
+      <button class="tool-btn gold" id="aiCustomBtn">送信</button>
     </div>
     <div class="ai-result-box" id="aiResultBox"></div>
-    <button class="tool-btn" id="aiResultCopyBtn" style="display:none;margin-top:10px;">搭 邨先棡繧貞・譁・さ繝斐・</button>
+    <button class="tool-btn" id="aiResultCopyBtn" style="display:none;margin-top:10px;">📋 結果を全文コピー</button>
   </div>
 </div>
 
@@ -492,15 +492,15 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 <div class="sheet" id="graphsSheet">
   <div class="sheet-handle"></div>
   <div class="sheet-header">
-    <button id="graphsSheetClose">髢峨§繧・/button>
-    <h2>繧ｰ繝ｩ繝穂ｸ隕ｧ</h2>
-    <button id="newGraphBtn" style="color:var(--gold);font-weight:800;">・・譁ｰ隕・/button>
+    <button id="graphsSheetClose">閉じる</button>
+    <h2>グラフ一覧</h2>
+    <button id="newGraphBtn" style="color:var(--gold);font-weight:800;">＋ 新規</button>
   </div>
   <div class="sheet-body">
     <div id="graphListWrap"></div>
     <div style="margin-top:8px;border-top:1px solid var(--border);padding-top:14px;">
       <button class="tool-btn" id="importTransferBtn" style="width:100%;justify-content:center;">
-        踏 is_transfer 縺九ｉ蜿嶺ｿ｡
+        📥 is_transfer から受信
       </button>
     </div>
   </div>
@@ -508,21 +508,21 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 
 <!-- EDGE DELETE HINT -->
 <div id="edgeHint">
-  <p id="edgeHintLabel">縺薙・謗･邯壹ｒ蜑企勁縺励∪縺吶°・・/p>
-  <button id="edgeDeleteBtn">蜑企勁</button>
-  <button id="edgeCancelBtn">繧ｭ繝｣繝ｳ繧ｻ繝ｫ</button>
+  <p id="edgeHintLabel">この接続を削除しますか？</p>
+  <button id="edgeDeleteBtn">削除</button>
+  <button id="edgeCancelBtn">キャンセル</button>
 </div>
 
-<!-- SEARCH SHEET (A: 繧ｰ繝ｩ繝墓ｨｪ譁ｭ讀懃ｴ｢, D: 繧ｿ繧ｰ髫主ｱ､繝悶Λ繧ｦ繧ｶ) -->
+<!-- SEARCH SHEET (A: グラフ横断検索, D: タグ階層ブラウザ) -->
 <div class="sheet" id="searchSheet">
   <div class="sheet-handle"></div>
   <div class="sheet-header">
-    <button id="searchSheetClose">髢峨§繧・/button>
-    <h2 id="searchSheetTitle">讀懃ｴ｢</h2>
+    <button id="searchSheetClose">閉じる</button>
+    <h2 id="searchSheetTitle">検索</h2>
     <span style="width:44px;"></span>
   </div>
   <div class="sheet-body">
-    <input type="text" id="searchInput" placeholder="繝ｩ繝吶Ν繝ｻ繝｡繝｢繝ｻ繧ｿ繧ｰ縺ｧ讀懃ｴ｢・亥・繧ｰ繝ｩ繝墓ｨｪ譁ｭ・・ autocomplete="off">
+    <input type="text" id="searchInput" placeholder="ラベル・メモ・タグで検索（全グラフ横断）" autocomplete="off">
     <div id="tagBrowserWrap"></div>
     <div id="searchResultsWrap"></div>
   </div>
@@ -532,110 +532,110 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 <div class="sheet" id="syncSheet">
   <div class="sheet-handle"></div>
   <div class="sheet-header">
-    <button id="syncSheetClose">髢峨§繧・/button>
-    <h2>笘・ｸ・iCloud蜷梧悄</h2>
+    <button id="syncSheetClose">閉じる</button>
+    <h2>☁️ iCloud同期</h2>
     <span></span>
   </div>
   <div class="sheet-body">
     <div class="sync-platform-box" id="syncCloudBox">
-      <h3>笘・ｸ・繧ｯ繝ｩ繧ｦ繝・蜈ｨ遶ｯ譛ｫ蜈ｱ騾壹・謗ｨ螂ｨ)</h3>
-      <p>Cloudflare Worker縺ｮ繧ｨ繝ｳ繝峨・繧､繝ｳ繝医→繝医・繧ｯ繝ｳ繧・蝗櫁ｨｭ螳壹☆繧後・縲（Phone縺ｧ繧８indows縺ｧ繧ょ酔縺倥ョ繝ｼ繧ｿ縺ｫ繧｢繧ｯ繧ｻ繧ｹ縺ｧ縺阪∪縺吶ゅロ繝・ヨ謗･邯壹＆縺医≠繧後・蜊ｳ蠎ｧ縺ｫ蜿肴丐縺輔ｌ縺ｾ縺吶・/p>
-      <label class="field-label">繧ｨ繝ｳ繝峨・繧､繝ｳ繝・RL</label>
+      <h3>☁️ クラウド(全端末共通・推奨)</h3>
+      <p>Cloudflare Workerのエンドポイントとトークンを1回設定すれば、iPhoneでもWindowsでも同じデータにアクセスできます。ネット接続さえあれば即座に反映されます。</p>
+      <label class="field-label">エンドポイントURL</label>
       <input type="text" id="cloudEndpointInput" placeholder="https://norinori-sync.xxx.workers.dev">
-      <label class="field-label">繝医・繧ｯ繝ｳ</label>
-      <input type="text" id="cloudTokenInput" placeholder="wrangler secret put縺ｧ險ｭ螳壹＠縺溘ヨ繝ｼ繧ｯ繝ｳ">
+      <label class="field-label">トークン</label>
+      <input type="text" id="cloudTokenInput" placeholder="wrangler secret putで設定したトークン">
       <div class="sync-btn-row" style="margin-top:12px;">
-        <button class="tool-btn gold" id="cloudSaveConfigBtn">菫晏ｭ・/button>
-        <button class="tool-btn" id="cloudSyncNowBtn">売 莉翫☆縺仙酔譛・/button>
+        <button class="tool-btn gold" id="cloudSaveConfigBtn">保存</button>
+        <button class="tool-btn" id="cloudSyncNowBtn">🔄 今すぐ同期</button>
       </div>
-      <div class="sync-status-line" id="cloudSyncStatus">譛ｪ險ｭ螳・/div>
+      <div class="sync-status-line" id="cloudSyncStatus">未設定</div>
     </div>
     <div class="sync-platform-box" id="syncDesktopBox">
-      <h3>捗 Windows / PC・医ヵ繧ｩ繝ｫ繝蜷梧悄繝ｻ莉｣譖ｿ謇区ｮｵ・・/h3>
-      <p>iCloud Drive for Windows縺ｮ蜷梧悄繝輔か繝ｫ繝繧剃ｸ蠎ｦ驕ｸ縺ｶ縺ｨ縲∽ｻ･髯阪・螟画峩縺ｮ縺溘・縺ｫ閾ｪ蜍輔〒譖ｸ縺崎ｾｼ縺ｿ繝ｻ襍ｷ蜍墓凾縺ｫ隱ｭ縺ｿ霎ｼ縺ｿ縺ｾ縺吶・/p>
+      <h3>💻 Windows / PC（フォルダ同期・代替手段）</h3>
+      <p>iCloud Drive for Windowsの同期フォルダを一度選ぶと、以降は変更のたびに自動で書き込み・起動時に読み込みます。</p>
       <div class="sync-btn-row">
-        <button class="tool-btn" id="syncConnectBtn">刀 繝輔か繝ｫ繝縺ｫ謗･邯・/button>
-        <button class="tool-btn" id="syncNowBtn">売 莉翫☆縺仙酔譛・/button>
+        <button class="tool-btn" id="syncConnectBtn">📁 フォルダに接続</button>
+        <button class="tool-btn" id="syncNowBtn">🔄 今すぐ同期</button>
       </div>
-      <div class="sync-status-line" id="syncDesktopStatus">譛ｪ謗･邯・/div>
+      <div class="sync-status-line" id="syncDesktopStatus">未接続</div>
     </div>
     <div class="sync-platform-box" id="syncMobileBox">
-      <h3>導 iPhone・域焔蜍墓嶌縺榊・縺励・莉｣譖ｿ謇区ｮｵ・・/h3>
-      <p>譖ｸ縺榊・縺冷・縲熊iles縺ｫ菫晏ｭ倥阪〒iCloud Drive繧帝∈縺ｶ・剰ｪｭ縺ｿ霎ｼ縺ｿ竊偵ヵ繧｡繧､繝ｫ驕ｸ謚槭〒iCloud Drive縺九ｉ驕ｸ縺ｶ縲√→縺・≧謇句虚繝輔Ο繝ｼ縺ｧ縺吶・/p>
+      <h3>📱 iPhone（手動書き出し・代替手段）</h3>
+      <p>書き出し→「Filesに保存」でiCloud Driveを選ぶ／読み込み→ファイル選択でiCloud Driveから選ぶ、という手動フローです。</p>
       <div class="sync-btn-row">
-        <button class="tool-btn" id="syncExportBtn">筮・ｸ・iCloud縺ｸ譖ｸ縺榊・縺・/button>
-        <button class="tool-btn" id="syncImportBtn">筮・ｸ・iCloud縺九ｉ隱ｭ縺ｿ霎ｼ繧</button>
+        <button class="tool-btn" id="syncExportBtn">⬆️ iCloudへ書き出す</button>
+        <button class="tool-btn" id="syncImportBtn">⬇️ iCloudから読み込む</button>
       </div>
       <div class="sync-status-line" id="syncMobileStatus"></div>
     </div>
     <div class="sync-platform-box" id="syncDriveKeepBox">
-      <h3>統 Google Keep・・rive邨檎罰繝ｻ蜿梧婿蜷托ｼ・/h3>
-      <p>Keep譛ｬ菴薙↓縺ｯ謗･邯壹○縺壹；oogle Drive荳翫・蟆ら畑繝輔か繝ｫ繝(flow-mind-keep-sync)繧狸eep縺ｮ莉｣繧上ｊ縺ｫ菴ｿ縺・√ヮ繝ｼ繝峨→蜿梧婿蜷代↓蜷梧悄縺励∪縺吶ゅい繧ｯ繧ｻ繧ｹ遽・峇縺ｯ縺薙・繧｢繝励Μ縺御ｽ懈・縺励◆繝輔ぃ繧､繝ｫ縺ｮ縺ｿ(drive.file繧ｹ繧ｳ繝ｼ繝・縲・/p>
-      <label class="field-label">繧ｯ繝ｩ繧､繧｢繝ｳ繝・D</label>
+      <h3>📝 Google Keep（Drive経由・双方向）</h3>
+      <p>Keep本体には接続せず、Google Drive上の専用フォルダ(flow-mind-keep-sync)をKeepの代わりに使い、ノードと双方向に同期します。アクセス範囲はこのアプリが作成したファイルのみ(drive.fileスコープ)。</p>
+      <label class="field-label">クライアントID</label>
       <input type="text" id="driveKeepClientIdInput" placeholder="xxxxxxxxxx.apps.googleusercontent.com"
         value="976527515292-e0kodj8bidtksuasiljj2fv64273q827.apps.googleusercontent.com">
       <div class="sync-btn-row" style="margin-top:12px;">
-        <button class="tool-btn gold" id="driveKeepAuthorizeBtn">泊 騾｣謳ｺ繧定ｨｱ蜿ｯ</button>
-        <button class="tool-btn" id="driveKeepSyncNowBtn">売 莉翫☆縺仙酔譛・/button>
+        <button class="tool-btn gold" id="driveKeepAuthorizeBtn">🔑 連携を許可</button>
+        <button class="tool-btn" id="driveKeepSyncNowBtn">🔄 今すぐ同期</button>
       </div>
-      <div class="sync-status-line" id="driveKeepStatus">譛ｪ險ｭ螳・/div>
+      <div class="sync-status-line" id="driveKeepStatus">未設定</div>
     </div>
     <div class="sync-platform-box" id="syncSheetsBox">
-      <h3>投 Google繧ｹ繝励Ξ繝・ラ繧ｷ繝ｼ繝茨ｼ医け繧､繝・け繧ｭ繝｣繝励メ繝｣・・/h3>
-      <p>髮ｻ霆翫・荳ｭ縺ｪ縺ｩ縺ｧiPhone縺ｮGoogle Sheets繧｢繝励Μ縺ｫ1陦瑚ｿｽ蜉縺吶ｋ縺縺代〒縲∵ｬ｡縺ｫflow-mind繧帝幕縺・◆縺ｨ縺阪↓閾ｪ蜍輔〒繝弱・繝牙喧縺輔ｌ縺ｾ縺吶ゅ・繝ｼ繧ｸ繧帝幕縺咲峩縺励※繧ょ・險ｱ蜿ｯ縺ｯ荳崎ｦ√〒縺吶・/p>
-      <label class="field-label">Web App縺ｮURL</label>
+      <h3>📊 Googleスプレッドシート（クイックキャプチャ）</h3>
+      <p>電車の中などでiPhoneのGoogle Sheetsアプリに1行追加するだけで、次にflow-mindを開いたときに自動でノード化されます。ページを開き直しても再許可は不要です。</p>
+      <label class="field-label">Web AppのURL</label>
       <input type="text" id="sheetsUrlInput" placeholder="https://script.google.com/macros/s/xxxxx/exec">
-      <label class="field-label">繝医・繧ｯ繝ｳ</label>
-      <input type="text" id="sheetsTokenInput" placeholder="Code.gs縺ｮSECRET_TOKEN縺ｨ蜷後§蛟､">
+      <label class="field-label">トークン</label>
+      <input type="text" id="sheetsTokenInput" placeholder="Code.gsのSECRET_TOKENと同じ値">
       <div class="sync-btn-row" style="margin-top:12px;">
-        <button class="tool-btn gold" id="sheetsSaveConfigBtn">菫晏ｭ・/button>
-        <button class="tool-btn" id="sheetsSyncNowBtn">売 莉翫☆縺仙酔譛・/button>
+        <button class="tool-btn gold" id="sheetsSaveConfigBtn">保存</button>
+        <button class="tool-btn" id="sheetsSyncNowBtn">🔄 今すぐ同期</button>
       </div>
-      <div class="sync-status-line" id="sheetsSyncStatus">譛ｪ險ｭ螳・/div>
+      <div class="sync-status-line" id="sheetsSyncStatus">未設定</div>
     </div>
-<!-- 諢滓ュ繝悶Μ繝・ず -->
+<!-- 感情ブリッジ -->
     <div class="sync-platform-box" id="syncEmotionBridgeBox">
-      <h3>潔 諢滓ュ繝悶Μ繝・ず・・uick-ref繝ｻ蜿梧婿蜷托ｼ・/h3>
-      <p>fm_graphs蜈ｨ菴薙〒縺ｯ縺ｪ縺上∫樟蝨ｨ縺ｮattractor・域─諠・憾諷具ｼ峨□縺代ｒquick-ref縺ｨ蜿梧婿蜷代〒繧・ｊ蜿悶ｊ縺励∪縺吶Ｆmotion-bridge-api(Cloudflare Pages Functions)邨檎罰縲・/p>
-      <label class="field-label">繧ｨ繝ｳ繝峨・繧､繝ｳ繝・RL</label>
+      <h3>🌉 感情ブリッジ（quick-ref・双方向）</h3>
+      <p>fm_graphs全体ではなく、現在のattractor（感情状態）だけをquick-refと双方向でやり取りします。emotion-bridge-api(Cloudflare Pages Functions)経由。</p>
+      <label class="field-label">エンドポイントURL</label>
       <input type="text" id="ebEndpointInput" placeholder="https://emotion-bridge-api.pages.dev">
-      <label class="field-label">繝医・繧ｯ繝ｳ</label>
-      <input type="text" id="ebTokenInput" placeholder="BRIDGE_TOKEN縺ｨ蜷後§蛟､">
+      <label class="field-label">トークン</label>
+      <input type="text" id="ebTokenInput" placeholder="BRIDGE_TOKENと同じ値">
       <div class="sync-btn-row" style="margin-top:12px;">
-        <button class="tool-btn gold" id="ebSaveConfigBtn">菫晏ｭ・/button>
-        <button class="tool-btn" id="ebPullNowBtn">売 莉翫☆縺仙叙蠕・/button>
+        <button class="tool-btn gold" id="ebSaveConfigBtn">保存</button>
+        <button class="tool-btn" id="ebPullNowBtn">🔄 今すぐ取得</button>
       </div>
-      <div class="sync-status-line" id="ebStatus">譛ｪ險ｭ螳・/div>
+      <div class="sync-status-line" id="ebStatus">未設定</div>
     </div>
 
-    <!-- quick-ref sync-worker 騾｣謳ｺ險ｭ螳・-->
+    <!-- quick-ref sync-worker 連携設定 -->
     <div class="sync-platform-box" id="syncQuickRefBox" style="margin-top: 16px;">
-      <h3>統 quick-ref 繝｡繝｢蜷梧悄・・ync-worker・・/h3>
-      <p>quick-ref 蛛ｴ縺ｮ繝｡繝｢繝・・繧ｿ繧定・蜍募叙蠕励＠縲√ヮ繝ｼ繝峨→縺励※繝輔Ο繝ｼ繝√Ε繝ｼ繝医↓蜿悶ｊ霎ｼ縺ｿ縺ｾ縺吶・/p>
-      <label class="field-label">sync-worker 繧ｨ繝ｳ繝峨・繧､繝ｳ繝・/label>
+      <h3>📝 quick-ref メモ同期（sync-worker）</h3>
+      <p>quick-ref 側のメモデータを自動取得し、ノードとしてフローチャートに取り込みます。</p>
+      <label class="field-label">sync-worker エンドポイント</label>
       <input type="text" id="qrSyncEndpointInput" placeholder="https://sync-worker.xxxx.workers.dev">
       
-      <label class="field-label">隱崎ｨｼ Bearer 繝医・繧ｯ繝ｳ</label>
+      <label class="field-label">認証 Bearer トークン</label>
       <input type="password" id="qrSyncTokenInput" placeholder="Bearer Token...">
       
       <div class="sync-btn-row" style="margin-top:12px;">
-        <button class="tool-btn gold" id="qrSyncSaveConfigBtn">險ｭ螳壹ｒ菫晏ｭ・/button>
+        <button class="tool-btn gold" id="qrSyncSaveConfigBtn">設定を保存</button>
       </div>
     </div>
 
-    <!-- crypto-vault 騾｣謳ｺ險ｭ螳・-->
+    <!-- crypto-vault 連携設定 -->
     <div class="sync-platform-box" id="syncVaultBox">
-      <h3>柏 crypto-vault騾｣謳ｺ・医ち繧､繝医Ν縺ｮ縺ｿ繝ｻ荳譁ｹ蜷托ｼ・/h3>
-      <p>crypto-vault縺九ｉ繧ｨ繝ｳ繝医Μ縺ｮ繧ｿ繧､繝医Ν繝ｻ繧ｫ繝・ざ繝ｪ縺ｮ縺ｿ繧貞女菫｡縺励∪縺吶ゅヱ繧ｹ繝ｯ繝ｼ繝峨・繝ｦ繝ｼ繧ｶ繝ｼ蜷阪・URL遲峨・荳蛻・√ｉ繧後※縺阪∪縺帙ｓ・・rypto-vault蛛ｴ縺ｧ騾∽ｿ｡蜑阪↓繧ｵ繝ｼ繝舌・蛛ｴ繧ょ性繧∽ｺ碁㍾縺ｫ髯､螟悶＆繧後※縺・∪縺呻ｼ峨・/p>
-      <label class="field-label">繧ｨ繝ｳ繝峨・繧､繝ｳ繝・RL</label>
+      <h3>🔐 crypto-vault連携（タイトルのみ・一方向）</h3>
+      <p>crypto-vaultからエントリのタイトル・カテゴリのみを受信します。パスワード・ユーザー名・URL等は一切送られてきません（crypto-vault側で送信前にサーバー側も含め二重に除外されています）。</p>
+      <label class="field-label">エンドポイントURL</label>
       <input type="text" id="vaultUrlInput" placeholder="https://vault-bridge-api.pages.dev">
-      <label class="field-label">繝医・繧ｯ繝ｳ</label>
-      <input type="text" id="vaultTokenInput" placeholder="VAULT_BRIDGE_TOKEN縺ｨ蜷後§蛟､">
+      <label class="field-label">トークン</label>
+      <input type="text" id="vaultTokenInput" placeholder="VAULT_BRIDGE_TOKENと同じ値">
       <div class="sync-btn-row" style="margin-top:12px;">
-        <button class="tool-btn gold" id="vaultSaveConfigBtn">菫晏ｭ・/button>
-        <button class="tool-btn" id="vaultSyncNowBtn">売 莉翫☆縺仙叙蠕・/button>
+        <button class="tool-btn gold" id="vaultSaveConfigBtn">保存</button>
+        <button class="tool-btn" id="vaultSyncNowBtn">🔄 今すぐ取得</button>
       </div>
-      <div class="sync-status-line" id="vaultSyncStatus">譛ｪ險ｭ螳・/div>
+      <div class="sync-status-line" id="vaultSyncStatus">未設定</div>
     </div>
   </div>
 </div>
@@ -644,33 +644,33 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 <div class="sheet" id="onboardingSheet">
   <div class="sheet-handle"></div>
   <div class="sheet-header">
-    <button id="onboardingSkip">繧ｹ繧ｭ繝・・</button>
-    <h2>flow-mind縺ｮ菴ｿ縺・婿</h2>
+    <button id="onboardingSkip">スキップ</button>
+    <h2>flow-mindの使い方</h2>
     <span id="onboardingStepIndicator" style="font-size:12px;color:var(--text-dim);"></span>
   </div>
   <div class="sheet-body" id="onboardingBody"></div>
   <div style="padding:0 16px calc(env(safe-area-inset-bottom, 0px)+20px);">
-    <button class="tool-btn gold" id="onboardingNextBtn" style="width:100%;justify-content:center;">谺｡縺ｸ</button>
+    <button class="tool-btn gold" id="onboardingNextBtn" style="width:100%;justify-content:center;">次へ</button>
   </div>
 </div>
 
 <!-- AI LOADING -->
-<div id="aiLoading">竢ｳ AI縺悟・譫蝉ｸｭ窶ｦ</div>
+<div id="aiLoading">⏳ AIが分析中…</div>
 
 <!-- QUICK CAPTURE FAB -->
-<button id="quickCaptureFab" aria-label="縺吶＄險倬鹸">笞｡</button>
+<button id="quickCaptureFab" aria-label="すぐ記録">⚡</button>
 
 <!-- QUICK CAPTURE BAR -->
 <div id="quickCaptureBar">
   <div class="qc-header">
-    <span class="qc-title">笞｡ 縺吶＄險倬鹸</span>
-    <button class="qc-close" id="qcCopyBtn" style="margin-right:8px;">搭 繧ｳ繝斐・</button>
-    <button class="qc-close" id="qcCloseBtn">髢峨§繧・/button>
+    <span class="qc-title">⚡ すぐ記録</span>
+    <button class="qc-close" id="qcCopyBtn" style="margin-right:8px;">📋 コピー</button>
+    <button class="qc-close" id="qcCloseBtn">閉じる</button>
   </div>
   <div class="qc-row">
-    <textarea id="qcInput" placeholder="諤昴＞縺､縺・◆縺薙→繧偵◎縺ｮ縺ｾ縺ｾ窶ｦ" rows="1"></textarea>
-    <button class="qc-mic-btn" id="qcMicBtn" title="髻ｳ螢ｰ縺ｧ險倬鹸">児</button>
-    <button class="qc-send-btn" id="qcSendBtn" title="繝弱・繝峨→縺励※霑ｽ蜉">・・/button>
+    <textarea id="qcInput" placeholder="思いついたことをそのまま…" rows="1"></textarea>
+    <button class="qc-mic-btn" id="qcMicBtn" title="音声で記録">🎙</button>
+    <button class="qc-send-btn" id="qcSendBtn" title="ノードとして追加">＋</button>
   </div>
   <div class="qc-status" id="qcStatus"></div>
 </div>
@@ -678,7 +678,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<!-- 蜷梧悄繝｢繧ｸ繝･繝ｼ繝ｫ -->
+<!-- 同期モジュール -->
 <script src="./shared/sync-bridge.js"></script>
 <script src="./shared/cloud-sync.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -688,17 +688,17 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 <script src="./shared/vault-sync.js"></script>
 
 <script>
-// 笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
-// saveGraphs・医Ο繝ｼ繧ｫ繝ｫ・九け繝ｩ繧ｦ繝芽・蜍穂ｿ晏ｭ假ｼ・
-// 笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
-// 笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
-// 蜷梧悄繝｢繝ｼ繝芽ｨｭ螳・
-// 笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
+// ─────────────────────────────────────────────
+// saveGraphs（ローカル＋クラウド自動保存）
+// ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// 同期モード設定
+// ─────────────────────────────────────────────
 let CLOUD_PRIORITY = false;
 
-// 笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
-// loadFromCloud・医け繝ｩ繧ｦ繝芽・蜍輔Ο繝ｼ繝会ｼ・
-// 笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
+// ─────────────────────────────────────────────
+// loadFromCloud（クラウド自動ロード）
+// ─────────────────────────────────────────────
 async function loadFromCloud() {
     if (!window.SyncBridge || !SyncBridge.isConfigured()) return;
 
@@ -707,7 +707,7 @@ async function loadFromCloud() {
     await SyncBridge.autoLoad("flow-mind", localTs, (cloudData, cloudTs) => {
         if (!cloudData || typeof cloudData !== "object") return;
 
-        // 笏笏 繧ｯ繝ｩ繧ｦ繝牙━蜈医Δ繝ｼ繝・笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
+        // ── クラウド優先モード ─────────────────────────────
         if (CLOUD_PRIORITY) {
             graphs = cloudData;
             localStorage.setItem("fm_graphs", JSON.stringify(graphs));
@@ -717,12 +717,12 @@ async function loadFromCloud() {
             if (ids.length > 0) currentGraphId = ids[0];
 
             renderAll();
-            showToast("笘・ｸ・繧ｯ繝ｩ繧ｦ繝牙━蜈医Δ繝ｼ繝会ｼ壹け繝ｩ繧ｦ繝峨°繧牙ｾｩ蜈・＠縺ｾ縺励◆");
+            showToast("☁️ クラウド優先モード：クラウドから復元しました");
             return;
         }
 
-        // 笏笏 繝ｭ繝ｼ繧ｫ繝ｫ蜆ｪ蜈医Δ繝ｼ繝会ｼ域里蟄倥・謖吝虚・・笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
-        const msg = `笘・ｸ・繧ｯ繝ｩ繧ｦ繝峨↓譁ｰ縺励＞繝・・繧ｿ縺後≠繧翫∪縺兔n(${new Date(cloudTs).toLocaleString("ja-JP")})\n\n荳頑嶌縺阪＠縺ｦ隱ｭ縺ｿ霎ｼ縺ｿ縺ｾ縺吶°・歔;
+        // ── ローカル優先モード（既存の挙動） ─────────────────
+        const msg = `☁️ クラウドに新しいデータがあります\n(${new Date(cloudTs).toLocaleString("ja-JP")})\n\n上書きして読み込みますか？`;
         if (!confirm(msg)) return;
 
         graphs = cloudData;
@@ -733,13 +733,13 @@ async function loadFromCloud() {
         if (ids.length > 0) currentGraphId = ids[0];
 
         renderAll();
-        showToast("笘・ｸ・繧ｯ繝ｩ繧ｦ繝峨°繧牙ｾｩ蜈・＠縺ｾ縺励◆");
+        showToast("☁️ クラウドから復元しました");
     });
 }
 
-// 笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
-// 繧ｪ繝ｳ繝ｩ繧､繝ｳ蠕ｩ蟶ｰ譎ゅ・蜀埼・ｼ遺ｻ驥崎､・↑縺暦ｼ・
-// 笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
+// ─────────────────────────────────────────────
+// オンライン復帰時の再送（※重複なし）
+// ─────────────────────────────────────────────
 window.addEventListener('online', () => {
     if (window.SyncBridge) SyncBridge.retryPending();
     if (window.CloudSync) CloudSync.retryPending();
@@ -747,9 +747,9 @@ window.addEventListener('online', () => {
 
 
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 // CONSTANTS & STATE
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 const LS_GRAPHS   = 'fm_graphs';
 const LS_CURRENT  = 'fm_current';
 const LS_CLAUDE   = 'ml_claude';
@@ -758,8 +758,8 @@ const LS_OPENAI   = 'ml_openai';
 const LS_PROXY    = 'kansei_proxy_url';
 const LS_MODEL    = 'kansei_model';
 const LS_TRANSFER = 'is_transfer';
-// 繝悶Μ繝・ず(quick-ref-bridge遲・縺御ｿ晏ｭ倥・縺溘・縺ｫ閾ｪ蜍暮∽ｿ｡縺吶ｋ蟆ら畑繧ｭ繝ｼ縲・
-// 謇句虚縺ｮ縲悟・繝・・繧ｿ荳諡ｬ霆｢騾√・is_transfer)縺ｨ縺ｯ蛻･繧ｭ繝ｼ縺ｪ縺ｮ縺ｧ荳頑嶌縺堺ｺ区腐繧帝∩縺代ｉ繧後ｋ縲・
+// ブリッジ(quick-ref-bridge等)が保存のたびに自動送信する専用キー。
+// 手動の「全データ一括転送」(is_transfer)とは別キーなので上書き事故を避けられる。
 const LS_EMOTION_TRANSFER = 'is_emotion_transfer';
 
 const MODELS = {
@@ -768,27 +768,27 @@ const MODELS = {
   openai: { label:'OpenAI', endpoint:'https://api.openai.com/v1/chat/completions', model:'gpt-4o-mini' },
 };
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// 閾ｪ蜍輔ち繧ｰ謚ｽ蜃ｺ・医く繝ｼ繝ｯ繝ｼ繝峨・繝ｼ繧ｹ繝ｻ蜊ｳ譎ゑｼ上が繝輔Λ繧､繝ｳ・・
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
+// 自動タグ抽出（キーワードベース・即時／オフライン）
+// ═══════════════════════════════════
 const TAG_KEYWORD_DICT = {
-  '諢滓ュ-諤偵ｊ':   ['諤偵ｊ','繧､繝ｩ繧､繝ｩ','閻ｹ遶・,'繝繧ｫ'],
-  '諢滓ュ-荳榊ｮ・:   ['荳榊ｮ・,'蠢・・','辟ｦ繧・,'諤・],
-  '諢滓ュ-蝟懊・':   ['螫峨＠','讌ｽ縺・,'繝ｯ繧ｯ繝ｯ繧ｯ','螳牙ｿ・],
-  '莉穂ｺ・:        ['莉穂ｺ・,'讌ｭ蜍・,'譯井ｻｶ','邱蛻・,'繧ｿ繧ｹ繧ｯ'],
-  '繧｢繧､繝・い':    ['繧｢繧､繝・い','諤昴＞縺､縺・,'縺ｲ繧峨ａ縺・],
-  '莠ｺ髢馴未菫・:    ['蜿倶ｺｺ','螳ｶ譌・,'蜷悟・','諱倶ｺｺ','荳雁昇'],
-  '霄ｫ菴・:        ['逍ｲ繧・,'逵','菴楢ｪｿ','逞・],
+  '感情-怒り':   ['怒り','イライラ','腹立','ムカ'],
+  '感情-不安':   ['不安','心配','焦り','怖'],
+  '感情-喜び':   ['嬉し','楽し','ワクワク','安心'],
+  '仕事':        ['仕事','業務','案件','締切','タスク'],
+  'アイデア':    ['アイデア','思いつき','ひらめき'],
+  '人間関係':    ['友人','家族','同僚','恋人','上司'],
+  '身体':        ['疲れ','眠','体調','痛'],
 
-  '髢狗匱-繝舌げ':   ['繝舌げ','繧ｨ繝ｩ繝ｼ','萓句､・,'荳榊・蜷・,'菫ｮ豁｣'],
-  '髢狗匱-險ｭ險・:   ['險ｭ險・,'螳溯｣・,'API','髢｢謨ｰ','莉墓ｧ・,'繝ｪ繝輔ぃ繧ｯ繧ｿ'],
-  '髻ｳ讌ｽ':        ['髻ｳ讌ｽ','菴懈峇','繝｡繝ｭ繝・ぅ','豁瑚ｩ・,'讌ｽ譖ｲ'],
-  '繧､繝ｩ繧ｹ繝・:    ['繧､繝ｩ繧ｹ繝・,'邱夂判','逹濶ｲ','謠上￥','邨ｵ'],
-  '蜊縺・:        ['蜊縺・,'譏・,'蜊ｦ','蜈ｭ蜊∝屁蜊ｦ','蜊陦・],
-  '闍ｱ隱槫ｭｦ鄙・:    ['闍ｱ隱・,'闍ｱ譁・,'闍ｱ蜊倩ｪ・,'闍ｱ譁・ｳ・,'逋ｺ髻ｳ'],
-  '繧ｻ繧ｭ繝･繝ｪ繝・ぅ':['繧ｻ繧ｭ繝･繝ｪ繝・ぅ','閼・ｼｱ諤ｧ','XSS','證怜捷','隱崎ｨｼ'],
-  'CAD':         ['CAD','3D繝｢繝・Ν','STEP','STL','蠖｢迥ｶ'],
-  '莨夊ｨ・:        ['莨夊ｨ・,'邨檎炊','莉戊ｨｳ','豎ｺ邂・,'隲区ｱ・],
+  '開発-バグ':   ['バグ','エラー','例外','不具合','修正'],
+  '開発-設計':   ['設計','実装','API','関数','仕様','リファクタ'],
+  '音楽':        ['音楽','作曲','メロディ','歌詞','楽曲'],
+  'イラスト':    ['イラスト','線画','着色','描く','絵'],
+  '占い':        ['占い','易','卦','六十四卦','占術'],
+  '英語学習':    ['英語','英文','英単語','英文法','発音'],
+  'セキュリティ':['セキュリティ','脆弱性','XSS','暗号','認証'],
+  'CAD':         ['CAD','3Dモデル','STEP','STL','形状'],
+  '会計':        ['会計','経理','仕訳','決算','請求'],
 };
 
 function extractTagsFromText(label, memo) {
@@ -800,48 +800,48 @@ function extractTagsFromText(label, memo) {
   return tags;
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// 諢滓ュ縺ｮ迚ｩ逅・Δ繝・Ν 窶・螳壽焚・・髫主ｱ､・・
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// 竭 髮ｻ闕ｷ縺ｮ貂幄｡ｰ騾溷ｺｦ・域凾螳壽焚 ﾏ・ ms・・
+// ═══════════════════════════════════
+// 感情の物理モデル — 定数（4階層）
+// ═══════════════════════════════════
+// ① 電荷の減衰速度（時定数 τ, ms）
 const CHARGE_DECAY_TAU = 4000;
-// 竭 逋ｺ轣ｫ縺励″縺・､
+// ① 発火しきい値
 const FIRE_CHARGE_BOOST = 0.7;
-// 竭｡ 莨晄眺蜉ｹ邇・ｼ磯崕豬≫・髮ｻ蝣ｴ繝ｻ逎∝ｴ縺ｮ繧｢繝翫Ο繧ｸ繝ｼ・壹お繝・ず縺ｮconductance縺ｧ蠅怜ｹ・ｼ・
+// ② 伝播効率（電流→電場・磁場のアナロジー：エッジのconductanceで増幅）
 const PROPAGATION_FACTOR = 0.42;
-// 竭 Hebbian蠑ｷ蛹門ｹ・ｼ亥酔譎ら匱轣ｫ縺ｧconductance縺御ｼｸ縺ｳ繧矩㍼・・
+// ① Hebbian強化幅（同時発火でconductanceが伸びる量）
 const HEBBIAN_STEP = 0.04;
-// 竭｢ 蜷梧悄讀懷・縺ｮ譎る俣遯難ｼ・s・俄・縺薙・遯灘・縺ｮ逋ｺ轣ｫ繧偵悟酔譛溘阪→縺ｿ縺ｪ縺・
+// ③ 同期検出の時間窓（ms）— この窓内の発火を「同期」とみなす
 const SYNC_WINDOW_MS = 2200;
-// 竭｢ 蜻ｨ豕｢謨ｰ蟶ｯ縺ｮ蠅・阜・・z逶ｸ蠖薙∫匱轣ｫ髢馴囈縺九ｉ騾・ｮ励＠縺溽桝莨ｼ蜻ｨ豕｢謨ｰ・・
+// ③ 周波数帯の境界（Hz相当、発火間隔から逆算した疑似周波数）
 const BAND_THRESH = { gamma:30, beta:13, alpha:8, theta:4 };
-// 竭｢ 蟶ｯ蝓溘＃縺ｨ縺ｮ濶ｲ繝ｻ騾溷ｺｦ・亥庄隕門喧逕ｨ・・
+// ③ 帯域ごとの色・速度（可視化用）
 const BAND_STYLE = {
-  gamma: { color:'#FF5F5F', speed:1.0, label:'ﾎｳ豕｢・域偵ｊ繝ｻ髮・ｸｭ・・ },
-  beta:  { color:'#FB923C', speed:0.7, label:'ﾎｲ豕｢・域晁・・邱雁ｼｵ・・ },
-  alpha: { color:'#4AE09A', speed:0.45,label:'ﾎｱ豕｢・医Μ繝ｩ繝・け繧ｹ・・ },
-  theta: { color:'#C084FC', speed:0.3, label:'ﾎｸ豕｢・井ｸ榊ｮ峨・險俶・・・ },
-  delta: { color:'#4A9EFF', speed:0.18,label:'ﾎｴ豕｢・域ｷｱ縺・ュ蜍包ｼ・ },
+  gamma: { color:'#FF5F5F', speed:1.0, label:'γ波（怒り・集中）' },
+  beta:  { color:'#FB923C', speed:0.7, label:'β波（思考・緊張）' },
+  alpha: { color:'#4AE09A', speed:0.45,label:'α波（リラックス）' },
+  theta: { color:'#C084FC', speed:0.3, label:'θ波（不安・記憶）' },
+  delta: { color:'#4A9EFF', speed:0.18,label:'δ波（深い情動）' },
 };
-// 竭｣ attractor蛻､螳壹ユ繝ｼ繝悶Ν・亥ｸｯ蝓・ﾃ・蟇・ｺｦ ﾃ・謖∫ｶ壽凾髢・竊・諢滓ュ繝ｩ繝吶Ν・・
+// ④ attractor判定テーブル（帯域 × 密度 × 持続時間 → 感情ラベル）
 function classifyAttractor(cluster) {
   const { band, density, durationMs, size } = cluster;
   if (size < 2) return null;
   if (band === 'gamma') {
-    if (density > 0.6 && durationMs > 2800) return { label:'諤偵ｊ', color:BAND_STYLE.gamma.color };
-    return { label:'髮・ｸｭ', color:BAND_STYLE.gamma.color };
+    if (density > 0.6 && durationMs > 2800) return { label:'怒り', color:BAND_STYLE.gamma.color };
+    return { label:'集中', color:BAND_STYLE.gamma.color };
   }
   if (band === 'beta') {
-    return durationMs > 3000 ? { label:'邱雁ｼｵ', color:BAND_STYLE.beta.color } : { label:'諤晁・ｸｭ', color:BAND_STYLE.beta.color };
+    return durationMs > 3000 ? { label:'緊張', color:BAND_STYLE.beta.color } : { label:'思考中', color:BAND_STYLE.beta.color };
   }
   if (band === 'alpha') {
-    return { label:'繝ｪ繝ｩ繝・け繧ｹ', color:BAND_STYLE.alpha.color };
+    return { label:'リラックス', color:BAND_STYLE.alpha.color };
   }
   if (band === 'theta') {
-    return density > 0.5 ? { label:'荳榊ｮ・, color:BAND_STYLE.theta.color } : { label:'諠ｳ襍ｷ', color:BAND_STYLE.theta.color };
+    return density > 0.5 ? { label:'不安', color:BAND_STYLE.theta.color } : { label:'想起', color:BAND_STYLE.theta.color };
   }
   if (band === 'delta') {
-    return durationMs > 5000 ? { label:'豺ｱ縺・ュ蜍・, color:BAND_STYLE.delta.color } : null;
+    return durationMs > 5000 ? { label:'深い情動', color:BAND_STYLE.delta.color } : null;
   }
   return null;
 }
@@ -879,10 +879,10 @@ let animFrame = null;
 let glowPhase = 0;
 let lastFrameTime = performance.now();
 
-// 迴ｾ蝨ｨ縺ｮattractor迥ｶ諷具ｼ遺促 繧ｯ繧ｪ繝ｪ繧｢螻､・・
+// 現在のattractor状態（④ クオリア層）
 let currentAttractor = null;
 let currentSyncClusters = [];
-// 繧ｯ繧､繝・け險倬鹸縺ｮ閾ｪ蜍墓磁邯壹↓菴ｿ縺・檎峩蜑阪↓逋ｺ轣ｫ縺励◆繝弱・繝峨・
+// クイック記録の自動接続に使う「直前に発火したノード」
 let lastFiredNodeId = null;
 
 // Node default
@@ -890,12 +890,12 @@ const NODE_R = 38;
 let editingNodeId = null;
 let editingNodeColor = '#4A9EFF';
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// FLOWCHART LAYOUT 窶・蟶ｸ譎ゅ∵ｧ矩蛹悶＆繧後◆荳岩・荳九・繝ｬ繧､繧｢繧ｦ繝医↓謨ｴ蛻励＆縺帙ｋ
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// 繧ｨ繝・ず縺ｮ蜷代″(from竊稚o)繧剃ｽｿ縺｣縺ｦ蜷・ヮ繝ｼ繝峨・縲碁嚴螻､(level)縲阪ｒ豎ｺ繧√・
-// 蜷後§髫主ｱ､縺ｮ繝弱・繝峨・讓ｪ縺ｫ荳ｦ縺ｹ繧九ゅΝ繝ｼ繝・蠕ｪ迺ｰ)縺後≠繧句ｴ蜷医・縲√◎縺薙□縺・
-// 譛ｪ遒ｺ螳壹・縺ｾ縺ｾ谿九ｋ縺ｮ縺ｧ縲∵怙蠕後↓縺ｾ縺ｨ繧√※譛ｫ蟆ｾ縺ｮ髫主ｱ､縺ｸ驟咲ｽｮ縺吶ｋ縲・
+// ═══════════════════════════════════
+// FLOWCHART LAYOUT — 常時、構造化された上→下のレイアウトに整列させる
+// ═══════════════════════════════════
+// エッジの向き(from→to)を使って各ノードの「階層(level)」を決め、
+// 同じ階層のノードは横に並べる。ループ(循環)がある場合は、そこだけ
+// 未確定のまま残るので、最後にまとめて末尾の階層へ配置する。
 function applyFlowchartLayout() {
   const g = currentGraph();
   if (!g) return;
@@ -925,20 +925,20 @@ function applyFlowchartLayout() {
     });
   }
 
-  // 蠕ｪ迺ｰ縺ｪ縺ｩ縺ｧ譛ｪ遒ｺ螳壹・縺ｾ縺ｾ谿九▲縺溘ヮ繝ｼ繝峨・縲∵怙螟ｧ髫主ｱ､縺ｮ谺｡縺ｫ縺ｾ縺ｨ繧√※驟咲ｽｮ
+  // 循環などで未確定のまま残ったノードは、最大階層の次にまとめて配置
   let maxLevel = 0;
   Object.values(level).forEach(l => { if (l > maxLevel) maxLevel = l; });
   ids.forEach(id => { if (level[id] === undefined) { maxLevel++; level[id] = maxLevel; } });
 
-  // 髫主ｱ､縺斐→縺ｫ繧ｰ繝ｫ繝ｼ繝斐Φ繧ｰ縺励※讓ｪ縺ｫ荳ｦ縺ｹ繧・
+  // 階層ごとにグルーピングして横に並べる
   const byLevel = {};
   ids.forEach(id => {
     const l = level[id];
     (byLevel[l] = byLevel[l] || []).push(id);
   });
 
-  const LEVEL_SPACING = 190; // 荳贋ｸ九・髢馴囈
-  const NODE_SPACING = 130;  // 蜷碁嚴螻､蜀・・蟾ｦ蜿ｳ髢馴囈
+  const LEVEL_SPACING = 190; // 上下の間隔
+  const NODE_SPACING = 130;  // 同階層内の左右間隔
 
   Object.keys(byLevel).map(Number).sort((a,b) => a-b).forEach(lvl => {
     const row = byLevel[lvl];
@@ -950,17 +950,17 @@ function applyFlowchartLayout() {
   });
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 // UTILS
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 
 function saveGraphs() {
   if (currentGraphId && graphs[currentGraphId]) graphs[currentGraphId].updatedAt = Date.now();
-  try { localStorage.setItem(LS_GRAPHS, JSON.stringify(graphs)); } catch(e) { showToast('菫晏ｭ伜ｮｹ驥上′荳崎ｶｳ縺励※縺・∪縺・); }
-  // Windows/PC 縺ｧ繝輔か繝ｫ繝謗･邯壽ｸ医∩縺ｪ繧芽・蜍輔〒iCloud Drive縺ｸ繧よ嶌縺崎ｾｼ繧・医ョ繝舌え繝ｳ繧ｹ貂医∩繝ｻ譛ｪ謗･邯壹↑繧我ｽ輔ｂ縺励↑縺・ｼ・
+  try { localStorage.setItem(LS_GRAPHS, JSON.stringify(graphs)); } catch(e) { showToast('保存容量が不足しています'); }
+  // Windows/PC でフォルダ接続済みなら自動でiCloud Driveへも書き込む（デバウンス済み・未接続なら何もしない）
   if (window.SyncBridge) SyncBridge.autoSave('flow-mind', graphs);
-  // 繧ｯ繝ｩ繧ｦ繝・蜈ｨ遶ｯ譛ｫ蜈ｱ騾・縺瑚ｨｭ螳壽ｸ医∩縺ｪ繧峨◎縺｡繧峨↓繧り・蜍墓嶌縺崎ｾｼ縺ｿ
+  // クラウド(全端末共通)が設定済みならそちらにも自動書き込み
   if (window.CloudSync) CloudSync.cloudSave('flow-mind', graphs);
 }
 
@@ -970,10 +970,10 @@ function loadGraphs() {
     graphs = raw ? JSON.parse(raw) : {};
     currentGraphId = localStorage.getItem(LS_CURRENT) || null;
     if (!currentGraphId || !graphs[currentGraphId]) {
-      // 繝・ヵ繧ｩ繝ｫ繝医げ繝ｩ繝穂ｽ懈・
-      createGraph('縺ｯ縺倥ａ縺ｦ縺ｮ繧ｰ繝ｩ繝・);
+      // デフォルトグラフ作成
+      createGraph('はじめてのグラフ');
     }
-  } catch(e) { graphs = {}; createGraph('繧ｰ繝ｩ繝・'); }
+  } catch(e) { graphs = {}; createGraph('グラフ1'); }
 }
 
 function createGraph(name) {
@@ -997,26 +997,26 @@ function switchGraph(id) {
   renderGraphList();
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// PAGE RANK 窶・驥崎ｦ∝ｺｦ繧ｹ繧ｳ繧｢險育ｮ・
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
+// PAGE RANK — 重要度スコア計算
+// ═══════════════════════════════════
 function computeScores() {
   const g = currentGraph();
   if (!g) return {};
   const nids = Object.keys(g.nodes);
   if (nids.length === 0) return {};
 
-  // 蛻晄悄繧ｹ繧ｳ繧｢ = 閾ｪ蟾ｱ驥阪∩
+  // 初期スコア = 自己重み
   const scores = {};
   nids.forEach(id => { scores[id] = g.nodes[id].weight || 3; });
 
-  // 蜿榊ｾｩ・・蝗橸ｼ・
+  // 反復（3回）
   for (let iter = 0; iter < 3; iter++) {
     const next = {};
-    nids.forEach(id => { next[id] = g.nodes[id].weight || 3; }); // 閾ｪ蟾ｱ驥阪∩縺後・繝ｼ繧ｹ
+    nids.forEach(id => { next[id] = g.nodes[id].weight || 3; }); // 自己重みがベース
     g.edges.forEach(e => {
       const w = e.weight || 1;
-      // to繝弱・繝峨・from繝弱・繝峨・繧ｹ繧ｳ繧｢繧貞女縺大叙繧・
+      // toノードはfromノードのスコアを受け取る
       if (next[e.to] !== undefined && scores[e.from] !== undefined) {
         next[e.to] += scores[e.from] * w * 0.4;
       }
@@ -1024,16 +1024,16 @@ function computeScores() {
     Object.assign(scores, next);
   }
 
-  // 豁｣隕丞喧 [0..1]
+  // 正規化 [0..1]
   const max = Math.max(...Object.values(scores));
   if (max > 0) nids.forEach(id => { scores[id] = scores[id] / max; });
   return scores;
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// 竭 竭｡ 諢滓ュ縺ｮ迚ｩ逅・Δ繝・Ν 窶・髮ｻ闕ｷ縺ｮ豬√ｌ縺ｨ莨晄眺
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// 繝弱・繝峨ｒ縲檎匱轣ｫ縲阪＆縺帙ｋ・医ち繝・・・晄ｴｻ蜍暮崕菴阪・逋ｺ逕滂ｼ・
+// ═══════════════════════════════════
+// ① ② 感情の物理モデル — 電荷の流れと伝播
+// ═══════════════════════════════════
+// ノードを「発火」させる（タップ＝活動電位の発生）
 function fireNode(id) {
   const g = currentGraph();
   const n = g?.nodes[id];
@@ -1041,14 +1041,14 @@ function fireNode(id) {
 
   ensurePhysicsFields(n);
   const now = Date.now();
-  // 竭 逋ｺ轣ｫ螻･豁ｴ繧定ｨ倬鹸・育峩霑・莉ｶ縺ｾ縺ｧ菫晄戟・・
+  // ① 発火履歴を記録（直近8件まで保持）
   n.fireHistory.push(now);
   if (n.fireHistory.length > 8) n.fireHistory.shift();
   n.lastFired = now;
   n.charge = Math.min(1, n.charge + FIRE_CHARGE_BOOST);
   lastFiredNodeId = id;
 
-  // 竭｡ 髮ｻ豬√′豬√ｌ繧・竊・髫｣謗･繝弱・繝峨∈髮ｻ蝣ｴ繝ｻ逎∝ｴ縺ｮ繧医≧縺ｫ莨晄眺
+  // ② 電流が流れる → 隣接ノードへ電場・磁場のように伝播
   const outEdges = g.edges.filter(e => e.from === id || e.to === id);
   outEdges.forEach(e => {
     ensureEdgePhysics(e);
@@ -1060,7 +1060,7 @@ function fireNode(id) {
     const transferred = n.charge * (e.weight || 1) * e.conductance * PROPAGATION_FACTOR;
     other.charge = Math.min(1, other.charge + transferred);
 
-    // 竭 蜷梧凾逋ｺ轣ｫ縺励※縺・◆繧ｨ繝・ず縺ｯ莨晏ｰ守紫・医す繝翫・繧ｹ蠑ｷ蠎ｦ・峨ｒ蠑ｷ蛹厄ｼ扎ebbian learning
+    // ① 同時発火していたエッジは伝導率（シナプス強度）を強化＝Hebbian learning
     const otherRecentlyFired = other.lastFired && (now - other.lastFired < SYNC_WINDOW_MS);
     if (otherRecentlyFired) {
       e.conductance = Math.min(2, e.conductance + HEBBIAN_STEP);
@@ -1079,7 +1079,7 @@ function ensureEdgePhysics(e) {
   if (e.conductance === undefined) e.conductance = 1.0;
 }
 
-// charge 縺ｮ譎る俣貂幄｡ｰ・医ヵ繝ｬ繝ｼ繝縺斐→縺ｫ蜻ｼ縺ｶ・・
+// charge の時間減衰（フレームごとに呼ぶ）
 function decayCharges(dtMs) {
   const g = currentGraph();
   if (!g) return;
@@ -1090,13 +1090,13 @@ function decayCharges(dtMs) {
   });
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// 竭｢ 逾樒ｵ後ロ繝・ヨ繝ｯ繝ｼ繧ｯ縺ｮ蜷梧悄讀懷・・医さ繝偵・繝ｬ繝ｳ繧ｹ・・
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
+// ③ 神経ネットワークの同期検出（コヒーレンス）
+// ═══════════════════════════════════
 function estimateFreqBand(n) {
   const h = n.fireHistory;
   if (!h || h.length < 2) return null;
-  // 逶ｴ霑代・逋ｺ轣ｫ髢馴囈縺ｮ蟷ｳ蝮・ｼ・s・・竊・逍台ｼｼ蜻ｨ豕｢謨ｰ・・z・峨↓螟画鋤
+  // 直近の発火間隔の平均（ms） → 疑似周波数（Hz）に変換
   const recent = h.slice(-4);
   let totalGap = 0, count = 0;
   for (let i = 1; i < recent.length; i++) {
@@ -1114,7 +1114,7 @@ function estimateFreqBand(n) {
   return 'delta';
 }
 
-// 譎る俣遯灘・縺ｫ逋ｺ轣ｫ縺励※縺・※縲∽ｺ偵＞縺ｫ騾｣邨舌＠縺ｦ縺・ｋ繝弱・繝臥ｾ､繧偵け繝ｩ繧ｹ繧ｿ蛹・
+// 時間窓内に発火していて、互いに連結しているノード群をクラスタ化
 function detectSyncClusters() {
   const g = currentGraph();
   if (!g) return [];
@@ -1125,7 +1125,7 @@ function detectSyncClusters() {
   });
   if (activeIds.length === 0) return [];
 
-  // 髫｣謗･繝槭ャ繝・
+  // 隣接マップ
   const adj = {};
   activeIds.forEach(id => adj[id] = []);
   g.edges.forEach(e => {
@@ -1133,7 +1133,7 @@ function detectSyncClusters() {
     if (adj[e.to] && activeIds.includes(e.from)) adj[e.to].push(e.from);
   });
 
-  // 騾｣邨先・蛻・ｒ謗｢邏｢
+  // 連結成分を探索
   const visited = new Set();
   const clusters = [];
   activeIds.forEach(start => {
@@ -1149,7 +1149,7 @@ function detectSyncClusters() {
     }
     if (comp.length === 0) return;
 
-    // 蟶ｯ蝓溘ｒ螟壽焚豎ｺ縺ｧ豎ｺ螳・
+    // 帯域を多数決で決定
     const bandCounts = {};
     let earliestFire = Infinity, latestFire = 0;
     comp.forEach(id => {
@@ -1166,97 +1166,16 @@ function detectSyncClusters() {
     clusters.push({ nodeIds: comp, band, density, durationMs, size: comp.length });
   });
 
-  return clusters.filter(c => c.size >= 2); // 蜊倡峡繝弱・繝峨・繧ｯ繝ｩ繧ｹ繧ｿ縺ｨ縺ｿ縺ｪ縺輔↑縺・
+  return clusters.filter(c => c.size >= 2); // 単独ノードはクラスタとみなさない
 }
 
-/**
- * 同期したノード群から、新しい「組み合わせノード」を生成する。
- * 既存ノードを置き換えるのではなく、現在の流れから新しい構造を一つ生む。
- */
-function generateEmergentNode(cluster) {
-  const g = currentGraph();
-  if (!g || !cluster || !cluster.nodeIds || cluster.nodeIds.length < 2) return null;
-  const nodes = cluster.nodeIds
-    .map(id => g.nodes[id])
-    .filter(Boolean);
-  if (nodes.length < 2) return null;
-  // 同じ組み合わせを何度も生成しない
-  const sourceIds = nodes.map(n => n.id).sort();
-  const signature = sourceIds.join('|');
-  if (!g.emergentSignatures) g.emergentSignatures = {};
-  if (g.emergentSignatures[signature]) return null;
-  // 既存ノードの内容から新しい概念の種を作る
-  const labels = nodes
-    .map(n => (n.label || '').trim())
-    .filter(Boolean);
-  if (labels.length < 2) return null;
-  const id = uid();
-  const centerX = nodes.reduce((sum, n) => sum + (n.x || 0), 0) / nodes.length;
-  const centerY = nodes.reduce((sum, n) => sum + (n.y || 0), 0) / nodes.length;
-  const label = labels.join(' × ').slice(0, 40);
-  g.nodes[id] = {
-    updatedAt: Date.now(),
-    id,
-    label,
-    memo:
-      'emergent: 同期したノードの組み合わせから生成\n' +
-      labels.map((x, i) => `${i + 1}. ${x}`).join('\n'),
-    x: centerX + (Math.random() - 0.5) * 80,
-    y: centerY + (Math.random() - 0.5) * 80,
-    weight: 4,
-    color: '#F5C842',
-    charge: 0,
-    fireHistory: [],
-    lastFired: 0,
-    tags: ['emergent'],
-    emergentFrom: sourceIds,
-    emergentAt: Date.now()
-  };
-  // 「この新しいものが、何から生まれたか」を実グラフに残す
-  sourceIds.forEach(sourceId => {
-    if (!g.nodes[sourceId]) return;
-    const exists = g.edges.some(e =>
-      (e.from === sourceId && e.to === id) ||
-      (e.from === id && e.to === sourceId)
-    );
-    if (!exists) {
-      g.edges.push({
-        from: sourceId,
-        to: id,
-        weight: 1,
-        conductance: 1.0,
-        emergent: true
-      });
-    }
-  });
-  g.emergentSignatures[signature] = id;
-  return id;
-}
-function processEmergence() {
-  const g = currentGraph();
-  if (!g || !currentSyncClusters || currentSyncClusters.length === 0) return;
-  // 最も大きな同期クラスタを、現在の「まとまり」として扱う
-  const cluster = [...currentSyncClusters]
-    .filter(c => c && c.nodeIds && c.nodeIds.length >= 2)
-    .sort((a, b) => b.size - a.size)[0];
-  if (!cluster) return;
-  const id = generateEmergentNode(cluster);
-  if (!id) return;
-  saveGraphs();
-  applyFlowchartLayout();
-  updateScoreBar();
-  // 生まれたもの自身を次のイベントの起点にする
-  fireNode(id);
-  showToast('新しい組み合わせが生まれました');
-}
 function updateAttractorState() {
   currentSyncClusters = detectSyncClusters();
   renderSyncClusterPanel();
   if (currentSyncClusters.length === 0) { currentAttractor = null; updateAttractorBar(); return; }
-  // 譛螟ｧ繧ｯ繝ｩ繧ｹ繧ｿ繧剃ｻ｣陦ｨattractor縺ｨ縺励※謗｡逕ｨ
+  // 最大クラスタを代表attractorとして採用
   const main = currentSyncClusters.sort((a,b)=>b.size-a.size)[0];
   currentAttractor = classifyAttractor(main);
-  processEmergence();
   updateAttractorBar();
   scheduleEmotionBridgePush();
 }
@@ -1278,7 +1197,7 @@ function renderSyncClusterPanel() {
   if (!g || currentSyncClusters.length === 0) { list.innerHTML = ''; return; }
   list.innerHTML = currentSyncClusters.map(c => {
     const style = BAND_STYLE[c.band] || BAND_STYLE.delta;
-    const names = c.nodeIds.map(id => g.nodes[id]?.label || '?').join('縲・);
+    const names = c.nodeIds.map(id => g.nodes[id]?.label || '?').join('、');
     return `<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:rgba(0,0,0,0.55);border-radius:8px;margin-bottom:3px;font-size:11px;color:#fff;">
       <span style="width:7px;height:7px;border-radius:50%;background:${style.color};flex-shrink:0;"></span>
       <span style="color:${style.color};font-weight:600;white-space:nowrap;">${style.label}</span>
@@ -1301,9 +1220,9 @@ function updateAttractorBar() {
   text.textContent = currentAttractor.label;
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 // CANVAS RENDER
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
@@ -1341,7 +1260,7 @@ function drawArrow(x1, y1, x2, y2, color, weight, glow) {
   const len = Math.sqrt(dx*dx+dy*dy);
   if (len < 1) return;
   const ux = dx/len, uy = dy/len;
-  // 遏｢蜊ｰ縺ｮ蜈育ｫｯ繧偵ヮ繝ｼ繝臥ｫｯ縺ｾ縺ｧ邵ｮ繧√ｋ
+  // 矢印の先端をノード端まで縮める
   const r = NODE_R * vpScale;
   const ex = x2 - ux*r, ey = y2 - uy*r;
   const sx = x1 + ux*r, sy = y1 + uy*r;
@@ -1360,7 +1279,7 @@ function drawArrow(x1, y1, x2, y2, color, weight, glow) {
   ctx.lineTo(ex, ey);
   ctx.stroke();
 
-  // 遏｢蜊ｰ繝倥ャ繝・
+  // 矢印ヘッド
   const hs = 10 * vpScale;
   const angle = Math.atan2(ey-sy, ex-sx);
   ctx.fillStyle = color;
@@ -1381,11 +1300,11 @@ function drawEdgeWeight(x1, y1, x2, y2, w) {
   ctx.font = `bold ${11*vpScale}px -apple-system`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(`ﾃ・{w}`, mx, my - 10*vpScale);
+  ctx.fillText(`×${w}`, mx, my - 10*vpScale);
   ctx.restore();
 }
 
-// 竭｡ 髮ｻ豬√′豬√ｌ縺ｦ縺・ｋ讒伜ｭ舌ｒ遉ｺ縺吶ヱ繝ｫ繧ｹ・医お繝・ず荳翫ｒ豬√ｌ繧句・轤ｹ・・
+// ② 電流が流れている様子を示すパルス（エッジ上を流れる光点）
 function drawCurrentPulse(x1, y1, x2, y2, charge, color) {
   if (charge < 0.05) return;
   const t = (Date.now() % 900) / 900;
@@ -1411,13 +1330,13 @@ function drawNode(n, id, score, phase) {
 
   ctx.save();
 
-  // 繧ｰ繝ｭ繝ｼ
+  // グロー
   if (glowAmt > 0.3 || isSel || isConnFrom) {
     ctx.shadowColor = isConnFrom ? '#F5C842' : (isSel ? '#fff' : n.color || '#4A9EFF');
     ctx.shadowBlur = 8 + glowAmt * 24;
   }
 
-  // 螟悶Μ繝ｳ繧ｰ・磯∈謚槭・謗･邯夲ｼ・
+  // 外リング（選択・接続）
   if (isSel || isConnFrom) {
     ctx.beginPath();
     ctx.arc(s.x, s.y, r + 5*vpScale, 0, Math.PI*2);
@@ -1426,7 +1345,7 @@ function drawNode(n, id, score, phase) {
     ctx.stroke();
   }
 
-  // 譛ｬ菴・
+  // 本体
   const grad = ctx.createRadialGradient(s.x - r*0.3, s.y - r*0.3, r*0.1, s.x, s.y, r);
   const col = n.color || '#4A9EFF';
   grad.addColorStop(0, col + 'CC');
@@ -1440,7 +1359,7 @@ function drawNode(n, id, score, phase) {
   ctx.stroke();
   ctx.shadowBlur = 0;
 
-  // 竭 髮ｻ闕ｷ繝ｪ繝ｳ繧ｰ・・harge驥上ｒ蜀・・縺ｮ蜈芽ｼｪ縺ｧ陦ｨ迴ｾ・・
+  // ① 電荷リング（charge量を内側の光輪で表現）
   if (n.charge > 0.03) {
     ctx.beginPath();
     ctx.arc(s.x, s.y, r * 0.7, 0, Math.PI*2);
@@ -1449,7 +1368,7 @@ function drawNode(n, id, score, phase) {
     ctx.stroke();
   }
 
-  // 繧ｹ繧ｳ繧｢繝ｪ繝ｳ繧ｰ・磯㍾隕∝ｺｦ・・
+  // スコアリング（重要度）
   if (score > 0) {
     const pct = score;
     ctx.beginPath();
@@ -1460,7 +1379,7 @@ function drawNode(n, id, score, phase) {
     ctx.stroke();
   }
 
-  // 繝ｩ繝吶Ν
+  // ラベル
   ctx.fillStyle = '#fff';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -1468,7 +1387,7 @@ function drawNode(n, id, score, phase) {
   ctx.font = `700 ${fs}px -apple-system`;
   const maxW = r * 1.6;
   const label = n.label || '?';
-  // 謚倥ｊ霑斐＠
+  // 折り返し
   const words = label.split('');
   const lineH = fs * 1.3;
   const lines = [];
@@ -1483,13 +1402,13 @@ function drawNode(n, id, score, phase) {
     ctx.fillText(line, s.x, s.y - totalH/2 + lineH*(i+0.5));
   });
 
-  // 驥阪∩繝舌ャ繧ｸ
+  // 重みバッジ
   const badge = `W${n.weight||3}`;
   ctx.font = `600 ${9*vpScale}px -apple-system`;
   ctx.fillStyle = 'rgba(255,255,255,0.55)';
   ctx.fillText(badge, s.x, s.y + r * 0.7);
 
-  // 譛ｪ蜃ｦ逅・inbox)繝舌ャ繧ｸ 窶・莉悶い繝励Μ縺九ｉ蜿悶ｊ霎ｼ繧薙□縺ｾ縺ｾ譛ｪ遒ｺ隱阪・繝弱・繝峨↓陦ｨ遉ｺ
+  // 未処理(inbox)バッジ — 他アプリから取り込んだまま未確認のノードに表示
   if (n.triageStatus === 'inbox') {
     const bx = s.x + r * 0.72, by = s.y - r * 0.72, br = 8 * vpScale;
     ctx.beginPath();
@@ -1503,13 +1422,13 @@ function drawNode(n, id, score, phase) {
     ctx.fillStyle = '#fff';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('踏', bx, by + 0.5*vpScale);
+    ctx.fillText('📥', bx, by + 0.5*vpScale);
   }
 
   ctx.restore();
 }
 
-// 竭｢竭｣ 蜷梧悄繧ｯ繝ｩ繧ｹ繧ｿ縺ｮ豕｢邏九お繝輔ぉ繧ｯ繝茨ｼ夷ｳ豕｢鬚ｨ繝ｪ繝ｳ繧ｰ・俄・attractor縺ｮ蜿ｯ隕門喧
+// ③④ 同期クラスタの波紋エフェクト（γ波風リング）— attractorの可視化
 function drawSyncRipples(phase) {
   if (!currentSyncClusters.length) return;
   const g = currentGraph();
@@ -1517,7 +1436,7 @@ function drawSyncRipples(phase) {
 
   currentSyncClusters.forEach(cluster => {
     const style = BAND_STYLE[cluster.band] || BAND_STYLE.delta;
-    // 繧ｯ繝ｩ繧ｹ繧ｿ縺ｮ驥榊ｿ・
+    // クラスタの重心
     let cx = 0, cy = 0;
     cluster.nodeIds.forEach(id => {
       const n = g.nodes[id];
@@ -1526,7 +1445,7 @@ function drawSyncRipples(phase) {
     cx /= cluster.nodeIds.length; cy /= cluster.nodeIds.length;
     const center = worldToScreen(cx, cy);
 
-    // 蜷・ヮ繝ｼ繝峨ｒ蛹・・豕｢邏九ｒ蛟句挨縺ｫ謠上￥
+    // 各ノードを包む波紋を個別に描く
     cluster.nodeIds.forEach(id => {
       const n = g.nodes[id];
       const s = worldToScreen(n.x, n.y);
@@ -1547,7 +1466,7 @@ function drawSyncRipples(phase) {
       }
     });
 
-    // 繧ｯ繝ｩ繧ｹ繧ｿ蜈ｨ菴薙ｒ蝗ｲ繧阮・＞蟶ｯ蝓溘Λ繝吶Ν
+    // クラスタ全体を囲む薄い帯域ラベル
     if (cluster.nodeIds.length >= 2 && vpScale > 0.4) {
       ctx.save();
       ctx.globalAlpha = 0.85;
@@ -1571,7 +1490,7 @@ function render(now) {
   const g = currentGraph();
   if (!g) { animFrame = requestAnimationFrame(render); return; }
 
-  // 竭 髮ｻ闕ｷ縺ｮ閾ｪ辟ｶ貂幄｡ｰ
+  // ① 電荷の自然減衰
   decayCharges(dt);
 
   const scores = computeScores();
@@ -1587,16 +1506,16 @@ function render(now) {
     const col = isSel ? '#FF5F5F' : (from.color || '#4A9EFF');
     drawArrow(fs.x, fs.y, ts.x, ts.y, col, e.weight||1, isSel);
     if (vpScale > 0.5) drawEdgeWeight(fs.x, fs.y, ts.x, ts.y, e.weight||1);
-    // 竭｡ 髮ｻ豬√ヱ繝ｫ繧ｹ・・rom縺ｫ髮ｻ闕ｷ縺御ｹ励▲縺ｦ縺・ｌ縺ｰ豬√ｌ縺ｦ隕九∴繧具ｼ・
+    // ② 電流パルス（fromに電荷が乗っていれば流れて見える）
     drawCurrentPulse(fs.x, fs.y, ts.x, ts.y, from.charge||0, col);
   });
 
-  // 謗･邯壹Δ繝ｼ繝我ｸｭ縺ｮ繝励Ξ繝薙Η繝ｼ繝ｩ繧､繝ｳ
+  // 接続モード中のプレビューライン
   if (mode === MODE.CONNECT && connectFrom && g.nodes[connectFrom]) {
-    // drawn dynamically in pointermove 窶・skip here
+    // drawn dynamically in pointermove — skip here
   }
 
-  // 竭｢竭｣ 蜷梧悄豕｢邏具ｼ医ヮ繝ｼ繝峨ｈ繧雁・縺ｫ謠上＞縺ｦ縲√ヮ繝ｼ繝峨′荳翫↓荵励ｋ繧医≧縺ｫ・・
+  // ③④ 同期波紋（ノードより先に描いて、ノードが上に乗るように）
   drawSyncRipples(glowPhase);
 
   // Draw nodes
@@ -1608,13 +1527,13 @@ function render(now) {
   animFrame = requestAnimationFrame(render);
 }
 
-// attractor迥ｶ諷九・謠冗判繝ｫ繝ｼ繝励→縺ｯ蛻･縺ｮ霆ｽ縺・捉譛溘〒蜀崎ｨ育ｮ暦ｼ磯㍾縺・・逅・〒縺ｯ縺ｪ縺・′鬆ｻ蠎ｦ繧呈椛縺医ｋ・・
+// attractor状態は描画ループとは別の軽い周期で再計算（重い処理ではないが頻度を抑える）
 renderBandLegend();
 setInterval(updateAttractorState, 500);
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 // SCORE BAR
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 function updateScoreBar() {
   const scores = computeScores();
   const g = currentGraph();
@@ -1635,9 +1554,9 @@ function updateScoreBar() {
   }).join('');
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 // INPUT HANDLING
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 function getPos(e) {
   const r = canvas.getBoundingClientRect();
   if (e.touches) {
@@ -1701,7 +1620,7 @@ canvas.addEventListener('pointerdown', e => {
   } else if (mode === MODE.CONNECT) {
     if (hitN) connectFrom = hitN;
   } else {
-    // ADD mode・医ラ繝ｩ繝・げ遘ｻ蜍輔・辟｡蜉ｹ縲り・蜍輔Ξ繧､繧｢繧ｦ繝医′菴咲ｽｮ繧堤ｮ｡逅・☆繧九◆繧・ｼ・
+    // ADD mode（ドラッグ移動は無効。自動レイアウトが位置を管理するため）
     if (hitN) { selectedNode = hitN; }
   }
 });
@@ -1745,11 +1664,11 @@ canvas.addEventListener('pointerup', e => {
     // TAP
     if (mode === MODE.ADD) {
       if (!hitN) {
-        // 譁ｰ隕上ヮ繝ｼ繝芽ｿｽ蜉
+        // 新規ノード追加
         const w = screenToWorld(pos.x, pos.y);
         addNode(w.x, w.y);
       } else {
-        // 竭 繧ｿ繝・・・晉匱轣ｫ・磯崕闕ｷ繧呈ｵ√☆・峨＠縺ｦ縺九ｉ繝弱・繝臥ｷｨ髮・ｒ髢九￥
+        // ① タップ＝発火（電荷を流す）してからノード編集を開く
         fireNode(hitN);
         openNodeSheet(hitN);
       }
@@ -1795,16 +1714,16 @@ function pinchDist(e) {
   return Math.sqrt(dx*dx+dy*dy);
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 // NODE / EDGE OPERATIONS
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 function addNode(wx, wy) {
   const g = currentGraph();
   if (!g) return;
   const id = uid();
   g.nodes[id] = {
     updatedAt: Date.now(),
-    id, label:'譁ｰ縺励＞繝弱・繝・,
+    id, label:'新しいノード',
     x: wx, y: wy,
     weight: 3,
     color: '#4A9EFF',
@@ -1823,19 +1742,19 @@ function addNode(wx, wy) {
 function addEdge(from, to) {
   const g = currentGraph();
   if (!g) return;
-  // 驥崎､・メ繧ｧ繝・け
-  if (g.edges.find(e => e.from===from && e.to===to)) { showToast('縺吶〒縺ｫ謗･邯壽ｸ医∩縺ｧ縺・); return; }
+  // 重複チェック
+  if (g.edges.find(e => e.from===from && e.to===to)) { showToast('すでに接続済みです'); return; }
   g.edges.push({ from, to, weight:1, conductance:1.0 });
-  if (g.deletedEdges) delete g.deletedEdges[from + '->' + to]; // 10 蜀肴磁邯壽凾縺ｯtombstone繧定ｧ｣髯､・医け繝ｩ繧ｦ繝峨・繝ｼ繧ｸ縺ｧ豸医∴縺ｪ縺・ｈ縺・↓・・
+  if (g.deletedEdges) delete g.deletedEdges[from + '->' + to]; // 10 再接続時はtombstoneを解除（クラウドマージで消えないように）
   applyFlowchartLayout();
   saveGraphs();
   updateScoreBar();
-  showToast('謗･邯壹＠縺ｾ縺励◆');
+  showToast('接続しました');
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// 繝・う繝ｪ繝ｼ繝弱・繝茨ｼ井ｻ頑律縺ｮ譌･莉倥ヮ繝ｼ繝峨ょ燕譌･繝弱・繝峨→閾ｪ蜍輔〒蝗譫懈磁邯壹☆繧具ｼ・
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
+// デイリーノート（今日の日付ノード。前日ノードと自動で因果接続する）
+// ═══════════════════════════════════
 function todayDateStr() {
   const d = new Date();
   const pad = n => String(n).padStart(2, '0');
@@ -1847,7 +1766,7 @@ function openOrCreateDailyNode() {
   if (!g) return;
   const today = todayDateStr();
 
-  // 譌｢縺ｫ莉頑律縺ｮ繝・う繝ｪ繝ｼ繝弱・繝医′縺ゅｌ縺ｰ縲√◎繧後ｒ髢九￥縺縺・
+  // 既に今日のデイリーノートがあれば、それを開くだけ
   const existingId = Object.keys(g.nodes).find(id => g.nodes[id].dailyNoteDate === today);
   if (existingId) {
     fireNode(existingId);
@@ -1855,7 +1774,7 @@ function openOrCreateDailyNode() {
     return;
   }
 
-  // 逶ｴ霑代・繝・う繝ｪ繝ｼ繝弱・繝茨ｼ井ｻ頑律繧医ｊ蜑阪〒譛譁ｰ縺ｮ繧ゅ・・峨ｒ謗｢縺励∝屏譫懊メ繧ｧ繝ｼ繝ｳ縺ｨ縺励※閾ｪ蜍墓磁邯・
+  // 直近のデイリーノート（今日より前で最新のもの）を探し、因果チェーンとして自動接続
   const dailyNodes = Object.entries(g.nodes)
     .filter(([, n]) => n.dailyNoteDate && n.dailyNoteDate < today)
     .sort((a, b) => b[1].dailyNoteDate.localeCompare(a[1].dailyNoteDate));
@@ -1876,7 +1795,7 @@ function openOrCreateDailyNode() {
     charge: 0,
     fireHistory: [],
     lastFired: 0,
-    tags: ['繝・う繝ｪ繝ｼ'],
+    tags: ['デイリー'],
     dailyNoteDate: today,
   };
   if (prevId) g.edges.push({ from: prevId, to: id, weight: 1, conductance: 1.0 });
@@ -1887,7 +1806,7 @@ function openOrCreateDailyNode() {
   centerView();
   fireNode(id);
   openNodeSheet(id, true);
-  showToast(prevId ? '莉頑律縺ｮ繝弱・繝峨ｒ菴懈・縺励∝燕蝗槭→謗･邯壹＠縺ｾ縺励◆' : '莉頑律縺ｮ繝弱・繝峨ｒ菴懈・縺励∪縺励◆');
+  showToast(prevId ? '今日のノードを作成し、前回と接続しました' : '今日のノードを作成しました');
 }
 
 function deleteNode(id) {
@@ -1916,12 +1835,12 @@ function deleteEdge(e) {
   updateScoreBar();
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 // NODE SHEET
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// 繝ｩ繝吶Ν蛟呵｣懶ｼ域里蟄倥ヮ繝ｼ繝峨・繝ｩ繝吶Ν縺九ｉdatalist繧呈峩譁ｰ・・
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
+// ═══════════════════════════════════
+// ラベル候補（既存ノードのラベルからdatalistを更新）
+// ═══════════════════════════════════
 function updateLabelSuggestions(excludeId) {
   const g = currentGraph();
   const datalist = document.getElementById('nLabelSuggestions');
@@ -1935,36 +1854,36 @@ function updateLabelSuggestions(excludeId) {
   datalist.innerHTML = labels.map(l => `<option value="${escHtml(l)}"></option>`).join('');
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// 繧ｳ繝斐・邉ｻ繝ｦ繝ｼ繝・ぅ繝ｪ繝・ぅ
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
+// コピー系ユーティリティ
+// ═══════════════════════════════════
 async function copyTextToClipboard(text, successMsg) {
-  if (!text) { showToast('繧ｳ繝斐・縺吶ｋ蜀・ｮｹ縺後≠繧翫∪縺帙ｓ'); return; }
+  if (!text) { showToast('コピーする内容がありません'); return; }
   try {
     await navigator.clipboard.writeText(text);
-    showToast(successMsg || '繧ｳ繝斐・縺励∪縺励◆');
+    showToast(successMsg || 'コピーしました');
   } catch (e) {
-    showToast('繧ｳ繝斐・縺ｫ螟ｱ謨励＠縺ｾ縺励◆(繝悶Λ繧ｦ繧ｶ縺ｮ讓ｩ髯舌ｒ遒ｺ隱阪＠縺ｦ縺上□縺輔＞)');
+    showToast('コピーに失敗しました(ブラウザの権限を確認してください)');
   }
 }
 
 function wireCopyButtons() {
   document.getElementById('nMemoCopyBtn')?.addEventListener('click', () => {
-    copyTextToClipboard(document.getElementById('nMemo').value, '繝｡繝｢繧偵さ繝斐・縺励∪縺励◆');
+    copyTextToClipboard(document.getElementById('nMemo').value, 'メモをコピーしました');
   });
   document.getElementById('qcCopyBtn')?.addEventListener('click', () => {
-    copyTextToClipboard(document.getElementById('qcInput').value, '繧ｳ繝斐・縺励∪縺励◆');
+    copyTextToClipboard(document.getElementById('qcInput').value, 'コピーしました');
   });
   document.getElementById('aiResultCopyBtn')?.addEventListener('click', () => {
-    copyTextToClipboard(document.getElementById('aiResultBox').textContent, 'AI蛻・梵邨先棡繧偵さ繝斐・縺励∪縺励◆');
+    copyTextToClipboard(document.getElementById('aiResultBox').textContent, 'AI分析結果をコピーしました');
   });
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// 繧ｿ繧ｰ陦ｨ遉ｺ・医ヮ繝ｼ繝峨す繝ｼ繝亥・繝√ャ繝暦ｼ・
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// 繧ｿ繧ｰ蜷・萓・ '諢滓ュ-諤偵ｊ')繧定ｦｪ/蟄舌↓蛻・ｧ｣縺吶ｋ縲ゅワ繧､繝輔Φ縺檎┌縺代ｌ縺ｰ隕ｪ縺ｮ縺ｿ(蟄舌↑縺・縺ｨ縺励※謇ｱ縺・・
-// D: 繧ｿ繧ｰ縺ｮ髫主ｱ､蛹・窶・TAG_KEYWORD_DICT縺ｮ繧ｭ繝ｼ蜻ｽ蜷崎ｦ丞援(隕ｪ-蟄・繧偵◎縺ｮ縺ｾ縺ｾ蛻ｩ逕ｨ縺吶ｋ霆ｽ驥丞ｮ溯｣・・
+// ═══════════════════════════════════
+// タグ表示（ノードシート内チップ）
+// ═══════════════════════════════════
+// タグ名(例: '感情-怒り')を親/子に分解する。ハイフンが無ければ親のみ(子なし)として扱う。
+// D: タグの階層化 — TAG_KEYWORD_DICTのキー命名規則(親-子)をそのまま利用する軽量実装。
 function splitTagHierarchy(tag) {
   const idx = tag.indexOf('-');
   if (idx === -1) return { parent: tag, child: null };
@@ -1985,8 +1904,8 @@ function renderNodeTags(node) {
     const chip = document.createElement('span');
     chip.style.cssText = 'background:var(--gold-dim);color:var(--gold);border-radius:100px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;display:inline-block;margin:0 6px 6px 0;';
     chip.innerHTML = child
-      ? `<span class="tag-chip-parent">${escHtml(parent)}</span> <span class="tag-chip-child">${escHtml(child)}</span> 笨描
-      : `<span class="tag-chip-child">${escHtml(parent)}</span> 笨描;
+      ? `<span class="tag-chip-parent">${escHtml(parent)}</span> <span class="tag-chip-child">${escHtml(child)}</span> ✕`
+      : `<span class="tag-chip-child">${escHtml(parent)}</span> ✕`;
     chip.onclick = () => {
       node.tags = (node.tags || []).filter(t => t !== tag);
       node.updatedAt = Date.now();
@@ -1997,35 +1916,35 @@ function renderNodeTags(node) {
   });
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// 繝舌ャ繧ｯ繝ｪ繝ｳ繧ｯ繝代ロ繝ｫ・医け繝ｪ繝・け縺ｧ蜿ら・蜈医ヮ繝ｼ繝峨∈繧ｸ繝｣繝ｳ繝暦ｼ・
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
+// バックリンクパネル（クリックで参照先ノードへジャンプ）
+// ═══════════════════════════════════
 function renderBacklinkPanel(inEdges, outEdges, g) {
   const wrap = document.getElementById('edgeInfo');
   if (!wrap) return;
   wrap.innerHTML = '';
   if (inEdges.length === 0 && outEdges.length === 0) {
-    wrap.textContent = '縺ｪ縺・;
+    wrap.textContent = 'なし';
     return;
   }
   const makeRow = (arrow, targetId, weight) => {
     const row = document.createElement('div');
     row.style.cssText = 'padding:6px 0;cursor:pointer;color:var(--blue);';
-    row.textContent = `${arrow} ${g.nodes[targetId]?.label || '?'} (ﾃ・{weight || 1})`;
+    row.textContent = `${arrow} ${g.nodes[targetId]?.label || '?'} (×${weight || 1})`;
     row.addEventListener('click', () => {
       if (g.nodes[targetId]) { fireNode(targetId); openNodeSheet(targetId); }
     });
     return row;
   };
-  inEdges.forEach(e => wrap.appendChild(makeRow('竊・, e.from, e.weight)));
-  outEdges.forEach(e => wrap.appendChild(makeRow('竊・, e.to, e.weight)));
+  inEdges.forEach(e => wrap.appendChild(makeRow('←', e.from, e.weight)));
+  outEdges.forEach(e => wrap.appendChild(makeRow('→', e.to, e.weight)));
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// A: 繧ｰ繝ｩ繝墓ｨｪ譁ｭ讀懃ｴ｢ / D: 繧ｿ繧ｰ髫主ｱ､繝悶Λ繧ｦ繧ｶ
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
+// A: グラフ横断検索 / D: タグ階層ブラウザ
+// ═══════════════════════════════════
 
-// 蜈ｨ繧ｰ繝ｩ繝輔ｒ讓ｪ譁ｭ縺励※繧ｿ繧ｰ縺斐→縺ｮ蜃ｺ迴ｾ莉ｶ謨ｰ繧帝寔險医☆繧・
+// 全グラフを横断してタグごとの出現件数を集計する
 function collectAllTagCounts() {
   const counts = {}; // tag -> count
   Object.values(graphs).forEach(g => {
@@ -2038,7 +1957,7 @@ function collectAllTagCounts() {
   return counts;
 }
 
-// 繧ｿ繧ｰ繧定ｦｪ縺斐→縺ｫ繧ｰ繝ｫ繝ｼ繝怜喧縺励※荳隕ｧ陦ｨ遉ｺ縲ょｭ舌ち繧ｰ繧偵ち繝・・縺吶ｋ縺ｨ縲√◎縺ｮ繧ｿ繧ｰ縺ｧ蜊ｳ讀懃ｴ｢縺吶ｋ縲・
+// タグを親ごとにグループ化して一覧表示。子タグをタップすると、そのタグで即検索する。
 function renderTagBrowser() {
   const wrap = document.getElementById('tagBrowserWrap');
   if (!wrap) return;
@@ -2052,7 +1971,7 @@ function renderTagBrowser() {
   wrap.innerHTML = '';
   const parentNames = Object.keys(groups);
   if (parentNames.length === 0) {
-    wrap.innerHTML = '<div class="search-empty">縺ｾ縺繧ｿ繧ｰ縺御ｻ倥＞縺溘ヮ繝ｼ繝峨′縺ゅｊ縺ｾ縺帙ｓ</div>';
+    wrap.innerHTML = '<div class="search-empty">まだタグが付いたノードがありません</div>';
     return;
   }
 
@@ -2082,7 +2001,7 @@ function renderTagBrowser() {
   });
 }
 
-// 蜈ｨ繧ｰ繝ｩ繝輔・繝弱・繝峨ｒ讓ｪ譁ｭ縺励※縲√Λ繝吶Ν繝ｻ繝｡繝｢繝ｻ繧ｿ繧ｰ縺ｫquery(驛ｨ蛻・ｸ閾ｴ繝ｻ螟ｧ蟆冗┌隕・繧呈､懃ｴ｢縺吶ｋ
+// 全グラフのノードを横断して、ラベル・メモ・タグにquery(部分一致・大小無視)を検索する
 function runGlobalSearch(rawQuery) {
   const wrap = document.getElementById('searchResultsWrap');
   if (!wrap) return;
@@ -2095,19 +2014,19 @@ function runGlobalSearch(rawQuery) {
       const tags = n.tags || [];
       const haystack = [n.label || '', n.memo || '', ...tags].join(' ').toLowerCase();
       if (haystack.includes(query)) {
-        results.push({ graphId, graphName: g.name || '辟｡鬘後・繧ｰ繝ｩ繝・, node: n });
+        results.push({ graphId, graphName: g.name || '無題のグラフ', node: n });
       }
     });
   });
 
   wrap.innerHTML = '';
   if (results.length === 0) {
-    wrap.innerHTML = '<div class="search-empty">隕九▽縺九ｊ縺ｾ縺帙ｓ縺ｧ縺励◆</div>';
+    wrap.innerHTML = '<div class="search-empty">見つかりませんでした</div>';
     return;
   }
 
   results.slice(0, 100).forEach(({ graphId, graphName, node }) => {
-    // 蝓九ａ霎ｼ縺ｿ繝斐ャ繧ｫ繝ｼ繝｢繝ｼ繝我ｸｭ縺ｯ縲∬・蛻・・霄ｫ繧貞呵｣懊°繧蛾勁螟悶☆繧・
+    // 埋め込みピッカーモード中は、自分自身を候補から除外する
     if (searchPickerCallback && graphId === currentGraphId && node.id === editingNodeId) return;
     const item = document.createElement('div');
     item.className = 'search-result-item';
@@ -2115,7 +2034,7 @@ function runGlobalSearch(rawQuery) {
     const tagsHtml = (node.tags || []).map(t => `<span>${formatTagDisplay(t)}</span>`).join('');
     item.innerHTML =
       `<div class="search-result-graph">${escHtml(graphName)}</div>` +
-      `<div class="search-result-label">${escHtml(node.label || '辟｡鬘・)}</div>` +
+      `<div class="search-result-label">${escHtml(node.label || '無題')}</div>` +
       (snippet ? `<div class="search-result-snippet">${escHtml(snippet)}</div>` : '') +
       (tagsHtml ? `<div class="search-result-tags">${tagsHtml}</div>` : '');
     item.addEventListener('click', () => {
@@ -2138,17 +2057,17 @@ function runGlobalSearch(rawQuery) {
   });
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// E: 繧ｰ繝ｩ繝暮俣縺ｮ蝓九ａ霎ｼ縺ｿ・井ｻ悶げ繝ｩ繝輔・繝弱・繝峨ｒ繝溘Λ繝ｼ蜿ら・縺吶ｋ・・
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-let searchPickerCallback = null; // null=騾壼ｸｸ縺ｮ讀懃ｴ｢縲・未謨ｰ縺後そ繝・ヨ縺輔ｌ縺ｦ縺・ｌ縺ｰ繝斐ャ繧ｫ繝ｼ繝｢繝ｼ繝・
+// ═══════════════════════════════════
+// E: グラフ間の埋め込み（他グラフのノードをミラー参照する）
+// ═══════════════════════════════════
+let searchPickerCallback = null; // null=通常の検索、関数がセットされていればピッカーモード
 
 function openSearchPicker(callback) {
   searchPickerCallback = callback;
   renderTagBrowser();
   document.getElementById('searchInput').value = '';
   document.getElementById('searchResultsWrap').innerHTML = '';
-  document.getElementById('searchSheetTitle').textContent = '蝓九ａ霎ｼ繧繝弱・繝峨ｒ驕ｸ謚・;
+  document.getElementById('searchSheetTitle').textContent = '埋め込むノードを選択';
   openSheet('searchSheet');
   setTimeout(() => document.getElementById('searchInput').focus(), 300);
 }
@@ -2167,13 +2086,13 @@ function renderEmbeds(node) {
     item.className = 'search-result-item';
     item.style.position = 'relative';
     if (!targetNode) {
-      item.innerHTML = `<div class="search-result-snippet">・亥盾辣ｧ蜈医′隕九▽縺九ｊ縺ｾ縺帙ｓ繝ｻ蜑企勁貂医∩縺ｮ蜿ｯ閭ｽ諤ｧ・・/div>`;
+      item.innerHTML = `<div class="search-result-snippet">（参照先が見つかりません・削除済みの可能性）</div>`;
     } else {
       const snippet = (targetNode.memo || '').slice(0, 60);
       const tagsHtml = (targetNode.tags || []).map(t => `<span>${formatTagDisplay(t)}</span>`).join('');
       item.innerHTML =
-        `<div class="search-result-graph">${escHtml(targetGraph.name || '辟｡鬘後・繧ｰ繝ｩ繝・)}</div>` +
-        `<div class="search-result-label">${escHtml(targetNode.label || '辟｡鬘・)}</div>` +
+        `<div class="search-result-graph">${escHtml(targetGraph.name || '無題のグラフ')}</div>` +
+        `<div class="search-result-label">${escHtml(targetNode.label || '無題')}</div>` +
         (snippet ? `<div class="search-result-snippet">${escHtml(snippet)}</div>` : '') +
         (tagsHtml ? `<div class="search-result-tags">${tagsHtml}</div>` : '');
       item.addEventListener('click', () => {
@@ -2186,7 +2105,7 @@ function renderEmbeds(node) {
       });
     }
     const removeBtn = document.createElement('button');
-    removeBtn.textContent = '笨・;
+    removeBtn.textContent = '✕';
     removeBtn.style.cssText = 'position:absolute;top:8px;right:8px;background:none;border:none;color:var(--red);font-size:14px;font-weight:800;cursor:pointer;padding:4px;';
     removeBtn.addEventListener('click', (ev) => {
       ev.stopPropagation();
@@ -2205,16 +2124,16 @@ function wireEmbeds() {
     const n = g?.nodes[editingNodeId];
     if (!n) return;
     openSearchPicker((graphId, nodeId) => {
-      if (graphId === currentGraphId && nodeId === editingNodeId) return; // 閾ｪ蟾ｱ蜿ら・縺ｯ遖∵ｭ｢
+      if (graphId === currentGraphId && nodeId === editingNodeId) return; // 自己参照は禁止
       n.embeds = n.embeds || [];
       if (n.embeds.some(e => e.graphId === graphId && e.nodeId === nodeId)) {
-        showToast('譌｢縺ｫ蝓九ａ霎ｼ縺ｿ貂医∩縺ｧ縺・);
+        showToast('既に埋め込み済みです');
       } else {
         n.embeds.push({ graphId, nodeId });
         saveGraphs();
-        showToast('蝓九ａ霎ｼ縺ｿ縺ｾ縺励◆');
+        showToast('埋め込みました');
       }
-      openNodeSheet(editingNodeId); // 繧ｷ繝ｼ繝医ｒ蜀肴緒逕ｻ縺励※蝓九ａ霎ｼ縺ｿ繧貞渚譏
+      openNodeSheet(editingNodeId); // シートを再描画して埋め込みを反映
     });
   });
 }
@@ -2226,8 +2145,8 @@ function wireSearchSheet() {
   if (!btn || !closeBtn || !input) return;
 
   btn.addEventListener('click', () => {
-    searchPickerCallback = null; // 騾壼ｸｸ繝懊ち繝ｳ縺九ｉ縺ｯ蟶ｸ縺ｫ騾壼ｸｸ繝｢繝ｼ繝峨〒髢九￥
-    document.getElementById('searchSheetTitle').textContent = '讀懃ｴ｢';
+    searchPickerCallback = null; // 通常ボタンからは常に通常モードで開く
+    document.getElementById('searchSheetTitle').textContent = '検索';
     renderTagBrowser();
     input.value = '';
     document.getElementById('searchResultsWrap').innerHTML = '';
@@ -2236,7 +2155,7 @@ function wireSearchSheet() {
   });
 
   closeBtn.addEventListener('click', () => {
-    searchPickerCallback = null; // 髢峨§縺溘ｉ繝斐ャ繧ｫ繝ｼ繝｢繝ｼ繝峨・蟶ｸ縺ｫ隗｣髯､
+    searchPickerCallback = null; // 閉じたらピッカーモードは常に解除
     closeSheet('searchSheet');
   });
 
@@ -2256,7 +2175,7 @@ function openNodeSheet(id, isNew=false) {
   ensurePhysicsFields(n);
   renderInboxBanner(n);
 
-  document.getElementById('nodeSheetTitle').textContent = isNew ? '譁ｰ隕上ヮ繝ｼ繝・ : '繝弱・繝臥ｷｨ髮・;
+  document.getElementById('nodeSheetTitle').textContent = isNew ? '新規ノード' : 'ノード編集';
   document.getElementById('nLabel').value = n.label || '';
   document.getElementById('nMemo').value = n.memo || '';
   updateLabelSuggestions(id);
@@ -2270,22 +2189,22 @@ function openNodeSheet(id, isNew=false) {
     sw.classList.toggle('active', sw.dataset.color === editingNodeColor);
   });
 
-  // 繧ｨ繝・ず諠・ｱ・医け繝ｪ繝・け縺ｧ蜿ら・蜈医ヮ繝ｼ繝峨∈繧ｸ繝｣繝ｳ繝暦ｼ昴ヰ繝・け繝ｪ繝ｳ繧ｯ蟆守ｷ夲ｼ・
+  // エッジ情報（クリックで参照先ノードへジャンプ＝バックリンク導線）
   const inEdges  = g.edges.filter(e => e.to===id);
   const outEdges = g.edges.filter(e => e.from===id);
   renderBacklinkPanel(inEdges, outEdges, g);
   renderNodeTags(n);
   renderEmbeds(n);
 
-  // 迚ｩ逅・ｱ､繧ｹ繝・・繧ｿ繧ｹ陦ｨ遉ｺ
+  // 物理層ステータス表示
   const band = estimateFreqBand(n);
-  const bandLabel = band ? BAND_STYLE[band].label : '譛ｪ逋ｺ轣ｫ';
+  const bandLabel = band ? BAND_STYLE[band].label : '未発火';
   const cluster = currentSyncClusters.find(c => c.nodeIds.includes(id));
   const attr = cluster ? classifyAttractor(cluster) : null;
   document.getElementById('physicsBox').innerHTML =
-    `髮ｻ闕ｷ驥・ <b>${Math.round(n.charge*100)}%</b>縲逋ｺ轣ｫ蝗樊焚: <b>${n.fireHistory.length}</b><br>` +
-    `謗ｨ螳壼ｸｯ蝓・ <b>${bandLabel}</b><br>` +
-    `蜷梧悄attractor: <b>${attr ? attr.label : '譛ｪ蜿取據'}</b>`;
+    `電荷量: <b>${Math.round(n.charge*100)}%</b>　発火回数: <b>${n.fireHistory.length}</b><br>` +
+    `推定帯域: <b>${bandLabel}</b><br>` +
+    `同期attractor: <b>${attr ? attr.label : '未収束'}</b>`;
 
   openSheet('nodeSheet');
   setTimeout(() => {
@@ -2307,22 +2226,22 @@ function saveNodeSheet() {
   updateScoreBar();
   closeSheet('nodeSheet');
   scheduleDriveKeepPush(n);
-  pushNodeToEmotionBridge(n); // 菫晏ｭ倥・縺溘・縺ｫ縲√ヮ繝ｼ繝峨・蜀・ｮｹ縺昴・繧ゅ・繧呈─諠・ヶ繝ｪ繝・ず縺ｸ蜊ｳ譎Ｑush
+  pushNodeToEmotionBridge(n); // 保存のたびに、ノードの内容そのものを感情ブリッジへ即時push
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 // EDGE HINT
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 function showEdgeHint(e) {
   const g = currentGraph();
-  const label = `${g?.nodes[e.from]?.label||'?'} 竊・${g?.nodes[e.to]?.label||'?'} (ﾃ・{e.weight||1}) 繧貞炎髯､縺励∪縺吶°・歔;
+  const label = `${g?.nodes[e.from]?.label||'?'} → ${g?.nodes[e.to]?.label||'?'} (×${e.weight||1}) を削除しますか？`;
   document.getElementById('edgeHintLabel').textContent = label;
   document.getElementById('edgeHint').classList.add('show');
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 // GRAPH LIST
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 function renderGraphList() {
   const wrap = document.getElementById('graphListWrap');
   const ids = Object.keys(graphs).sort((a,b) => (graphs[b].createdAt||0)-(graphs[a].createdAt||0));
@@ -2332,12 +2251,12 @@ function renderGraphList() {
     const isCur = id === currentGraphId;
     return `<div class="graph-item ${isCur?'current':''}" data-id="${id}">
       <div>
-        <div class="graph-item-name">${escHtml(g.name)}${isCur?' 笨・:''}</div>
-        <div class="graph-item-meta">繝弱・繝・${nodeCount}蛟・/div>
+        <div class="graph-item-name">${escHtml(g.name)}${isCur?' ✓':''}</div>
+        <div class="graph-item-meta">ノード ${nodeCount}個</div>
       </div>
-      <button class="graph-item-del" data-del="${id}">卵</button>
+      <button class="graph-item-del" data-del="${id}">🗑</button>
     </div>`;
-  }).join('') || '<div style="text-align:center;color:var(--text-dim);padding:30px;">繧ｰ繝ｩ繝輔′縺ゅｊ縺ｾ縺帙ｓ</div>';
+  }).join('') || '<div style="text-align:center;color:var(--text-dim);padding:30px;">グラフがありません</div>';
 
   wrap.querySelectorAll('.graph-item[data-id]').forEach(el => {
     el.addEventListener('click', ev => {
@@ -2350,11 +2269,11 @@ function renderGraphList() {
     btn.addEventListener('click', e => {
       e.stopPropagation();
       const id = btn.dataset.del;
-      if (!confirm(`縲・{graphs[id]?.name}縲阪ｒ蜑企勁縺励∪縺吶°・歔)) return;
+      if (!confirm(`「${graphs[id]?.name}」を削除しますか？`)) return;
       delete graphs[id];
       if (currentGraphId === id) {
         const remaining = Object.keys(graphs);
-        if (remaining.length === 0) createGraph('繧ｰ繝ｩ繝・');
+        if (remaining.length === 0) createGraph('グラフ1');
         else switchGraph(remaining[0]);
       }
       saveGraphs();
@@ -2363,24 +2282,24 @@ function renderGraphList() {
   });
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// is_transfer 騾｣謳ｺ
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// 繧｢繝励Μ蜷・竊・陦ｨ遉ｺ繝ｩ繝吶Ν・亥叙繧願ｾｼ縺ｿ蜈・ヰ繝翫・繝ｻ繧ｭ繝｣繝ｳ繝舌せ繝舌ャ繧ｸ縺ｧ菴ｿ縺・ｼ・
+// ═══════════════════════════════════
+// is_transfer 連携
+// ═══════════════════════════════════
+// アプリ名 → 表示ラベル（取り込み元バナー・キャンバスバッジで使う）
 const SOURCE_APP_LABEL = {
   'quick-ref':    'quick-ref',
   'vocal-lab':    'vocal-lab',
   'score-editor': 'score-editor',
   'illust-studio':'illust-studio',
   'google-keep':  'Google Keep',
-  'google-sheets':'Google繧ｹ繝励Ξ繝・ラ繧ｷ繝ｼ繝・,
+  'google-sheets':'Googleスプレッドシート',
   'crypto-vault': 'crypto-vault',
 };
 
-// 繧｢繧､繝・Β1莉ｶ繧偵∵─諠・Γ繧ｿ繝・・繧ｿ縺後≠繧後・縺昴ｌ繧貞渚譏縺励◆繝弱・繝峨→縺励※霑ｽ蜉縺吶ｋ蜈ｱ騾壼・逅・
-// sourceApp: 蜻ｼ縺ｳ蜃ｺ縺怜・(importFromTransfer/checkEmotionTransfer)縺・payload.source 縺九ｉ譏守､ｺ逧・↓貂｡縺吶・
-// 蠕捺擂縺ｯ item.source 繧定ｦ九※縺・◆縺後∝推繝悶Μ繝・ず縺ｯ payload逶ｴ荳九↓縺励° source 繧呈嶌縺崎ｾｼ縺ｾ縺ｪ縺・◆繧・
-// 蟶ｸ縺ｫnull縺ｫ縺ｪ縺｣縺ｦ縺・◆荳榊・蜷医ｒ菫ｮ豁｣縲・
+// アイテム1件を、感情メタデータがあればそれを反映したノードとして追加する共通処理
+// sourceApp: 呼び出し元(importFromTransfer/checkEmotionTransfer)が payload.source から明示的に渡す。
+// 従来は item.source を見ていたが、各ブリッジは payload直下にしか source を書き込まないため
+// 常にnullになっていた不具合を修正。
 function addNodeFromTransferItem(item, index, total, g, sourceApp) {
   const angle = (index / total) * Math.PI * 2;
   const dist = 200 + Math.random() * 100;
@@ -2396,10 +2315,10 @@ function addNodeFromTransferItem(item, index, total, g, sourceApp) {
   g.nodes[id] = {
     updatedAt: Date.now(),
     id,
-    label: (item.title || '辟｡鬘・).slice(0,20),
+    label: (item.title || '無題').slice(0,20),
     memo: (item.body || '').replace(/<[^>]+>/g,'').slice(0,200),
     weight: 3,
-    // 諢滓ュ繝｡繧ｿ縺後≠繧後・縺昴・蟶ｯ蝓溘・濶ｲ繧剃ｽｿ縺・ゅ↑縺代ｌ縺ｰ蠕捺擂騾壹ｊ陌ｹ濶ｲ繧貞牡繧雁ｽ薙※縲・
+    // 感情メタがあればその帯域の色を使う。なければ従来通り虹色を割り当て。
     color: bandStyle ? bandStyle.color : cols[index % cols.length],
     x: Math.cos(angle) * dist,
     y: Math.sin(angle) * dist,
@@ -2409,21 +2328,21 @@ function addNodeFromTransferItem(item, index, total, g, sourceApp) {
     sourceApp: resolvedSource || undefined,
     emotionBand: band || undefined,
     tags: extractTagsFromText(item.title, item.body),
-    // 蜿悶ｊ霎ｼ縺ｿ逶ｴ蠕後・縲梧悴蜃ｦ逅・阪ゅΘ繝ｼ繧ｶ繝ｼ縺後ヮ繝ｼ繝臥ｷｨ髮・す繝ｼ繝医〒蜀・ｮｹ繧堤｢ｺ隱阪＠縲・
-    // 縲悟叙繧願ｾｼ縺ｿ螳御ｺ・阪ｒ謚ｼ縺吶→ 'done' 縺ｫ縺ｪ繧九よ焔蜍戊ｿｽ蜉繝弱・繝峨↓縺ｯ縺薙・繝輔ぅ繝ｼ繝ｫ繝芽・菴薙′辟｡縺・・
+    // 取り込み直後は「未処理」。ユーザーがノード編集シートで内容を確認し、
+    // 「取り込み完了」を押すと 'done' になる。手動追加ノードにはこのフィールド自体が無い。
     triageStatus: 'inbox',
   };
   return id;
 }
 
-// 迴ｾ蝨ｨ縺ｮ繧ｰ繝ｩ繝募・縺ｧ譛ｪ蜃ｦ逅・triageStatus==='inbox')縺ｮ繝弱・繝画焚繧呈焚縺医ｋ
+// 現在のグラフ内で未処理(triageStatus==='inbox')のノード数を数える
 function getInboxCount(g) {
   g = g || currentGraph();
   if (!g) return 0;
   return Object.values(g.nodes).filter(n => n.triageStatus === 'inbox').length;
 }
 
-// 繝倥ャ繝繝ｼ縺ｮ縲交沒・繧ｰ繝ｩ繝輔阪・繧ｿ繝ｳ縺ｫ譛ｪ蜃ｦ逅・ｻｶ謨ｰ繝舌ャ繧ｸ繧貞渚譏
+// ヘッダーの「📂 グラフ」ボタンに未処理件数バッジを反映
 function updateInboxBadge() {
   const badge = document.getElementById('inboxBadge');
   if (!badge) return;
@@ -2436,7 +2355,7 @@ function updateInboxBadge() {
   }
 }
 
-// 繝弱・繝峨ｒ縲悟叙繧願ｾｼ縺ｿ螳御ｺ・阪↓縺吶ｋ・医ヮ繝ｼ繝臥ｷｨ髮・す繝ｼ繝医・繝舌リ繝ｼ縺九ｉ蜻ｼ縺ｶ・・
+// ノードを「取り込み完了」にする（ノード編集シートのバナーから呼ぶ）
 function markNodeInboxDone(id) {
   const g = currentGraph();
   const n = g?.nodes[id];
@@ -2447,7 +2366,7 @@ function markNodeInboxDone(id) {
   renderInboxBanner(n);
 }
 
-// 繝弱・繝臥ｷｨ髮・す繝ｼ繝医・蜿悶ｊ霎ｼ縺ｿ蜈・ヰ繝翫・陦ｨ遉ｺ繧呈峩譁ｰ
+// ノード編集シートの取り込み元バナー表示を更新
 function renderInboxBanner(n) {
   const banner = document.getElementById('inboxBanner');
   const sourceEl = document.getElementById('inboxBannerSource');
@@ -2459,13 +2378,13 @@ function renderInboxBanner(n) {
   }
   if (!n.triageStatus) { banner.classList.remove('show'); return; }
   banner.classList.add('show');
-  sourceEl.textContent = SOURCE_APP_LABEL[n.sourceApp] || n.sourceApp || '莉悶い繝励Μ';
+  sourceEl.textContent = SOURCE_APP_LABEL[n.sourceApp] || n.sourceApp || '他アプリ';
   if (n.triageStatus === 'inbox') {
-    btn.textContent = '蜿悶ｊ霎ｼ縺ｿ螳御ｺ・;
+    btn.textContent = '取り込み完了';
     btn.classList.remove('done');
     btn.disabled = false;
   } else {
-    btn.textContent = '笨・蜿悶ｊ霎ｼ縺ｿ貂医∩';
+    btn.textContent = '✓ 取り込み済み';
     btn.classList.add('done');
     btn.disabled = true;
   }
@@ -2474,10 +2393,10 @@ function renderInboxBanner(n) {
 function importFromTransfer() {
   try {
     const raw = localStorage.getItem(LS_TRANSFER);
-    if (!raw) { showToast('is_transfer縺ｫ繝・・繧ｿ縺後≠繧翫∪縺帙ｓ'); return; }
+    if (!raw) { showToast('is_transferにデータがありません'); return; }
     const payload = JSON.parse(raw);
     const items = payload.items || (Array.isArray(payload) ? payload : null);
-    if (!items || items.length === 0) { showToast('繧､繝ｳ繝昴・繝医〒縺阪ｋ繝・・繧ｿ縺後≠繧翫∪縺帙ｓ'); return; }
+    if (!items || items.length === 0) { showToast('インポートできるデータがありません'); return; }
 
     const g = currentGraph();
     if (!g) return;
@@ -2493,16 +2412,16 @@ function importFromTransfer() {
     updateInboxBadge();
     centerView();
     closeSheet('graphsSheet');
-    showToast(`${added}莉ｶ縺ｮ繝弱・繝峨ｒ霑ｽ蜉縺励∪縺励◆`);
+    showToast(`${added}件のノードを追加しました`);
   } catch(e) {
     console.error(e);
-    showToast('繧､繝ｳ繝昴・繝医↓螟ｱ謨励＠縺ｾ縺励◆');
+    showToast('インポートに失敗しました');
   }
 }
 
-// 笏笏 繝悶Μ繝・ず縺九ｉ縺ｮ閾ｪ蜍暮∽ｿ｡(is_emotion_transfer)繧帝撕縺九↓蜿悶ｊ霎ｼ繧 笏笏
-// quick-ref-bridge遲峨′菫晏ｭ倥・縺溘・縺ｫ譖ｸ縺崎ｾｼ繧1莉ｶ繝・・繧ｿ繧偵∫｢ｺ隱阪↑縺励〒
-// 蝗譫懊げ繝ｩ繝輔↓閾ｪ蜍戊ｿｽ蜉縺吶ｋ縲よ里縺ｫ蜿悶ｊ霎ｼ繧薙□繧ｿ繧､繝繧ｹ繧ｿ繝ｳ繝励・險倬鹸縺励※驥崎､・亟豁｢縲・
+// ── ブリッジからの自動送信(is_emotion_transfer)を静かに取り込む ──
+// quick-ref-bridge等が保存のたびに書き込む1件データを、確認なしで
+// 因果グラフに自動追加する。既に取り込んだタイムスタンプは記録して重複防止。
 let lastEmotionTransferTs = Number(localStorage.getItem('fm_last_emotion_ts') || 0);
 
 function checkEmotionTransfer() {
@@ -2511,7 +2430,7 @@ function checkEmotionTransfer() {
     if (!raw) return;
     const payload = JSON.parse(raw);
     if (!payload.timestamp || payload.timestamp <= lastEmotionTransferTs) return;
-    if (payload.source === 'flow-mind') return; // 閾ｪ蛻・・霄ｫ縺ｮ譖ｸ縺崎ｾｼ縺ｿ縺ｯ辟｡隕・
+    if (payload.source === 'flow-mind') return; // 自分自身の書き込みは無視
     const items = payload.items;
     if (!Array.isArray(items) || items.length === 0) return;
 
@@ -2520,7 +2439,7 @@ function checkEmotionTransfer() {
 
     let added = 0, lastId = null;
     items.forEach((item, i) => {
-      // 閾ｪ蜍募女菫｡縺ｧ縺ｯitem縺ｫ_emotionMeta縺檎┌縺・％縺ｨ縺後≠繧九・縺ｧ縲√・繧､繝ｭ繝ｼ繝牙・菴薙・emotionMeta縺ｧ陬懊≧
+      // 自動受信ではitemに_emotionMetaが無いことがあるので、ペイロード全体のemotionMetaで補う
       const merged = item._emotionMeta ? item : { ...item, _emotionMeta: payload.emotionMeta };
       const id = addNodeFromTransferItem(merged, i, items.length, g, payload.source);
       if (id) { added++; lastId = id; }
@@ -2531,7 +2450,7 @@ function checkEmotionTransfer() {
       updateScoreBar();
       updateInboxBadge();
       if (lastId) fireNode(lastId);
-      showToast(`${payload.source || '莉悶い繝励Μ'}縺九ｉ${added}莉ｶ繧貞女菫｡縺励∪縺励◆`);
+      showToast(`${payload.source || '他アプリ'}から${added}件を受信しました`);
     }
     lastEmotionTransferTs = payload.timestamp;
     localStorage.setItem('fm_last_emotion_ts', String(lastEmotionTransferTs));
@@ -2540,16 +2459,16 @@ function checkEmotionTransfer() {
   }
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 // #import= URL HASH
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 function checkImportHash() {
   if (!location.hash.startsWith('#import=')) return;
   try {
     const b64 = location.hash.slice(8);
     const json = decodeURIComponent(escape(atob(b64)));
     const payload = JSON.parse(json);
-    const name = payload.graphName || `繧､繝ｳ繝昴・繝・${new Date().toLocaleDateString()}`;
+    const name = payload.graphName || `インポート_${new Date().toLocaleDateString()}`;
     const newId = createGraph(name);
     const g = graphs[newId];
     if (payload.nodes) g.nodes = payload.nodes;
@@ -2557,14 +2476,14 @@ function checkImportHash() {
     applyFlowchartLayout();
     saveGraphs();
     switchGraph(newId);
-    showToast(`繧ｰ繝ｩ繝輔・{name}縲阪ｒ繧､繝ｳ繝昴・繝医＠縺ｾ縺励◆`);
+    showToast(`グラフ「${name}」をインポートしました`);
   } catch(e) { console.warn('hash import error', e); }
   finally { history.replaceState(null,'',location.pathname); }
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 // AI LAYER
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 async function callAI(prompt) {
   const modelKey = localStorage.getItem(LS_MODEL) || 'claude';
   const proxyUrl = localStorage.getItem(LS_PROXY) || '';
@@ -2572,7 +2491,7 @@ async function callAI(prompt) {
   const keyMap = { claude:LS_CLAUDE, gemini:LS_GEMINI, openai:LS_OPENAI };
   const apiKey = localStorage.getItem(keyMap[modelKey]) || '';
 
-  if (!apiKey && !proxyUrl) throw new Error(`API繧ｭ繝ｼ縺梧悴險ｭ螳壹〒縺吶Ｒuick-ref縺ｮ笞呻ｸ剰ｨｭ螳壹°繧牙・蜉帙＠縺ｦ縺上□縺輔＞・・{m.label}・荏);
+  if (!apiKey && !proxyUrl) throw new Error(`APIキーが未設定です。quick-refの⚙️設定から入力してください（${m.label}）`);
 
   if (proxyUrl) {
     const res = await fetch(proxyUrl, {
@@ -2617,7 +2536,7 @@ async function callAI(prompt) {
     if (!res.ok) throw new Error(d.error?.message || `OpenAI ${res.status}`);
     return d.choices?.[0]?.message?.content || '';
   }
-  throw new Error('譛ｪ蟇ｾ蠢懊・繝｢繝・Ν');
+  throw new Error('未対応のモデル');
 }
 
 function buildGraphDescription() {
@@ -2626,46 +2545,46 @@ function buildGraphDescription() {
   const scores = computeScores();
   const nodeLines = Object.entries(g.nodes)
     .sort((a,b) => (scores[b[0]]||0)-(scores[a[0]]||0))
-    .map(([id,n]) => `繝ｻ${n.label}・郁・蟾ｱ驥阪∩:${n.weight}縲・㍾隕∝ｺｦ繧ｹ繧ｳ繧｢:${Math.round((scores[id]||0)*100)}%・・{n.memo?` 竊・${n.memo}`:''}`);
+    .map(([id,n]) => `・${n.label}（自己重み:${n.weight}、重要度スコア:${Math.round((scores[id]||0)*100)}%）${n.memo?` → ${n.memo}`:''}`);
   const edgeLines = g.edges.map(e =>
-    `${g.nodes[e.from]?.label||'?'} 竊端ﾃ・{e.weight||1}]竊・${g.nodes[e.to]?.label||'?'}`);
-  return `繧ｰ繝ｩ繝募錐・・{g.name}\n\n縲舌ヮ繝ｼ繝峨曾n${nodeLines.join('\n')}\n\n縲仙屏譫懊お繝・ず縲曾n${edgeLines.join('\n')||'縺ｪ縺・}`;
+    `${g.nodes[e.from]?.label||'?'} →[×${e.weight||1}]→ ${g.nodes[e.to]?.label||'?'}`);
+  return `グラフ名：${g.name}\n\n【ノード】\n${nodeLines.join('\n')}\n\n【因果エッジ】\n${edgeLines.join('\n')||'なし'}`;
 }
 
-// 竭｣ 蜷梧悄繧ｯ繝ｩ繧ｹ繧ｿ・拌ttractor諠・ｱ繧呈ｧ矩蛹悶＠縺ｦAI縺ｫ貂｡縺呻ｼ域悽髻ｳ謚ｽ蜃ｺ逕ｨ繧ｳ繝ｳ繝・く繧ｹ繝茨ｼ・
+// ④ 同期クラスタ＝attractor情報を構造化してAIに渡す（本音抽出用コンテキスト）
 function buildAttractorContext() {
   const g = currentGraph();
   if (!g || currentSyncClusters.length === 0) {
-    return '迴ｾ蝨ｨ縲∝酔譛溘＠縺ｦ縺・ｋ・域ｴｻ諤ｧ蛹悶＠縺ｦ縺・ｋ・峨ヮ繝ｼ繝臥ｾ､縺ｯ縺ゅｊ縺ｾ縺帙ｓ縲・;
+    return '現在、同期している（活性化している）ノード群はありません。';
   }
   const lines = currentSyncClusters.map(c => {
     const attr = classifyAttractor(c);
     const style = BAND_STYLE[c.band];
-    const nodeLabels = c.nodeIds.map(id => g.nodes[id]?.label || '?').join('縲・);
-    return `繝ｻ蟶ｯ蝓・${style.label}・乗戟邯・${Math.round(c.durationMs)}ms・丞ｯ・ｺｦ:${Math.round(c.density*100)}%\n` +
-      `  髢｢荳弱ヮ繝ｼ繝・ ${nodeLabels}\n` +
-      `  謗ｨ螳啾ttractor: ${attr ? attr.label : '譛ｪ蜿取據・磯℃貂｡迥ｶ諷具ｼ・}`;
+    const nodeLabels = c.nodeIds.map(id => g.nodes[id]?.label || '?').join('、');
+    return `・帯域:${style.label}／持続:${Math.round(c.durationMs)}ms／密度:${Math.round(c.density*100)}%\n` +
+      `  関与ノード: ${nodeLabels}\n` +
+      `  推定attractor: ${attr ? attr.label : '未収束（過渡状態）'}`;
   });
-  return `迴ｾ蝨ｨ縲∽ｻ･荳九・逾樒ｵ悟酔譛溘ヱ繧ｿ繝ｼ繝ｳ・磯崕豌玲険蜍輔・繧ｯ繝ｩ繧ｹ繧ｿ・峨′讀懷・縺輔ｌ縺ｦ縺・∪縺呻ｼ喀n${lines.join('\n\n')}`;
+  return `現在、以下の神経同期パターン（電気振動のクラスタ）が検出されています：\n${lines.join('\n\n')}`;
 }
 
 async function runAnalysis(type, custom='') {
   const desc = buildGraphDescription();
-  if (!desc.includes('繝弱・繝・)) { showToast('繝弱・繝峨ｒ霑ｽ蜉縺励※縺九ｉ蛻・梵縺励※縺上□縺輔＞'); return; }
+  if (!desc.includes('ノード')) { showToast('ノードを追加してから分析してください'); return; }
 
   const attractorCtx = buildAttractorContext();
 
   const prompts = {
-    structure: `莉･荳九・蝗譫懊げ繝ｩ繝輔ｒ蛻・梵縺励※縺上□縺輔＞縲・n譛驥崎ｦ√ヮ繝ｼ繝会ｼ亥ｽｱ髻ｿ蜉帙′螟ｧ縺阪＞繧ゅ・・峨・逅・罰縲∵ｧ矩逧・↑迚ｹ蠕ｴ縲∵隼蝟・署譯医ｒ譌･譛ｬ隱槭〒謨吶∴縺ｦ縺上□縺輔＞縲・n\n${desc}`,
-    weak: `莉･荳九・蝗譫懊げ繝ｩ繝輔・蠑ｱ轤ｹ繧呈､懷・縺励※縺上□縺輔＞縲・n蟄､遶九＠縺溘ヮ繝ｼ繝峨∵ｹ諡縺ｮ阮・＞郢九′繧翫∬ｫ也炊逧・↑鬟幄ｺ阪∬ｦ玖誠縺ｨ縺輔ｌ縺ｦ縺・ｋ髢｢菫よｧ繧呈律譛ｬ隱槭〒謖・遭縺励※縺上□縺輔＞縲・n\n${desc}`,
-    suggest: `莉･荳九・蝗譫懊げ繝ｩ繝輔ｒ隕九※縲∬ｿｽ蜉縺吶∋縺阪ヮ繝ｼ繝会ｼ域ｦょｿｵ繝ｻ繧｢繧､繝・い・峨ｒ5縺､謠先｡医＠縺ｦ縺上□縺輔＞縲・n蜷・署譯医↓縲∵里蟄倥・縺ｩ縺ｮ繝弱・繝峨→郢九′繧九°繧ら､ｺ縺励※縺上□縺輔＞縲よ律譛ｬ隱槭〒縲・n\n${desc}`,
-    honne: `縺ゅ↑縺溘・縲梧─諠・・迚ｩ逅・Δ繝・Ν縲阪↓蝓ｺ縺･縺・※譛ｬ髻ｳ繧呈歓蜃ｺ縺吶ｋ繧｢繧ｷ繧ｹ繧ｿ繝ｳ繝医〒縺吶・n` +
-      `諢滓ュ縺ｨ縺ｯ縲∫･樒ｵ後ロ繝・ヨ繝ｯ繝ｼ繧ｯ縺ｮ迚ｹ螳壹・蜻ｨ豕｢謨ｰ蟶ｯ縺ｧ縺ｮ蜷梧悄・医さ繝偵・繝ｬ繝ｳ繧ｹ・峨′縲∝ｮ牙ｮ壹＠縺溽憾諷具ｼ・ttractor・峨↓蜿取據縺励◆縺ｨ縺阪・荳ｻ隕ｳ逧・ｽ馴ｨ薙□縺ｨ閠・∴縺ｾ縺吶・n\n` +
+    structure: `以下の因果グラフを分析してください。\n最重要ノード（影響力が大きいもの）の理由、構造的な特徴、改善提案を日本語で教えてください。\n\n${desc}`,
+    weak: `以下の因果グラフの弱点を検出してください。\n孤立したノード、根拠の薄い繋がり、論理的な飛躍、見落とされている関係性を日本語で指摘してください。\n\n${desc}`,
+    suggest: `以下の因果グラフを見て、追加すべきノード（概念・アイデア）を5つ提案してください。\n各提案に、既存のどのノードと繋がるかも示してください。日本語で。\n\n${desc}`,
+    honne: `あなたは「感情の物理モデル」に基づいて本音を抽出するアシスタントです。\n` +
+      `感情とは、神経ネットワークの特定の周波数帯での同期（コヒーレンス）が、安定した状態（attractor）に収束したときの主観的体験だと考えます。\n\n` +
       `${attractorCtx}\n\n` +
-      `莉･荳九・縺薙・繝ｦ繝ｼ繧ｶ繝ｼ縺ｮ諤晁・げ繝ｩ繝輔〒縺呻ｼ喀n${desc}\n\n` +
-      `荳願ｨ倥・蜷梧悄繝代ち繝ｼ繝ｳ・育音縺ｫﾎｳ豕｢・晄偵ｊ繝ｻ髮・ｸｭ縲∃ｸ豕｢・昜ｸ榊ｮ峨∃ｴ豕｢・晄ｷｱ縺・ュ蜍包ｼ峨′縲～ +
-      `縺ｩ縺ｮ繝弱・繝臥ｾ､繧剃ｸｭ蠢・↓襍ｷ縺阪※縺・ｋ縺九↓豕ｨ逶ｮ縺励√Θ繝ｼ繧ｶ繝ｼ閾ｪ霄ｫ繧ゅ∪縺險隱槫喧縺ｧ縺阪※縺・↑縺・梧悽髻ｳ縲阪ｒ譁ｭ螳壹○縺壻ｻｮ隱ｬ縺ｨ縺励※1縲・蛟九∵律譛ｬ隱槭〒謠千､ｺ縺励※縺上□縺輔＞縲Ａ +
-      `譬ｹ諡縺ｨ縺励※縲√←縺ｮ蜷梧悄繧ｯ繝ｩ繧ｹ繧ｿ繝ｻ縺ｩ縺ｮ繝弱・繝峨・邨・∩蜷医ｏ縺帙°繧峨◎縺ｮ莉ｮ隱ｬ繧貞ｰ弱＞縺溘°繧よ・險倥＠縺ｦ縺上□縺輔＞縲Ａ,
+      `以下はこのユーザーの思考グラフです：\n${desc}\n\n` +
+      `上記の同期パターン（特にγ波＝怒り・集中、θ波＝不安、δ波＝深い情動）が、` +
+      `どのノード群を中心に起きているかに注目し、ユーザー自身もまだ言語化できていない「本音」を断定せず仮説として1〜3個、日本語で提示してください。` +
+      `根拠として、どの同期クラスタ・どのノードの組み合わせからその仮説を導いたかも明記してください。`,
   };
 
   const prompt = custom
@@ -2689,17 +2608,17 @@ async function runAnalysis(type, custom='') {
   }
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// AI荳諡ｬ繧ｿ繧ｰ蜀肴歓蜃ｺ
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
+// AI一括タグ再抽出
+// ═══════════════════════════════════
 function buildTagPrompt(nodeList) {
-  return `莉･荳九・繝槭う繝ｳ繝峨・繝・・繧｢繝励Μ縺ｮ繝弱・繝我ｸ隕ｧ縺ｧ縺吶ょ推繝弱・繝峨↓縺､縺・※縲∝・螳ｹ繧定｡ｨ縺呎律譛ｬ隱槭ち繧ｰ繧・縲・蛟九★縺､莉倥￠縺ｦ縺上□縺輔＞縲・
-繧ｿ繧ｰ縺ｯ譌｢蟄倥・隕ｳ轤ｹ・域─諠・・莉穂ｺ九・繧｢繧､繝・い繝ｻ莠ｺ髢馴未菫ゅ・霄ｫ菴薙↑縺ｩ・峨↓縺ｨ繧峨ｏ繧後★縲∝・螳ｹ縺ｫ蜊ｳ縺励※閾ｪ逕ｱ縺ｫ驕ｸ繧薙〒縺上□縺輔＞縲・
-蜃ｺ蜉帙・蠢・★莉･荳九・JSON蠖｢蠑上・縺ｿ縺ｧ縲∬ｪｬ譏取枚繧・さ繝ｼ繝峨ヶ繝ｭ繝・け險伜捷縺ｯ荳蛻・性繧√↑縺・〒縺上□縺輔＞縲・
+  return `以下はマインドマップアプリのノード一覧です。各ノードについて、内容を表す日本語タグを1〜3個ずつ付けてください。
+タグは既存の観点（感情・仕事・アイデア・人間関係・身体など）にとらわれず、内容に即して自由に選んでください。
+出力は必ず以下のJSON形式のみで、説明文やコードブロック記号は一切含めないでください。
 
-{"繧ｿ繧ｰ邨先棡": [{"id": "繝弱・繝迂D", "tags": ["繧ｿ繧ｰ1", "繧ｿ繧ｰ2"]}, ...]}
+{"タグ結果": [{"id": "ノードID", "tags": ["タグ1", "タグ2"]}, ...]}
 
-繝弱・繝我ｸ隕ｧ:
+ノード一覧:
 ${nodeList.map(n => `- id:${n.id} label:${n.label} memo:${n.memo}`).join('\n')}`;
 }
 
@@ -2707,7 +2626,7 @@ async function aiRetagAllNodes() {
   const g = currentGraph();
   if (!g) return;
   const nodeList = Object.entries(g.nodes).map(([id, n]) => ({ id, label: n.label, memo: n.memo || '' }));
-  if (nodeList.length === 0) { showToast('繝弱・繝峨′縺ゅｊ縺ｾ縺帙ｓ'); return; }
+  if (nodeList.length === 0) { showToast('ノードがありません'); return; }
 
   document.getElementById('aiLoading').classList.add('show');
   try {
@@ -2715,22 +2634,22 @@ async function aiRetagAllNodes() {
     const raw = await callAI(prompt);
     const clean = raw.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
-    parsed['繧ｿ繧ｰ邨先棡'].forEach(item => {
+    parsed['タグ結果'].forEach(item => {
       if (g.nodes[item.id]) { g.nodes[item.id].tags = item.tags; g.nodes[item.id].updatedAt = Date.now(); }
     });
     saveGraphs();
     if (editingNodeId && g.nodes[editingNodeId]) renderNodeTags(g.nodes[editingNodeId]);
-    showToast('捷 AI繧ｿ繧ｰ莉倥￠縺悟ｮ御ｺ・＠縺ｾ縺励◆');
+    showToast('🏷 AIタグ付けが完了しました');
   } catch (e) {
-    showToast(e.message || '繧ｿ繧ｰ莉倥￠縺ｫ螟ｱ謨励＠縺ｾ縺励◆');
+    showToast(e.message || 'タグ付けに失敗しました');
   } finally {
     document.getElementById('aiLoading').classList.remove('show');
   }
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 // SHEET HELPERS
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 function openSheet(id) {
   document.getElementById(id).classList.add('open');
   document.getElementById('overlay').classList.add('open');
@@ -2753,9 +2672,9 @@ function setMode(m) {
   document.getElementById('connectModeBtn').classList.toggle('active', m===MODE.CONNECT);
   document.getElementById('editModeBtn').classList.toggle('active', m===MODE.EDIT);
   const labels = {
-    add:'繧ｿ繝・・縺ｧ譁ｰ縺励＞繝弱・繝峨ｒ霑ｽ蜉 / 繝弱・繝峨ｒ繧ｿ繝・・縺ｧ邱ｨ髮・・逋ｺ轣ｫ',
-    connect:'謗･邯壼・繝弱・繝峨ｒ繧ｿ繝・・ 竊・謗･邯壼・繧偵ち繝・・',
-    edit:'繝弱・繝峨ｒ繧ｿ繝・・縺ｧ邱ｨ髮・/ 繧ｨ繝・ず繧偵ち繝・・縺ｧ蜑企勁・磯・鄂ｮ縺ｯ閾ｪ蜍墓紛蛻暦ｼ・,
+    add:'タップで新しいノードを追加 / ノードをタップで編集・発火',
+    connect:'接続元ノードをタップ → 接続先をタップ',
+    edit:'ノードをタップで編集 / エッジをタップで削除（配置は自動整列）',
   };
   document.getElementById('modeLabel').textContent = labels[m];
   document.getElementById('deleteNodeBtn').style.display = 'none';
@@ -2780,9 +2699,9 @@ function showToast(msg) {
   toastTimer = setTimeout(() => el.classList.remove('show'), 2300);
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// QUICK CAPTURE 窶・縺吶＄險倬鹸・磯浹螢ｰ / 繝・く繧ｹ繝・/ 蜈ｱ譛峨す繝ｼ繝郁ｵｷ蜍包ｼ・
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
+// QUICK CAPTURE — すぐ記録（音声 / テキスト / 共有シート起動）
+// ═══════════════════════════════════
 let qcRecorder = null;
 let qcChunks = [];
 let qcRecording = false;
@@ -2812,13 +2731,13 @@ function setQcStatus(msg, busy) {
   el.classList.toggle('busy', !!busy);
 }
 
-// 繝・く繧ｹ繝医°繧峨ヮ繝ｼ繝峨ｒ蜊ｳ譎ゆｽ懈・縺励∫峩蜑阪↓逋ｺ轣ｫ縺励◆繝弱・繝峨∈蝗譫懊お繝・ず縺ｧ謗･邯壹☆繧・
-// ・茨ｼ晏ｭ､遶九ヮ繝ｼ繝峨↓縺帙★縲∵里蟄倥・諤晁・げ繝ｩ繝輔・荳ｭ縺ｫ菴咲ｽｮ縺･縺代ｋ・・
+// テキストからノードを即時作成し、直前に発火したノードへ因果エッジで接続する
+// （＝孤立ノードにせず、既存の思考グラフの中に位置づける）
 function quickAddNode(text) {
   const g = currentGraph();
   if (!g) return;
   const trimmed = text.trim();
-  if (!trimmed) { showToast('蜀・ｮｹ繧貞・蜉帙＠縺ｦ縺上□縺輔＞'); return; }
+  if (!trimmed) { showToast('内容を入力してください'); return; }
 
   const connectSourceId = (lastFiredNodeId && g.nodes[lastFiredNodeId]) ? lastFiredNodeId : null;
   const basePos = connectSourceId
@@ -2833,8 +2752,8 @@ function quickAddNode(text) {
   g.nodes[id] = {
     updatedAt: Date.now(),
     id,
-    label: firstLine || '險倬鹸',
-    memo: trimmed,                // 蜈ｨ譁・ｒ蠢・★繝｡繝｢縺ｫ菫晄戟・育怐逡･縺励↑縺・ｼ・
+    label: firstLine || '記録',
+    memo: trimmed,                // 全文を必ずメモに保持（省略しない）
     x: pos.x, y: pos.y,
     weight: 3,
     color: '#4A9EFF',
@@ -2843,7 +2762,7 @@ function quickAddNode(text) {
     lastFired: 0,
     tags: extractTagsFromText(firstLine, trimmed),
   };
-  // 逶ｴ蜑阪↓逋ｺ轣ｫ縺励◆繝弱・繝峨′縺ゅｌ縺ｰ縲∝屏譫懊・騾｣骼悶→縺励※閾ｪ蜍墓磁邯・
+  // 直前に発火したノードがあれば、因果の連鎖として自動接続
   if (connectSourceId) {
     g.edges.push({ from: connectSourceId, to: id, weight: 1, conductance: 1.0 });
   }
@@ -2852,31 +2771,31 @@ function quickAddNode(text) {
   saveGraphs();
   updateScoreBar();
   closeQuickCapture();
-  fireNode(id);                   // 逋ｺ轣ｫ縺輔○縺ｦ髮ｻ闕ｷ繝ｻ蜷梧悄豕｢繧剃ｼ晄眺縺輔○繧・
+  fireNode(id);                   // 発火させて電荷・同期波を伝播させる
   scheduleDriveKeepPush(g.nodes[id]);
   document.getElementById('qcInput').value = '';
   autoGrowQc();
 
-  // 蜈ｨ譁・・謗･邯壹ｒ遒ｺ隱阪〒縺阪ｋ繧医≧縲√ヮ繝ｼ繝臥ｷｨ髮・す繝ｼ繝医ｒ閾ｪ蜍輔〒髢九￥
+  // 全文・接続を確認できるよう、ノード編集シートを自動で開く
   openNodeSheet(id, true);
-  showToast(connectSourceId ? '險倬鹸縺励※謗･邯壹＠縺ｾ縺励◆' : '險倬鹸縺励∪縺励◆');
+  showToast(connectSourceId ? '記録して接続しました' : '記録しました');
 }
 
-// 笏笏 髻ｳ螢ｰ蜈･蜉幢ｼ・ediaRecorder縺ｧ骭ｲ髻ｳ 竊・AI(Whisper邉ｻ)縺ｧ譁・ｭ苓ｵｷ縺薙＠・俄楳笏
-// 陬懆ｶｳ・喨OS Safari縺ｯ繝悶Λ繧ｦ繧ｶ讓呎ｺ悶・髻ｳ螢ｰ隱崎ｭ・SpeechRecognition)縺ｫ蟇ｾ蠢懊＠縺ｦ縺・↑縺・◆繧√・
-// 骭ｲ髻ｳ縺励※AI API縺ｫ騾√▲縺ｦ譁・ｭ苓ｵｷ縺薙＠縺吶ｋ譁ｹ蠑上↓縺励※縺・∪縺吶・
+// ── 音声入力（MediaRecorderで録音 → AI(Whisper系)で文字起こし）──
+// 補足：iOS Safariはブラウザ標準の音声認識(SpeechRecognition)に対応していないため、
+// 録音してAI APIに送って文字起こしする方式にしています。
 function startQcRecording() {
   if (qcRecording) return;
   if (!window.isSecureContext) {
-    showToast('繝槭う繧ｯ縺ｯhttps迺ｰ蠅・〒縺ｮ縺ｿ菴ｿ逕ｨ縺ｧ縺阪∪縺・);
+    showToast('マイクはhttps環境でのみ使用できます');
     return;
   }
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    showToast('縺薙・繝悶Λ繧ｦ繧ｶ/陦ｨ遉ｺ繝｢繝ｼ繝峨・骭ｲ髻ｳ縺ｫ蟇ｾ蠢懊＠縺ｦ縺・∪縺帙ｓ');
+    showToast('このブラウザ/表示モードは録音に対応していません');
     return;
   }
   if (typeof MediaRecorder === 'undefined') {
-    showToast('縺薙・迺ｰ蠅・・MediaRecorder縺ｫ蟇ｾ蠢懊＠縺ｦ縺・∪縺帙ｓ');
+    showToast('この環境はMediaRecorderに対応していません');
     return;
   }
   navigator.mediaDevices.getUserMedia({ audio:true }).then(stream => {
@@ -2887,18 +2806,18 @@ function startQcRecording() {
       qcRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
     } catch (recErr) {
       console.error(recErr);
-      showToast('骭ｲ髻ｳ縺ｮ蛻晄悄蛹悶↓螟ｱ謨励＠縺ｾ縺励◆: ' + recErr.message);
+      showToast('録音の初期化に失敗しました: ' + recErr.message);
       stream.getTracks().forEach(t => t.stop());
       return;
     }
     qcRecorder.ondataavailable = e => { if (e.data.size > 0) qcChunks.push(e.data); };
     qcRecorder.onerror = e => {
       console.error('MediaRecorder error', e.error);
-      showToast('骭ｲ髻ｳ繧ｨ繝ｩ繝ｼ: ' + (e.error?.message || e.error?.name || '荳肴・縺ｪ繧ｨ繝ｩ繝ｼ'));
+      showToast('録音エラー: ' + (e.error?.message || e.error?.name || '不明なエラー'));
     };
     qcRecorder.onstop = () => {
       stream.getTracks().forEach(t => t.stop());
-      if (qcChunks.length === 0) { setQcStatus(''); showToast('骭ｲ髻ｳ繝・・繧ｿ縺悟叙蠕励〒縺阪∪縺帙ｓ縺ｧ縺励◆'); return; }
+      if (qcChunks.length === 0) { setQcStatus(''); showToast('録音データが取得できませんでした'); return; }
       const blob = new Blob(qcChunks, { type: qcRecorder.mimeType || 'audio/webm' });
       transcribeAndFill(blob);
     };
@@ -2906,21 +2825,21 @@ function startQcRecording() {
     qcRecording = true;
     document.getElementById('qcMicBtn').classList.add('recording');
     document.getElementById('quickCaptureFab').classList.add('recording');
-    setQcStatus('児 骭ｲ髻ｳ荳ｭ窶ｦ繧ゅ≧荳蠎ｦ繧ｿ繝・・縺ｧ譁・ｭ苓ｵｷ縺薙＠', true);
+    setQcStatus('🎙 録音中…もう一度タップで文字起こし', true);
   }).catch(err => {
     console.error(err);
-    // iOS縺ｧ繧医￥縺ゅｋ蜴溷屏繧貞愛蛻･縺励※繝｡繝・そ繝ｼ繧ｸ繧貞・縺怜・縺代ｋ
-    let msg = '繝槭う繧ｯ縺ｸ縺ｮ繧｢繧ｯ繧ｻ繧ｹ縺悟ｿ・ｦ√〒縺・;
+    // iOSでよくある原因を判別してメッセージを出し分ける
+    let msg = 'マイクへのアクセスが必要です';
     if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-      msg = '繝槭う繧ｯ縺ｸ縺ｮ繧｢繧ｯ繧ｻ繧ｹ縺梧拠蜷ｦ縺輔ｌ縺ｦ縺・∪縺吶りｨｭ螳・> Safari(縺ｾ縺溘・縺薙・繧｢繝励Μ) > 繝槭う繧ｯ 繧堤｢ｺ隱阪＠縺ｦ縺上□縺輔＞';
+      msg = 'マイクへのアクセスが拒否されています。設定 > Safari(またはこのアプリ) > マイク を確認してください';
     } else if (err.name === 'NotFoundError') {
-      msg = '繝槭う繧ｯ縺瑚ｦ九▽縺九ｊ縺ｾ縺帙ｓ';
+      msg = 'マイクが見つかりません';
     } else if (err.name === 'NotReadableError') {
-      msg = '莉悶・繧｢繝励Μ縺後・繧､繧ｯ繧剃ｽｿ逕ｨ荳ｭ縺ｮ蜿ｯ閭ｽ諤ｧ縺後≠繧翫∪縺・;
+      msg = '他のアプリがマイクを使用中の可能性があります';
     } else if (err.name === 'SecurityError') {
-      msg = '繧ｻ繧ｭ繝･繝ｪ繝・ぅ蛻ｶ髯舌↓繧医ｊ繝槭う繧ｯ繧剃ｽｿ逕ｨ縺ｧ縺阪∪縺帙ｓ(https迺ｰ蠅・°遒ｺ隱阪＠縺ｦ縺上□縺輔＞)';
+      msg = 'セキュリティ制限によりマイクを使用できません(https環境か確認してください)';
     }
-    showToast(msg + `・・{err.name}・荏);
+    showToast(msg + `（${err.name}）`);
   });
 }
 
@@ -2933,12 +2852,12 @@ function stopQcRecording() {
 }
 
 async function transcribeAndFill(blob) {
-  setQcStatus('竢ｳ 譁・ｭ苓ｵｷ縺薙＠荳ｭ窶ｦ', true);
+  setQcStatus('⏳ 文字起こし中…', true);
   const apiKey = localStorage.getItem(LS_OPENAI) || '';
   const proxyUrl = localStorage.getItem(LS_PROXY) || '';
   if (!apiKey && !proxyUrl) {
     setQcStatus('');
-    showToast('譁・ｭ苓ｵｷ縺薙＠縺ｫ縺ｯOpenAI API繧ｭ繝ｼ縺悟ｿ・ｦ√〒縺呻ｼ・uick-ref縺ｮ笞呻ｸ剰ｨｭ螳夲ｼ・);
+    showToast('文字起こしにはOpenAI APIキーが必要です（quick-refの⚙️設定）');
     return;
   }
   try {
@@ -2972,13 +2891,13 @@ async function transcribeAndFill(blob) {
   } catch(e) {
     console.error(e);
     setQcStatus('');
-    showToast('譁・ｭ苓ｵｷ縺薙＠縺ｫ螟ｱ謨励＠縺ｾ縺励◆: ' + e.message);
+    showToast('文字起こしに失敗しました: ' + e.message);
   }
 }
 
-// 笏笏 URL邨檎罰縺ｮ蜊ｳ險倬鹸蜿嶺ｿ｡ 笏笏
-// index.html#capture=<encodeURIComponent(text)> 縺ｧ髢九￥縺ｨ縲√☆縺占ｨ倬鹸繝舌・縺ｫ繝・く繧ｹ繝医′蜈･縺｣縺溽憾諷九〒襍ｷ蜍輔☆繧九・
-// &auto=1 繧剃ｻ倥￠繧九→繝舌・繧帝幕縺九★縺昴・縺ｾ縺ｾ繝弱・繝牙喧縺吶ｋ・井ｾ具ｼ喨OS繧ｷ繝ｧ繝ｼ繝医き繝・ヨ縺ｮ縲悟・譛峨阪い繧ｯ繧ｷ繝ｧ繝ｳ縺九ｉ・峨・
+// ── URL経由の即記録受信 ──
+// index.html#capture=<encodeURIComponent(text)> で開くと、すぐ記録バーにテキストが入った状態で起動する。
+// &auto=1 を付けるとバーを開かずそのままノード化する（例：iOSショートカットの「共有」アクションから）。
 function checkCaptureHash() {
   if (!location.hash.startsWith('#capture=')) return;
   try {
@@ -3003,9 +2922,9 @@ function wireQuickCapture() {
   const sendBtn = document.getElementById('qcSendBtn');
   const closeBtn = document.getElementById('qcCloseBtn');
 
-  // FAB縺ｯ繧ｿ繝・・縺ｧ繝舌・繧帝幕縺上□縺托ｼ磯鹸髻ｳ縺ｯ繝槭う繧ｯ繝懊ち繝ｳ繧堤峩謗･繧ｿ繝・・縺励◆譎ゅ□縺鷹幕蟋九☆繧九・
-  // iOS縺ｯgetUserMedia繧偵Θ繝ｼ繧ｶ繝ｼ謫堺ｽ懊・窶懃峩謗･縺ｮ邨先棡窶昴→縺励※縺ｧ縺ｪ縺・→險ｱ蜿ｯ縺励↑縺・◆繧√・
-  // setTimeout繧呈検繧髟ｷ謚ｼ縺苓ｵｷ蜍輔・菴ｿ繧上↑縺・ｼ・
+  // FABはタップでバーを開くだけ（録音はマイクボタンを直接タップした時だけ開始する。
+  // iOSはgetUserMediaをユーザー操作の“直接の結果”としてでないと許可しないため、
+  // setTimeoutを挟む長押し起動は使わない）
   fab.addEventListener('click', () => openQuickCapture());
 
   closeBtn.addEventListener('click', closeQuickCapture);
@@ -3026,12 +2945,12 @@ function wireQuickCapture() {
   sendBtn.addEventListener('click', () => quickAddNode(input.value));
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// SYNC 窶・Windows(File System Access API) / iPhone(謇句虚Files騾｣謳ｺ)
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// SYNC 窶・Windows(File System Access API) / iPhone(謇句虚Files騾｣謳ｺ) / 繧ｯ繝ｩ繧ｦ繝・蜈ｨ遶ｯ譛ｫ蜈ｱ騾・
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
+// SYNC — Windows(File System Access API) / iPhone(手動Files連携)
+// ═══════════════════════════════════
+// ═══════════════════════════════════
+// SYNC — Windows(File System Access API) / iPhone(手動Files連携) / クラウド(全端末共通)
+// ═══════════════════════════════════
 function mergeCloudGraphs(local, remote) {
   const merged = structuredClone(local || {});
   const remoteGraphs = remote || {};
@@ -3125,7 +3044,7 @@ async function checkCloudSyncOnLoad() {
     const ids = Object.keys(graphs);
     if (!graphs[currentGraphId]) {
       currentGraphId = ids[0] || null;
-      if (!currentGraphId) createGraph('縺ｯ縺倥ａ縺ｦ縺ｮ繧ｰ繝ｩ繝・);
+      if (!currentGraphId) createGraph('はじめてのグラフ');
       else localStorage.setItem(LS_CURRENT, currentGraphId);
     }
 
@@ -3133,7 +3052,7 @@ async function checkCloudSyncOnLoad() {
     if (payload.timestamp) {
       CloudSync.setLastSyncedAt('flow-mind', payload.timestamp);
     }
-    // 繝槭・繧ｸ邨先棡繧偵し繝ｼ繝舌・縺ｫ繧よ嶌縺肴綾縺呻ｼ井ｻ也ｫｯ譛ｫ縺ｮ螟画峩縺梧ｶ医∴縺ｪ縺・ｈ縺・↓縺吶ｋ縺溘ａ・・
+    // マージ結果をサーバーにも書き戻す（他端末の変更が消えないようにするため）
     CloudSync.cloudSave('flow-mind', graphs);
 
     applyFlowchartLayout();
@@ -3154,7 +3073,7 @@ async function checkCloudSyncOnResume() {
     const ids = Object.keys(graphs);
     if (!graphs[currentGraphId]) {
       currentGraphId = ids[0] || null;
-      if (!currentGraphId) createGraph('縺ｯ縺倥ａ縺ｦ縺ｮ繧ｰ繝ｩ繝・);
+      if (!currentGraphId) createGraph('はじめてのグラフ');
       else localStorage.setItem(LS_CURRENT, currentGraphId);
     }
 
@@ -3162,7 +3081,7 @@ async function checkCloudSyncOnResume() {
     if (payload.timestamp) {
       CloudSync.setLastSyncedAt('flow-mind', payload.timestamp);
     }
-    // 繝槭・繧ｸ邨先棡繧偵し繝ｼ繝舌・縺ｫ繧よ嶌縺肴綾縺呻ｼ井ｻ也ｫｯ譛ｫ縺ｮ螟画峩縺梧ｶ医∴縺ｪ縺・ｈ縺・↓縺吶ｋ縺溘ａ・・
+    // マージ結果をサーバーにも書き戻す（他端末の変更が消えないようにするため）
     CloudSync.cloudSave('flow-mind', graphs);
 
     updateScoreBar();
@@ -3175,31 +3094,31 @@ async function refreshCloudSyncStatus() {
   document.getElementById('cloudEndpointInput').value = c.endpoint || '';
   document.getElementById('cloudTokenInput').value = c.token || '';
   if (!CloudSync.isConfigured()) {
-    document.getElementById('cloudSyncStatus').textContent = '譛ｪ險ｭ螳・;
+    document.getElementById('cloudSyncStatus').textContent = '未設定';
     return;
   }
   const ts = CloudSync.getLastSyncedAt('flow-mind');
   document.getElementById('cloudSyncStatus').textContent = ts
-    ? `險ｭ螳壽ｸ医∩ / 譛邨ょ酔譛・ ${new Date(ts).toLocaleString('ja-JP')}`
-    : '險ｭ螳壽ｸ医∩・医∪縺譛ｪ蜷梧悄・・;
+    ? `設定済み / 最終同期: ${new Date(ts).toLocaleString('ja-JP')}`
+    : '設定済み（まだ未同期）';
 }
 
 function wireCloudSync() {
   document.getElementById('cloudSaveConfigBtn').addEventListener('click', async () => {
-    if (!window.CloudSync) { showToast('cloud-sync.js縺瑚ｪｭ縺ｿ霎ｼ縺ｾ繧後※縺・∪縺帙ｓ'); return; }
+    if (!window.CloudSync) { showToast('cloud-sync.jsが読み込まれていません'); return; }
     const endpoint = document.getElementById('cloudEndpointInput').value;
     const token = document.getElementById('cloudTokenInput').value;
     CloudSync.setConfig(endpoint, token);
-    showToast('險ｭ螳壹ｒ菫晏ｭ倥＠縺ｾ縺励◆');
+    showToast('設定を保存しました');
     await checkCloudSyncOnLoad();
-    CloudSync.cloudSave('flow-mind', graphs); // 險ｭ螳夂峩蠕後↓荳蠎ｦ譖ｸ縺崎ｾｼ繧薙〒縺翫￥
+    CloudSync.cloudSave('flow-mind', graphs); // 設定直後に一度書き込んでおく
     refreshCloudSyncStatus();
   });
 
   document.getElementById('cloudSyncNowBtn').addEventListener('click', async () => {
-    if (!window.CloudSync || !CloudSync.isConfigured()) { showToast('蜈医↓繧ｨ繝ｳ繝峨・繧､繝ｳ繝・繝医・繧ｯ繝ｳ繧定ｨｭ螳壹＠縺ｦ縺上□縺輔＞'); return; }
+    if (!window.CloudSync || !CloudSync.isConfigured()) { showToast('先にエンドポイント/トークンを設定してください'); return; }
     CloudSync.cloudSave('flow-mind', graphs);
-    showToast('蜷梧悄縺励∪縺励◆');
+    showToast('同期しました');
     setTimeout(refreshCloudSyncStatus, 1400);
   });
 }
@@ -3214,29 +3133,29 @@ async function checkCloudOnLoad() {
     const localLastSync = SyncBridge.getLastSyncedAt('flow-mind') || 0;
     if (payload.timestamp > localLastSync) {
       const when = new Date(payload.timestamp).toLocaleString('ja-JP');
-      if (confirm(`iCloud蛛ｴ縺ｫ譁ｰ縺励＞繝・・繧ｿ縺後≠繧翫∪縺・${when})縲りｪｭ縺ｿ霎ｼ縺ｿ縺ｾ縺吶°・歃n・育樟蝨ｨ縺ｮ繧ｰ繝ｩ繝輔・荳頑嶌縺阪＆繧後∪縺呻ｼ荏)) {
+      if (confirm(`iCloud側に新しいデータがあります(${when})。読み込みますか？\n（現在のグラフは上書きされます）`)) {
         graphs = payload.data;
         const ids = Object.keys(graphs);
         if (!graphs[currentGraphId]) {
           currentGraphId = ids[0] || null;
-          if (!currentGraphId) createGraph('縺ｯ縺倥ａ縺ｦ縺ｮ繧ｰ繝ｩ繝・);
+          if (!currentGraphId) createGraph('はじめてのグラフ');
           else localStorage.setItem(LS_CURRENT, currentGraphId);
         }
         applyFlowchartLayout();
         saveGraphs();
         centerView();
         updateScoreBar();
-        showToast('iCloud縺九ｉ隱ｭ縺ｿ霎ｼ縺ｿ縺ｾ縺励◆');
+        showToast('iCloudから読み込みました');
       }
     }
   } catch(e) { console.warn('checkCloudOnLoad error', e); }
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// GOOGLE KEEP 謫ｬ莨ｼ蜷梧悄・・oogle Drive邨檎罰・・
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// 1繝弱・繝会ｼ・JSON繝輔ぃ繧､繝ｫ縺ｨ縺励※Drive荳翫↓菫晏ｭ倥・蜿門ｾ励☆繧九・eep譛ｬ菴薙↓縺ｯ隗ｦ繧後↑縺・・
-// emotion-bridge(is_transfer/is_emotion_transfer)縺ｨ縺ｯ螳悟・縺ｫ迢ｬ遶九＠縺滉ｻ慕ｵ・∩縲・
+// ═══════════════════════════════════
+// GOOGLE KEEP 擬似同期（Google Drive経由）
+// ═══════════════════════════════════
+// 1ノード＝1JSONファイルとしてDrive上に保存・取得する。Keep本体には触れない。
+// emotion-bridge(is_transfer/is_emotion_transfer)とは完全に独立した仕組み。
 const DRIVE_KEEP_KNOWN_IDS_KEY = 'fm_drive_keep_known_ids';
 
 function driveKeepKnownFileIds() {
@@ -3253,7 +3172,7 @@ function rememberDriveKeepFileId(fileId) {
   try { localStorage.setItem(DRIVE_KEEP_KNOWN_IDS_KEY, JSON.stringify(ids)); } catch(e) {}
 }
 
-// 繝弱・繝芽ｿｽ蜉繝ｻ邱ｨ髮・・縺溘・縺ｫ蜻ｼ縺ｶ縲りｪ榊庄貂医∩縺ｧ縺ｪ縺代ｌ縺ｰ菴輔ｂ縺励↑縺・繧ｵ繧､繝ｬ繝ｳ繝医↓辟｡隕・
+// ノード追加・編集のたびに呼ぶ。認可済みでなければ何もしない(サイレントに無視)
 let driveKeepPushTimer = null;
 function scheduleDriveKeepPush(node) {
   if (!node || !window.DriveKeepSync || !DriveKeepSync.isAuthorized()) return;
@@ -3296,7 +3215,7 @@ async function pullDriveKeepNotes() {
       saveGraphs();
       updateScoreBar();
       if (lastId) fireNode(lastId);
-      showToast(`Google Keep縺九ｉ${added}莉ｶ繧貞女菫｡縺励∪縺励◆`);
+      showToast(`Google Keepから${added}件を受信しました`);
     }
   } catch (e) {
     console.warn('[drive-keep-sync] pull failed', e);
@@ -3307,13 +3226,13 @@ function refreshDriveKeepStatus() {
   const statusEl = document.getElementById('driveKeepStatus');
   if (!statusEl) return;
   if (!window.DriveKeepSync || !DriveKeepSync.isConfigured()) {
-    statusEl.textContent = '譛ｪ險ｭ螳・;
+    statusEl.textContent = '未設定';
     return;
   }
   const ts = DriveKeepSync.getLastSyncedAt();
   statusEl.textContent = DriveKeepSync.isAuthorized()
-    ? `騾｣謳ｺ貂医∩${ts ? ' / 譛邨ょ酔譛・ ' + new Date(ts).toLocaleString('ja-JP') : ''}`
-    : '騾｣謳ｺ譛ｪ險ｱ蜿ｯ・医碁｣謳ｺ繧定ｨｱ蜿ｯ縲阪ｒ謚ｼ縺励※縺上□縺輔＞縲ゅ・繝ｼ繧ｸ繧帝幕縺咲峩縺吶◆縺ｳ縺ｫ蜀榊ｺｦ蠢・ｦ√〒縺呻ｼ・;
+    ? `連携済み${ts ? ' / 最終同期: ' + new Date(ts).toLocaleString('ja-JP') : ''}`
+    : '連携未許可（「連携を許可」を押してください。ページを開き直すたびに再度必要です）';
 }
 
 function wireDriveKeepSync() {
@@ -3323,39 +3242,39 @@ function wireDriveKeepSync() {
   if (!clientIdInput || !authorizeBtn || !syncNowBtn) return;
 
   if (window.DriveKeepSync && DriveKeepSync.isConfigured()) {
-    // 菫晏ｭ俶ｸ医∩縺ｮ繧ｯ繝ｩ繧､繧｢繝ｳ繝・D縺後≠繧後・縲？TML縺ｮ蛻晄悄蛟､繧医ｊ蜆ｪ蜈医＠縺ｦ陦ｨ遉ｺ縺吶ｋ
+    // 保存済みのクライアントIDがあれば、HTMLの初期値より優先して表示する
     clientIdInput.value = DriveKeepSync.getClientId();
   } else if (window.DriveKeepSync && clientIdInput.value.trim()) {
     DriveKeepSync.setClientId(clientIdInput.value.trim());
   }
 
   authorizeBtn.addEventListener('click', async () => {
-    if (!window.DriveKeepSync) { showToast('drive-keep-sync.js縺瑚ｪｭ縺ｿ霎ｼ縺ｾ繧後※縺・∪縺帙ｓ'); return; }
+    if (!window.DriveKeepSync) { showToast('drive-keep-sync.jsが読み込まれていません'); return; }
     DriveKeepSync.setClientId(clientIdInput.value.trim());
     try {
       await DriveKeepSync.authorize();
-      showToast('Google Drive縺ｨ縺ｮ騾｣謳ｺ繧定ｨｱ蜿ｯ縺励∪縺励◆');
+      showToast('Google Driveとの連携を許可しました');
       refreshDriveKeepStatus();
       pullDriveKeepNotes();
     } catch (e) {
-      showToast('騾｣謳ｺ縺ｫ螟ｱ謨励＠縺ｾ縺励◆: ' + e.message);
+      showToast('連携に失敗しました: ' + e.message);
     }
   });
 
   syncNowBtn.addEventListener('click', async () => {
     if (!window.DriveKeepSync || !DriveKeepSync.isAuthorized()) {
-      showToast('蜈医↓縲碁｣謳ｺ繧定ｨｱ蜿ｯ縲阪ｒ謚ｼ縺励※縺上□縺輔＞');
+      showToast('先に「連携を許可」を押してください');
       return;
     }
     await pullDriveKeepNotes();
-    showToast('蜷梧悄縺励∪縺励◆');
+    showToast('同期しました');
     refreshDriveKeepStatus();
   });
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// GOOGLE 繧ｹ繝励Ξ繝・ラ繧ｷ繝ｼ繝磯｣謳ｺ・医け繧､繝・け繧ｭ繝｣繝励メ繝｣逕ｨ縺ｮ荳譁ｹ蜷大叙繧願ｾｼ縺ｿ・・
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
+// GOOGLE スプレッドシート連携（クイックキャプチャ用の一方向取り込み）
+// ═══════════════════════════════════
 async function pullSheetsNotes() {
   if (!window.SheetsSync || !SheetsSync.isConfigured()) return;
   const g = currentGraph();
@@ -3375,7 +3294,7 @@ async function pullSheetsNotes() {
       updateScoreBar();
       updateInboxBadge();
       if (lastId) fireNode(lastId);
-      showToast(`繧ｹ繝励Ξ繝・ラ繧ｷ繝ｼ繝医°繧・{added}莉ｶ繧貞女菫｡縺励∪縺励◆`);
+      showToast(`スプレッドシートから${added}件を受信しました`);
     }
   } catch (e) {
     console.warn('[sheets-sync] pull failed', e);
@@ -3386,13 +3305,13 @@ function refreshSheetsStatus() {
   const statusEl = document.getElementById('sheetsSyncStatus');
   if (!statusEl) return;
   if (!window.SheetsSync || !SheetsSync.isConfigured()) {
-    statusEl.textContent = '譛ｪ險ｭ螳・;
+    statusEl.textContent = '未設定';
     return;
   }
   const ts = SheetsSync.getLastSyncedAt();
   statusEl.textContent = ts
-    ? `險ｭ螳壽ｸ医∩ / 譛邨ょ酔譛・ ${new Date(ts).toLocaleString('ja-JP')}`
-    : '險ｭ螳壽ｸ医∩・医∪縺譛ｪ蜷梧悄・・;
+    ? `設定済み / 最終同期: ${new Date(ts).toLocaleString('ja-JP')}`
+    : '設定済み（まだ未同期）';
 }
 
 function wireSheetsSync() {
@@ -3409,24 +3328,24 @@ function wireSheetsSync() {
   }
 
   saveBtn.addEventListener('click', async () => {
-    if (!window.SheetsSync) { showToast('sheets-sync.js縺瑚ｪｭ縺ｿ霎ｼ縺ｾ繧後※縺・∪縺帙ｓ'); return; }
+    if (!window.SheetsSync) { showToast('sheets-sync.jsが読み込まれていません'); return; }
     SheetsSync.setConfig(urlInput.value, tokenInput.value);
-    showToast('險ｭ螳壹ｒ菫晏ｭ倥＠縺ｾ縺励◆');
+    showToast('設定を保存しました');
     await pullSheetsNotes();
     refreshSheetsStatus();
   });
 
   syncNowBtn.addEventListener('click', async () => {
-    if (!window.SheetsSync || !SheetsSync.isConfigured()) { showToast('蜈医↓URL/繝医・繧ｯ繝ｳ繧定ｨｭ螳壹＠縺ｦ縺上□縺輔＞'); return; }
+    if (!window.SheetsSync || !SheetsSync.isConfigured()) { showToast('先にURL/トークンを設定してください'); return; }
     await pullSheetsNotes();
-    showToast('蜷梧悄縺励∪縺励◆');
+    showToast('同期しました');
     refreshSheetsStatus();
   });
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// CRYPTO-VAULT騾｣謳ｺ・医ち繧､繝医Ν縺ｮ縺ｿ繝ｻ荳譁ｹ蜷代∵里遏･ID縺ｧ驥崎､・賜髯､・・
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
+// CRYPTO-VAULT連携（タイトルのみ・一方向、既知IDで重複排除）
+// ═══════════════════════════════════
 async function pullVaultNotes() {
   if (!window.VaultSync || !VaultSync.isConfigured()) return;
   const g = currentGraph();
@@ -3435,12 +3354,12 @@ async function pullVaultNotes() {
     const newItems = await VaultSync.pullNew();
     if (!newItems.length) return;
 
-    // VaultSync蛛ｴ縺ｮ {id,title,category,updatedAt} 繧・addNodeFromTransferItem 縺・
-    // 譛溷ｾ・☆繧・{id,title,body} 蠖｢蠑上↓螟画鋤縺吶ｋ
+    // VaultSync側の {id,title,category,updatedAt} を addNodeFromTransferItem が
+    // 期待する {id,title,body} 形式に変換する
     const items = newItems.map(it => ({
       id: it.id,
       title: it.title,
-      body: it.category ? `繧ｫ繝・ざ繝ｪ: ${it.category}` : '',
+      body: it.category ? `カテゴリ: ${it.category}` : '',
     }));
 
     let added = 0, lastId = null;
@@ -3454,7 +3373,7 @@ async function pullVaultNotes() {
       updateScoreBar();
       updateInboxBadge();
       if (lastId) fireNode(lastId);
-      showToast(`crypto-vault縺九ｉ${added}莉ｶ繧貞女菫｡縺励∪縺励◆`);
+      showToast(`crypto-vaultから${added}件を受信しました`);
     }
   } catch (e) {
     console.warn('[vault-sync] pull failed', e);
@@ -3465,13 +3384,13 @@ function refreshVaultStatus() {
   const statusEl = document.getElementById('vaultSyncStatus');
   if (!statusEl) return;
   if (!window.VaultSync || !VaultSync.isConfigured()) {
-    statusEl.textContent = '譛ｪ險ｭ螳・;
+    statusEl.textContent = '未設定';
     return;
   }
   const ts = VaultSync.getLastSyncedAt();
   statusEl.textContent = ts
-    ? `險ｭ螳壽ｸ医∩ / 譛邨ょ酔譛・ ${new Date(ts).toLocaleString('ja-JP')}`
-    : '險ｭ螳壽ｸ医∩・医∪縺譛ｪ蜷梧悄・・;
+    ? `設定済み / 最終同期: ${new Date(ts).toLocaleString('ja-JP')}`
+    : '設定済み（まだ未同期）';
 }
 
 function wireVaultSync() {
@@ -3488,17 +3407,17 @@ function wireVaultSync() {
   }
 
   saveBtn.addEventListener('click', async () => {
-    if (!window.VaultSync) { showToast('vault-sync.js縺瑚ｪｭ縺ｿ霎ｼ縺ｾ繧後※縺・∪縺帙ｓ'); return; }
+    if (!window.VaultSync) { showToast('vault-sync.jsが読み込まれていません'); return; }
     VaultSync.setConfig(urlInput.value, tokenInput.value);
-    showToast('險ｭ螳壹ｒ菫晏ｭ倥＠縺ｾ縺励◆');
+    showToast('設定を保存しました');
     await pullVaultNotes();
     refreshVaultStatus();
   });
 
   syncNowBtn.addEventListener('click', async () => {
-    if (!window.VaultSync || !VaultSync.isConfigured()) { showToast('蜈医↓URL/繝医・繧ｯ繝ｳ繧定ｨｭ螳壹＠縺ｦ縺上□縺輔＞'); return; }
+    if (!window.VaultSync || !VaultSync.isConfigured()) { showToast('先にURL/トークンを設定してください'); return; }
     await pullVaultNotes();
-    showToast('蜷梧悄縺励∪縺励◆');
+    showToast('同期しました');
     refreshVaultStatus();
   });
 }
@@ -3516,9 +3435,9 @@ function openSyncSheet() {
   openSheet('syncSheet');
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// 諢滓ュ繝悶Μ繝・ず・・uick-ref繝ｻ蜿梧婿蜷代∥ttractor迥ｶ諷九・縺ｿ・・
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
+// 感情ブリッジ（quick-ref・双方向、attractor状態のみ）
+// ═══════════════════════════════════
 const EB_SELF_APP = 'flow-mind';
 let ebPushTimer = null;
 let ebLastPushedLabel = null;
@@ -3529,11 +3448,11 @@ function refreshEmotionBridgeStatus() {
   const c = EmotionBridgeClient.getConfig();
   document.getElementById('ebEndpointInput').value = c.endpoint || '';
   document.getElementById('ebTokenInput').value = c.token || '';
-  statusEl.textContent = EmotionBridgeClient.isConfigured() ? '險ｭ螳壽ｸ医∩' : '譛ｪ險ｭ螳・;
+  statusEl.textContent = EmotionBridgeClient.isConfigured() ? '設定済み' : '未設定';
 }
 
-// 繝弱・繝我ｿ晏ｭ倥・縺溘・縺ｫ蜻ｼ縺ｶ縲Ｂttractor縺ｮdedup縺ｨ縺ｯ辟｡髢｢菫ゅ↓縲∝・螳ｹ繧堤峩謗･push縺吶ｋ
-// ・・uick-ref蛛ｴ縺ｮpushEmotionToFlowMind()縺ｨ蟇ｾ縺ｫ縺ｪ繧九∽ｿ晏ｭ倥ヨ繝ｪ繧ｬ繝ｼ迚茨ｼ・
+// ノード保存のたびに呼ぶ。attractorのdedupとは無関係に、内容を直接pushする
+// （quick-ref側のpushEmotionToFlowMind()と対になる、保存トリガー版）
 async function pushNodeToEmotionBridge(n) {
   if (!window.EmotionBridgeClient || !EmotionBridgeClient.isConfigured() || !n) return;
   try {
@@ -3547,11 +3466,11 @@ async function pushNodeToEmotionBridge(n) {
   }
 }
 
-// attractor・域─諠・憾諷具ｼ峨′螟峨ｏ縺｣縺溘→縺阪□縺代√ョ繝舌え繝ｳ繧ｹ縺励※騾∽ｿ｡縺吶ｋ
+// attractor（感情状態）が変わったときだけ、デバウンスして送信する
 function scheduleEmotionBridgePush() {
   if (!window.EmotionBridgeClient || !EmotionBridgeClient.isConfigured()) return;
   const label = currentAttractor ? currentAttractor.label : null;
-  if (label === ebLastPushedLabel) return; // 螟牙喧縺後↑縺代ｌ縺ｰ騾√ｉ縺ｪ縺・
+  if (label === ebLastPushedLabel) return; // 変化がなければ送らない
   clearTimeout(ebPushTimer);
   ebPushTimer = setTimeout(async () => {
     try {
@@ -3571,7 +3490,7 @@ function scheduleEmotionBridgePush() {
   }, 1500);
 }
 
-// quick-ref縺九ｉ譚･縺滓─諠・ョ繝ｼ繧ｿ繧偵∝叙繧願ｾｼ縺ｿ繝弱・繝峨→縺励※繧ｰ繝ｩ繝輔↓蜿肴丐縺吶ｋ
+// quick-refから来た感情データを、取り込みノードとしてグラフに反映する
 async function pollEmotionBridge() {
   if (!window.EmotionBridgeClient || !EmotionBridgeClient.isConfigured()) return;
   try {
@@ -3580,7 +3499,7 @@ async function pollEmotionBridge() {
     const g = currentGraph();
     if (!g) return;
     const p = record.payload;
-    const title = p.title || (p.attractor ? `quick-ref: ${p.attractor}` : 'quick-ref縺九ｉ');
+    const title = p.title || (p.attractor ? `quick-ref: ${p.attractor}` : 'quick-refから');
     const item = { title, body: p.body || p.summary || '', source: 'quick-ref' };
     const id = addNodeFromTransferItem(item, 0, 1, g, 'quick-ref');
     if (id) {
@@ -3589,13 +3508,13 @@ async function pollEmotionBridge() {
       updateScoreBar();
       updateInboxBadge();
       fireNode(id);
-      showToast('quick-ref縺九ｉ諢滓ュ繝・・繧ｿ繧貞女菫｡縺励∪縺励◆');
+      showToast('quick-refから感情データを受信しました');
     }
   } catch (e) {
     console.warn('[emotion-bridge] pull failed', e);
   }
 }
-// 笏笏 quick-ref (sync-worker) 蟆ら畑縺ｮ閾ｪ蜍輔ヮ繝ｼ繝牙叙繧願ｾｼ縺ｿ 笏笏
+// ── quick-ref (sync-worker) 専用の自動ノード取り込み ──
 async function pollQuickRefSync() {
   const endpoint = localStorage.getItem('qr_sync_endpoint');
   const token = localStorage.getItem('qr_sync_token');
@@ -3628,11 +3547,11 @@ async function pollQuickRefSync() {
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       if (!item.id || importedSet.has(item.id)) continue;
-      if (item.sensitive) { importedSet.add(item.id); continue; } // 讖溷ｯ・Γ繝｢縺ｯ髯､螟悶＠縺ｦ險俶・
+      if (item.sensitive) { importedSet.add(item.id); continue; } // 機密メモは除外して記憶
 
       const plainBody = stripHtml(item.body);
       const transferItem = {
-        title: item.title || plainBody.slice(0, 20) || 'quick-ref 繝｡繝｢',
+        title: item.title || plainBody.slice(0, 20) || 'quick-ref メモ',
         body: plainBody,
         category: (item.tags && item.tags.length > 0) ? item.tags.join(', ') : 'quick-ref',
         source: 'quick-ref'
@@ -3651,14 +3570,14 @@ async function pollQuickRefSync() {
       saveGraphs();
       updateScoreBar();
       updateInboxBadge();
-      showToast(`quick-ref縺九ｉ ${addedCount} 莉ｶ縺ｮ繝｡繝｢繧定・蜍募叙繧願ｾｼ縺ｿ縺励∪縺励◆`);
+      showToast(`quick-refから ${addedCount} 件のメモを自動取り込みしました`);
     }
   } catch (e) {
     console.warn('[quick-ref-sync] poll failed', e);
   }
 }
 
-// 險ｭ螳壹Δ繝ｼ繝繝ｫ蛻晄悄蛹・& 菫晏ｭ倥う繝吶Φ繝磯・邱・
+// 設定モーダル初期化 & 保存イベント配線
 function wireQuickRefSyncModal() {
   const endpointInput = document.getElementById('qrSyncEndpointInput');
   const tokenInput = document.getElementById('qrSyncTokenInput');
@@ -3673,8 +3592,8 @@ function wireQuickRefSyncModal() {
       const tk = (tokenInput ? tokenInput.value : '').trim();
       localStorage.setItem('qr_sync_endpoint', ep);
       localStorage.setItem('qr_sync_token', tk);
-      showToast('quick-ref蜷梧悄險ｭ螳壹ｒ菫晏ｭ倥＠縺ｾ縺励◆');
-      pollQuickRefSync(); // 菫晏ｭ倡峩蠕後↓1蝗槫叉譎ょｮ溯｡・
+      showToast('quick-ref同期設定を保存しました');
+      pollQuickRefSync(); // 保存直後に1回即時実行
     });
   }
 }
@@ -3687,13 +3606,13 @@ function wireEmotionBridge() {
     const endpoint = document.getElementById('ebEndpointInput').value;
     const token = document.getElementById('ebTokenInput').value;
     EmotionBridgeClient.setConfig(endpoint, token);
-    showToast('諢滓ュ繝悶Μ繝・ず縺ｮ險ｭ螳壹ｒ菫晏ｭ倥＠縺ｾ縺励◆');
+    showToast('感情ブリッジの設定を保存しました');
     refreshEmotionBridgeStatus();
   });
 
   pullBtn.addEventListener('click', async () => {
     await pollEmotionBridge();
-    showToast('蜿門ｾ励＠縺ｾ縺励◆');
+    showToast('取得しました');
   });
 }
 
@@ -3703,13 +3622,13 @@ async function refreshSyncStatus() {
     const connected = await SyncBridge.isConnected('flow-mind');
     const ts = SyncBridge.getLastSyncedAt('flow-mind');
     document.getElementById('syncDesktopStatus').textContent = connected
-      ? `謗･邯壽ｸ医∩${ts ? ' / 譛邨ょ酔譛・ ' + new Date(ts).toLocaleString('ja-JP') : ''}`
-      : '譛ｪ謗･邯・;
+      ? `接続済み${ts ? ' / 最終同期: ' + new Date(ts).toLocaleString('ja-JP') : ''}`
+      : '未接続';
   } else {
     const ts = SyncBridge.getLastSyncedAt('flow-mind-sync');
     document.getElementById('syncMobileStatus').textContent = ts
-      ? `譛邨よ嶌縺榊・縺・ ${new Date(ts).toLocaleString('ja-JP')}`
-      : '縺ｾ縺譖ｸ縺榊・縺励※縺・∪縺帙ｓ';
+      ? `最終書き出し: ${new Date(ts).toLocaleString('ja-JP')}`
+      : 'まだ書き出していません';
   }
 }
 
@@ -3722,75 +3641,75 @@ function wireSyncSheet() {
   document.getElementById('syncSheetClose').addEventListener('click', () => closeSheet('syncSheet'));
 
   document.getElementById('syncConnectBtn').addEventListener('click', async () => {
-    if (!window.SyncBridge) { showToast('蜷梧悄繝｢繧ｸ繝･繝ｼ繝ｫ縺瑚ｪｭ縺ｿ霎ｼ縺ｾ繧後※縺・∪縺帙ｓ'); return; }
+    if (!window.SyncBridge) { showToast('同期モジュールが読み込まれていません'); return; }
     try {
       await SyncBridge.connectFolder('flow-mind');
-      showToast('繝輔か繝ｫ繝縺ｫ謗･邯壹＠縺ｾ縺励◆');
+      showToast('フォルダに接続しました');
       await checkCloudOnLoad();
-      SyncBridge.autoSave('flow-mind', graphs); // 謗･邯夂峩蠕後↓迴ｾ蝨ｨ縺ｮ迥ｶ諷九ｒ荳蠎ｦ譖ｸ縺崎ｾｼ繧
+      SyncBridge.autoSave('flow-mind', graphs); // 接続直後に現在の状態を一度書き込む
       refreshSyncStatus();
     } catch(e) {
       console.error(e);
-      showToast('謗･邯壹↓螟ｱ謨励＠縺ｾ縺励◆: ' + e.message);
+      showToast('接続に失敗しました: ' + e.message);
     }
   });
 
   document.getElementById('syncNowBtn').addEventListener('click', async () => {
     if (!window.SyncBridge || !(await SyncBridge.isConnected('flow-mind'))) {
-      showToast('蜈医↓繝輔か繝ｫ繝縺ｸ謗･邯壹＠縺ｦ縺上□縺輔＞');
+      showToast('先にフォルダへ接続してください');
       return;
     }
     SyncBridge.autoSave('flow-mind', graphs);
-    showToast('蜷梧悄縺励∪縺励◆');
+    showToast('同期しました');
     setTimeout(refreshSyncStatus, 1400);
   });
 
   document.getElementById('syncExportBtn').addEventListener('click', () => {
-    if (!window.SyncBridge) { showToast('蜷梧悄繝｢繧ｸ繝･繝ｼ繝ｫ縺瑚ｪｭ縺ｿ霎ｼ縺ｾ繧後※縺・∪縺帙ｓ'); return; }
+    if (!window.SyncBridge) { showToast('同期モジュールが読み込まれていません'); return; }
     SyncBridge.exportToFiles('flow-mind-sync.json', graphs);
-    showToast('譖ｸ縺榊・縺励∪縺励◆縲ゆｿ晏ｭ伜・縺ｧiCloud Drive繧帝∈繧薙〒縺上□縺輔＞');
+    showToast('書き出しました。保存先でiCloud Driveを選んでください');
     setTimeout(refreshSyncStatus, 300);
   });
 
   document.getElementById('syncImportBtn').addEventListener('click', async () => {
-    if (!window.SyncBridge) { showToast('蜷梧悄繝｢繧ｸ繝･繝ｼ繝ｫ縺瑚ｪｭ縺ｿ霎ｼ縺ｾ繧後※縺・∪縺帙ｓ'); return; }
+    if (!window.SyncBridge) { showToast('同期モジュールが読み込まれていません'); return; }
     const payload = await SyncBridge.importFromFiles();
     if (!payload || !payload.data) return;
-    if (!confirm('迴ｾ蝨ｨ縺ｮ繧ｰ繝ｩ繝輔ｒ隱ｭ縺ｿ霎ｼ繧薙□繝・・繧ｿ縺ｧ荳頑嶌縺阪＠縺ｾ縺吶ゅｈ繧阪＠縺・〒縺吶°・・)) return;
+    if (!confirm('現在のグラフを読み込んだデータで上書きします。よろしいですか？')) return;
     graphs = payload.data;
     const ids = Object.keys(graphs);
     currentGraphId = ids[0] || null;
-    if (!currentGraphId) createGraph('縺ｯ縺倥ａ縺ｦ縺ｮ繧ｰ繝ｩ繝・);
+    if (!currentGraphId) createGraph('はじめてのグラフ');
     else localStorage.setItem(LS_CURRENT, currentGraphId);
     applyFlowchartLayout();
     saveGraphs();
     centerView();
     updateScoreBar();
     renderGraphList();
-    showToast('隱ｭ縺ｿ霎ｼ縺ｿ縺ｾ縺励◆');
+    showToast('読み込みました');
   });
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
-// ONBOARDING・亥・蝗櫁ｵｷ蜍墓凾縺ｮ菴ｿ縺・婿譯亥・・・
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
+// ONBOARDING（初回起動時の使い方案内）
+// ═══════════════════════════════════
 const LS_ONBOARDING = 'fm_onboarding_seen';
 
 const ONBOARDING_STEPS = [
   {
-    icon: '・・,
-    title: '霑ｽ蜉繝｢繝ｼ繝・,
-    desc: '繧ｭ繝｣繝ｳ繝舌せ繧偵ち繝・・縺吶ｋ縺ｨ譁ｰ縺励＞繝弱・繝峨′霑ｽ蜉縺輔ｌ縺ｾ縺吶ゅ∪縺壹・諤昴＞縺､縺・◆縺薙→繧偵←繧薙←繧薙ヮ繝ｼ繝峨↓縺励※縺ｿ縺ｾ縺励ｇ縺・・,
+    icon: '＋',
+    title: '追加モード',
+    desc: 'キャンバスをタップすると新しいノードが追加されます。まずは思いついたことをどんどんノードにしてみましょう。',
   },
   {
-    icon: '竊・,
-    title: '謗･邯壹Δ繝ｼ繝・,
-    desc: '謗･邯壼・繝弱・繝峨ｒ繧ｿ繝・・竊呈磁邯壼・繝弱・繝峨ｒ繧ｿ繝・・縺ｧ縲∫泙蜊ｰ(蝗譫憺未菫・繧貞ｼ輔￠縺ｾ縺吶ゅヮ繝ｼ繝牙酔螢ｫ繧偵▽縺ｪ縺舌→縲∬・蜍輔〒繝輔Ο繝ｼ繝√Ε繝ｼ繝医・繧医≧縺ｫ謨ｴ蛻励＠縺ｾ縺吶・,
+    icon: '→',
+    title: '接続モード',
+    desc: '接続元ノードをタップ→接続先ノードをタップで、矢印(因果関係)を引けます。ノード同士をつなぐと、自動でフローチャートのように整列します。',
   },
   {
-    icon: '笨・,
-    title: '邱ｨ髮・Δ繝ｼ繝・,
-    desc: '繝弱・繝峨ｒ繧ｿ繝・・縺ｧ邱ｨ髮・√お繝・ず繧偵ち繝・・縺ｧ蜑企勁縺ｧ縺阪∪縺吶る・鄂ｮ縺ｯ閾ｪ蜍墓紛蛻励＆繧後ｋ縺ｮ縺ｧ縲√ラ繝ｩ繝・げ縺ｧ縺ｮ菴咲ｽｮ隱ｿ謨ｴ縺ｯ荳崎ｦ√〒縺吶・,
+    icon: '✎',
+    title: '編集モード',
+    desc: 'ノードをタップで編集、エッジをタップで削除できます。配置は自動整列されるので、ドラッグでの位置調整は不要です。',
   },
 ];
 
@@ -3809,7 +3728,7 @@ function renderOnboardingStep() {
   document.getElementById('onboardingStepIndicator').textContent =
     `${onboardingStep + 1} / ${ONBOARDING_STEPS.length}`;
   document.getElementById('onboardingNextBtn').textContent =
-    (onboardingStep === ONBOARDING_STEPS.length - 1) ? '縺ｯ縺倥ａ繧・ : '谺｡縺ｸ';
+    (onboardingStep === ONBOARDING_STEPS.length - 1) ? 'はじめる' : '次へ';
 }
 
 function openOnboarding() {
@@ -3837,30 +3756,30 @@ function wireOnboarding() {
   document.getElementById('dailyNoteBtn').addEventListener('click', openOrCreateDailyNode);
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 // WIRE EVENTS
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 function wireEvents() {
-  // 繝｢繝ｼ繝・
+  // モード
   document.getElementById('addModeBtn').addEventListener('click', () => setMode(MODE.ADD));
   document.getElementById('connectModeBtn').addEventListener('click', () => setMode(MODE.CONNECT));
   document.getElementById('editModeBtn').addEventListener('click', () => setMode(MODE.EDIT));
 
-  // 繝弱・繝峨す繝ｼ繝・
+  // ノードシート
   document.getElementById('nodeSheetCancel').addEventListener('click', () => closeSheet('nodeSheet'));
   document.getElementById('nodeSheetSave').addEventListener('click', saveNodeSheet);
   document.getElementById('inboxBannerBtn').addEventListener('click', () => {
     if (editingNodeId) markNodeInboxDone(editingNodeId);
   });
 
-  // 驥阪∩繧ｹ繝ｩ繧､繝繝ｼ
+  // 重みスライダー
   const slider = document.getElementById('nWeight');
   slider.addEventListener('input', () => {
     document.getElementById('nWeightVal').textContent = slider.value;
     updateSliderPct(slider);
   });
 
-  // 繧ｫ繝ｩ繝ｼ繧ｹ繧ｦ繧ｩ繝・メ
+  // カラースウォッチ
   document.querySelectorAll('.color-swatch').forEach(sw => {
     sw.addEventListener('click', () => {
       editingNodeColor = sw.dataset.color;
@@ -3869,15 +3788,15 @@ function wireEvents() {
     });
   });
 
-  // 繝弱・繝牙炎髯､
+  // ノード削除
   document.getElementById('deleteNodeBtn').addEventListener('click', () => {
-    if (selectedNode && confirm('縺薙・繝弱・繝峨ｒ蜑企勁縺励∪縺吶°・・)) deleteNode(selectedNode);
+    if (selectedNode && confirm('このノードを削除しますか？')) deleteNode(selectedNode);
   });
 
-  // 繝ｪ繧ｻ繝・ヨ繝薙Η繝ｼ
+  // リセットビュー
   document.getElementById('resetViewBtn').addEventListener('click', () => { centerView(); });
 
-  // 繧ｨ繝・ず繝偵Φ繝・
+  // エッジヒント
   document.getElementById('edgeDeleteBtn').addEventListener('click', () => {
     if (selectedEdge) { deleteEdge(selectedEdge); selectedEdge=null; }
     document.getElementById('edgeHint').classList.remove('show');
@@ -3887,7 +3806,7 @@ function wireEvents() {
     document.getElementById('edgeHint').classList.remove('show');
   });
 
-  // AI蛻・梵繧ｷ繝ｼ繝・
+  // AI分析シート
   document.getElementById('analyzeBtn').addEventListener('click', () => {
     const modelKey = localStorage.getItem(LS_MODEL) || 'claude';
     document.getElementById('aiModelBadge').textContent = MODELS[modelKey]?.label || modelKey;
@@ -3908,17 +3827,17 @@ function wireEvents() {
     if (e.key==='Enter') { const v=e.target.value.trim(); if(v) runAnalysis(null,v); }
   });
 
-  // 繧ｰ繝ｩ繝穂ｸ隕ｧ
+  // グラフ一覧
   document.getElementById('graphsBtn').addEventListener('click', () => { renderGraphList(); openSheet('graphsSheet'); });
   document.getElementById('graphsSheetClose').addEventListener('click', () => closeSheet('graphsSheet'));
   document.getElementById('newGraphBtn').addEventListener('click', () => {
-    const name = prompt('繧ｰ繝ｩ繝募錐繧貞・蜉帙＠縺ｦ縺上□縺輔＞', '譁ｰ縺励＞繧ｰ繝ｩ繝・);
+    const name = prompt('グラフ名を入力してください', '新しいグラフ');
     if (!name) return;
-    createGraph(name.trim() || '譁ｰ縺励＞繧ｰ繝ｩ繝・);
+    createGraph(name.trim() || '新しいグラフ');
     renderGraphList();
     closeSheet('graphsSheet');
     centerView();
-    showToast(`縲・{name}縲阪ｒ菴懈・縺励∪縺励◆`);
+    showToast(`「${name}」を作成しました`);
   });
   document.getElementById('importTransferBtn').addEventListener('click', importFromTransfer);
 
@@ -3926,9 +3845,9 @@ function wireEvents() {
   document.getElementById('overlay').addEventListener('click', closeAllSheets);
 }
 
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 // INIT
-// 笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊絶武笊・
+// ═══════════════════════════════════
 function init() {
   loadGraphs();
   checkImportHash();
@@ -3951,10 +3870,10 @@ function init() {
   checkEmotionTransfer();
   checkCloudOnLoad();
   checkCloudSyncOnLoad();
-  pullSheetsNotes(); // 險ｭ螳壽ｸ医∩縺ｪ繧峨・崕霆翫・荳ｭ縺ｧ譖ｸ縺・◆繝｡繝｢繧定ｵｷ蜍墓凾縺ｫ閾ｪ蜍輔〒蜿悶ｊ霎ｼ繧
-  pullVaultNotes(); // 險ｭ螳壽ｸ医∩縺ｪ繧峨…rypto-vault縺ｮ譁ｰ隕上ち繧､繝医Ν繧定ｵｷ蜍墓凾縺ｫ閾ｪ蜍輔〒蜿悶ｊ霎ｼ繧
+  pullSheetsNotes(); // 設定済みなら、電車の中で書いたメモを起動時に自動で取り込む
+  pullVaultNotes(); // 設定済みなら、crypto-vaultの新規タイトルを起動時に自動で取り込む
 
-  // 莉悶い繝励Μ(quick-ref遲・縺九ｉ縺ｮ閾ｪ蜍暮∽ｿ｡繧貞ｮ壽悄繝√ぉ繝・け + 繝壹・繧ｸ蠕ｩ蟶ｰ譎ゅ↓繧ゅメ繧ｧ繝・け
+  // 他アプリ(quick-ref等)からの自動送信を定期チェック + ページ復帰時にもチェック
   setInterval(checkEmotionTransfer, 4000);
   let lastCloudCheck = 0;
   document.addEventListener('visibilitychange', () => {
@@ -3968,20 +3887,20 @@ function init() {
     }
   });
 
-  // Google Keep(Drive邨檎罰)縺ｮ螳壽悄蜷梧悄・郁ｪ榊庄貂医∩縺ｮ蝣ｴ蜷医・縺ｿ螳溯｡後＆繧後ｋ・・
+  // Google Keep(Drive経由)の定期同期（認可済みの場合のみ実行される）
   setInterval(pullDriveKeepNotes, 60000);
 
-  // 諢滓ュ繝悶Μ繝・ず(quick-ref)縺ｮ螳壽悄蜿門ｾ暦ｼ域悴險ｭ螳壹・蝣ｴ蜷医・菴輔ｂ縺励↑縺・ｼ・
+  // 感情ブリッジ(quick-ref)の定期取得（未設定の場合は何もしない）
   setInterval(pollEmotionBridge, 20000);
   pollEmotionBridge();
 
   render();
 
-  // 笏笏 繧ｯ繝ｩ繧ｦ繝芽・蜍輔Ο繝ｼ繝会ｼ郁ｿｽ蜉・・笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
-  // SyncBridge 縺梧ｧ区・貂医∩縺ｪ繧峨け繝ｩ繧ｦ繝峨・譖ｴ譁ｰ繧偵メ繧ｧ繝・け縺励※蜿肴丐
+  // ── クラウド自動ロード（追加） ──────────────────────
+  // SyncBridge が構成済みならクラウドの更新をチェックして反映
   loadFromCloud();
 
-  // 蛻晏屓襍ｷ蜍墓凾縺ｮ縺ｿ繧ｪ繝ｳ繝懊・繝・ぅ繝ｳ繧ｰ繧定・蜍戊｡ｨ遉ｺ
+  // 初回起動時のみオンボーディングを自動表示
   if (!localStorage.getItem(LS_ONBOARDING)) {
     openOnboarding();
   }
@@ -3996,4 +3915,3 @@ init();
 </script>
 </body>
 </html>
-
