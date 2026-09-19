@@ -1253,7 +1253,7 @@ function updateAttractorState() {
   currentSyncClusters = detectSyncClusters();
   renderSyncClusterPanel();
   if (currentSyncClusters.length === 0) { currentAttractor = null; updateAttractorBar(); return; }
-  // 最大クラスタを代表attractorとして採用
+  // 譛螟ｧ繧ｯ繝ｩ繧ｹ繧ｿ繧剃ｻ｣陦ｨattractor縺ｨ縺励※謗｡逕ｨ
   const main = currentSyncClusters.sort((a,b)=>b.size-a.size)[0];
   currentAttractor = classifyAttractor(main);
   processEmergence();
