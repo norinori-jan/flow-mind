@@ -807,6 +807,10 @@ function extractTagsFromText(label, memo) {
 const CHARGE_DECAY_TAU = 4000;
 // ① 発火しきい値
 const FIRE_CHARGE_BOOST = 0.7;
+// 電荷がこの値を超えたら、次のフレームで発火
+const FIRE_CHARGE_THRESHOLD = 0.25;
+// 同じノードが連続して自動発火するのを防ぐ最小間隔
+const AUTO_FIRE_REFRACTORY_MS = 120;
 // ② 伝播効率（電流→電場・磁場のアナロジー：エッジのconductanceで増幅）
 const PROPAGATION_FACTOR = 0.42;
 // ① Hebbian強化幅（同時発火でconductanceが伸びる量）
@@ -1074,6 +1078,7 @@ function ensurePhysicsFields(n) {
   if (n.charge === undefined) n.charge = 0;
   if (!n.fireHistory) n.fireHistory = [];
   if (n.lastFired === undefined) n.lastFired = 0;
+  if (n.lastAutoFired === undefined) n.lastAutoFired = 0;
 }
 function ensureEdgePhysics(e) {
   if (e.conductance === undefined) e.conductance = 1.0;
@@ -1087,6 +1092,26 @@ function decayCharges(dtMs) {
   Object.values(g.nodes).forEach(n => {
     if (n.charge) n.charge *= decayFactor;
     if (n.charge < 0.01) n.charge = 0;
+  });
+}
+
+function processChargeFires(now) {
+  const g = currentGraph();
+  if (!g) return;
+  const candidates = [];
+  Object.entries(g.nodes).forEach(([id, n]) => {
+    ensurePhysicsFields(n);
+    if (n.charge < FIRE_CHARGE_THRESHOLD) return;
+    if (n.lastAutoFired && now - n.lastAutoFired < AUTO_FIRE_REFRACTORY_MS) return;
+    candidates.push({ id, charge: n.charge });
+  });
+  candidates.sort((a, b) => b.charge - a.charge);
+  const maxFiresPerFrame = 1;
+  candidates.slice(0, maxFiresPerFrame).forEach(({ id }) => {
+    const n = g.nodes[id];
+    if (!n) return;
+    n.lastAutoFired = now;
+    fireNode(id);
   });
 }
 
@@ -1492,6 +1517,7 @@ function render(now) {
 
   // ① 電荷の自然減衰
   decayCharges(dt);
+  processChargeFires(now || performance.now());
 
   const scores = computeScores();
 
