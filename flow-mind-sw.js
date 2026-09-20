@@ -1,4 +1,4 @@
-const CACHE_NAME = 'flow-mind-shell-v3';
+const CACHE_NAME = 'flow-mind-shell-v4';
 
 const APP_SHELL = [
   './index.html',
@@ -34,6 +34,14 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const req = event.request;
   if (req.method !== 'GET') return;
+
+  const url = new URL(req.url);
+
+  // 同一オリジン（自サイト）以外の外部APIリクエスト（Cloudflare Workers等）は
+  // Service Workerで処理せずブラウザのデフォルト通信に任せる
+  if (url.origin !== self.location.origin) {
+    return;
+  }
 
   // HTML(ページ本体)は常にネットワークを優先する。
   // 開発中の更新をすぐ反映させるため。ネットワークが取れない時だけキャッシュにフォールバック。
