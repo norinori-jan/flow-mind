@@ -2342,7 +2342,7 @@ function addNodeFromTransferItem(item, index, total, g, sourceApp) {
     updatedAt: Date.now(),
     id,
     label: (item.title || '無題').slice(0,20),
-    memo: (item.body || '').replace(/<[^>]+>/g,'').slice(0,200),
+    memo: (item.body || '').replace(/<[^>]+>/g,'').slice(0, item.memoMax || 200),   // まとまり要約だけ長めに保つ
     weight: 3,
     // 感情メタがあればその帯域の色を使う。なければ従来通り虹色を割り当て。
     color: bandStyle ? bandStyle.color : cols[index % cols.length],
@@ -2353,7 +2353,9 @@ function addNodeFromTransferItem(item, index, total, g, sourceApp) {
     lastFired: 0,
     sourceApp: resolvedSource || undefined,
     emotionBand: band || undefined,
-    tags: extractTagsFromText(item.title, item.body),
+    tags: [...new Set([...(item.extraTags || []), ...extractTagsFromText(item.title, item.body)])],
+    qrItemId: item.qrItemId || undefined,   // quick-ref の元メモID（まとまり要約のとき）
+    kind: item.kind || undefined,
     // 取り込み直後は「未処理」。ユーザーがノード編集シートで内容を確認し、
     // 「取り込み完了」を押すと 'done' になる。手動追加ノードにはこのフィールド自体が無い。
     triageStatus: 'inbox',
@@ -3574,6 +3576,11 @@ async function pollQuickRefSync() {
       const item = items[i];
       if (!item.id || importedSet.has(item.id)) continue;
       if (item.sensitive) { importedSet.add(item.id); continue; } // 機密メモは除外して記憶
+      // AIが作ったメモ(AI作成/まとまり/用語)は、利用者が quick-ref で「flow-mind へ」を押したものだけ取り込む。
+      // 押されていないものは記憶せずに見送る（あとで押されたら取り込める）。
+      const aiMade = (item.tags || []).some(t => t === 'AI作成' || t === 'まとまり' || t === '用語');
+      const fmSend = item.ai && item.ai.flowMind && item.ai.flowMind.sentAt;
+      if (aiMade && !fmSend) continue;
 
       const plainBody = stripHtml(item.body);
       const transferItem = {
@@ -3582,6 +3589,15 @@ async function pollQuickRefSync() {
         category: (item.tags && item.tags.length > 0) ? item.tags.join(', ') : 'quick-ref',
         source: 'quick-ref'
       };
+      if (aiMade && fmSend) {   // まとまり要約: 長めの本文＋元メモの一覧つきで、1つの塊ノードに
+        const refs = (Array.isArray(item.ai.flowMind.refs) ? item.ai.flowMind.refs : []).slice(0, 30)
+          .map(r => String(r.n) + '. ' + String(r.title || '').slice(0, 60)).join('\n');
+        Object.assign(transferItem, {
+          title: String(item.title || '').replace(/^まとまり要約:\s*/, '') || 'まとまり要約',
+          body: plainBody + (refs ? '\n\n元メモ:\n' + refs : ''),
+          memoMax: 1500, extraTags: ['AI作成', 'まとまり'], qrItemId: item.id, kind: 'cluster-summary'
+        });
+      }
 
       const id = addNodeFromTransferItem(transferItem, i, items.length, g, 'quick-ref');
       if (id) {
