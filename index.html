@@ -395,6 +395,8 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
   <button class="tool-btn" id="addModeBtn">＋ 追加</button>
   <button class="tool-btn" id="connectModeBtn">→ 接続</button>
   <button class="tool-btn" id="editModeBtn">✎ 編集</button>
+  <button class="tool-btn" id="fmExpandTb" style="display:none">🔀 展開</button>
+  <button class="tool-btn" id="fmBackTb" style="display:none">↩ 返す</button>
   <div class="tool-spacer"></div>
   <button class="tool-btn danger" id="deleteNodeBtn" style="display:none">🗑 削除</button>
   <button class="tool-btn" id="resetViewBtn">⊙</button>
@@ -412,6 +414,15 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
     <button id="nodeSheetSave" style="color:var(--gold);font-weight:800;">保存</button>
   </div>
   <div class="sheet-body">
+    <div id="clusterOps" style="display:none;margin:0 0 14px;padding:12px;border:1px solid rgba(74,158,255,0.35);border-radius:10px;">
+      <div style="font-weight:700;margin-bottom:4px;">🧭 まとまり要約の操作</div>
+      <div id="clusterOpsState" style="font-size:12px;color:var(--text-dim);margin-bottom:8px;"></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <button type="button" class="inbox-banner-btn" id="expandFlowBtn">🔀 流れに展開する</button>
+        <button type="button" class="inbox-banner-btn" id="sendBackBtn">↩ quick-ref へ返す</button>
+      </div>
+    </div>
+
     <div class="inbox-banner" id="inboxBanner">
       <div class="inbox-banner-text">
         📥 <span id="inboxBannerSource">他アプリ</span>から取り込み
@@ -457,15 +468,6 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
       <button type="button" id="addEmbedBtn" style="background:none;border:none;color:var(--blue);font-size:12px;font-weight:600;padding:2px 4px;cursor:pointer;">＋ 追加</button>
     </label>
     <div id="embedWrap"></div>
-
-    <div id="clusterOps" style="display:none;margin-top:20px;padding:12px;border:1px solid rgba(74,158,255,0.35);border-radius:10px;">
-      <div style="font-weight:700;margin-bottom:4px;">🧭 まとまり要約の操作</div>
-      <div id="clusterOpsState" style="font-size:12px;color:var(--text-dim);margin-bottom:8px;"></div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;">
-        <button type="button" class="inbox-banner-btn" id="expandFlowBtn">🔀 流れに展開する</button>
-        <button type="button" class="inbox-banner-btn" id="sendBackBtn">↩ quick-ref へ返す</button>
-      </div>
-    </div>
 
     <label class="field-label" style="margin-top:20px;">物理層ステータス</label>
     <div class="physics-box" id="physicsBox">—</div>
@@ -3680,7 +3682,7 @@ function expandClusterFlow(id) {
   });
   n.flowExpandedAt = now; n.updatedAt = now;
   applyFlowchartLayout(); saveGraphs(); updateScoreBar(); centerView();
-  showToast(pf.order.length + '個のステップに展開しました');
+  showToast(pf.order.length + '個のステップに展開しました。考えたら、下の「↩ 返す」を押します');
   return pf.order.length;
 }
 // 塊ノードから先（線でつながったノード）を、quick-ref の流れ図の書き方に直す
@@ -3708,6 +3710,30 @@ function composeThoughtFlow(rootId) {
   const lines = g.edges.filter(e => set.has(e.from) && set.has(e.to)).map(e => tok(e.from) + ' -> ' + tok(e.to) + (e.label ? ' : ' + clean(e.label) : ''));
   return { text: lines.join('\n'), nodeCount: set.size, edgeCount: lines.length };
 }
+// ── ツールバーの「🔀 展開」「↩ 返す」：塊ノードがあるグラフでだけ出す（ノード編集シートの奥に埋もれないように） ──
+function fmTargetCluster(wantExpanded) {
+  const g = currentGraph(); if (!g) return null;
+  const isC = n => n && (n.kind === 'cluster-summary' || n.cluster);
+  if (selectedNode && isC(g.nodes[selectedNode])) return selectedNode;
+  const ids = Object.keys(g.nodes).filter(id => isC(g.nodes[id]));
+  const pick = ids.filter(id => wantExpanded ? !!g.nodes[id].flowExpandedAt : !g.nodes[id].flowExpandedAt);
+  const pool = pick.length ? pick : ids;
+  pool.sort((a, b) => (g.nodes[b].updatedAt || 0) - (g.nodes[a].updatedAt || 0));
+  return pool[0] || null;
+}
+function refreshFmBar() {
+  const ex = document.getElementById('fmExpandTb'), bk = document.getElementById('fmBackTb'); if (!ex || !bk) return;
+  const g = currentGraph(); let has = false;
+  if (g) for (const id in g.nodes) { const n = g.nodes[id]; if (n && (n.kind === 'cluster-summary' || n.cluster)) { has = true; break; } }
+  const eid = has ? fmTargetCluster(false) : null, canEx = !!(eid && !g.nodes[eid].flowExpandedAt);
+  ex.style.display = canEx ? '' : 'none'; bk.style.display = has ? '' : 'none';
+}
+setInterval(refreshFmBar, 800);
+document.addEventListener('DOMContentLoaded', () => {
+  const ex = document.getElementById('fmExpandTb'), bk = document.getElementById('fmBackTb');
+  if (ex) ex.addEventListener('click', () => { const id = fmTargetCluster(false); if (id) expandClusterFlow(id); refreshFmBar(); });
+  if (bk) bk.addEventListener('click', () => { const id = fmTargetCluster(true); if (id) openBackSheet(id); });
+});
 const FM_OUT_KEY = 'fm_out_thoughts';
 function loadOutThoughts() { try { const v = JSON.parse(localStorage.getItem(FM_OUT_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch (_) { return []; } }
 let backNodeId = null;
