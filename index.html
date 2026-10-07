@@ -458,8 +458,38 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
     </label>
     <div id="embedWrap"></div>
 
+    <div id="clusterOps" style="display:none;margin-top:20px;padding:12px;border:1px solid rgba(74,158,255,0.35);border-radius:10px;">
+      <div style="font-weight:700;margin-bottom:4px;">🧭 まとまり要約の操作</div>
+      <div id="clusterOpsState" style="font-size:12px;color:var(--text-dim);margin-bottom:8px;"></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <button type="button" class="inbox-banner-btn" id="expandFlowBtn">🔀 流れに展開する</button>
+        <button type="button" class="inbox-banner-btn" id="sendBackBtn">↩ quick-ref へ返す</button>
+      </div>
+    </div>
+
     <label class="field-label" style="margin-top:20px;">物理層ステータス</label>
     <div class="physics-box" id="physicsBox">—</div>
+  </div>
+</div>
+
+<!-- quick-ref へ返す -->
+<div class="sheet" id="backSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <button id="backSheetCancel">キャンセル</button>
+    <h2>quick-ref へ返す</h2>
+    <button id="backSheetSend" style="color:var(--gold);font-weight:800;">送る</button>
+  </div>
+  <div class="sheet-body">
+    <label class="field-label">題名</label>
+    <input type="text" id="bkTitle" maxlength="40" placeholder="この考察の題">
+    <label class="field-label">決めたこと</label>
+    <textarea id="bkDecided" placeholder="考えた結果、何が決まった／分かったか"></textarea>
+    <label class="field-label">次の一手</label>
+    <input type="text" id="bkNext" maxlength="120" placeholder="次にやること（1文）">
+    <label class="field-label">流れ（この塊から先のノードと線。自動で作ります）</label>
+    <textarea id="bkFlow" readonly style="min-height:120px;font-size:12px;"></textarea>
+    <div id="bkNote" style="font-size:12px;color:var(--text-dim);margin-top:8px;"></div>
   </div>
 </div>
 
@@ -1318,6 +1348,19 @@ function drawArrow(x1, y1, x2, y2, color, weight, glow) {
   ctx.restore();
 }
 
+function drawEdgeLabel(x1, y1, x2, y2, text) {
+  const mx = (x1+x2)/2, my = (y1+y2)/2;
+  ctx.save();
+  ctx.font = `bold ${12*vpScale}px -apple-system, 'Hiragino Sans', sans-serif`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = 4*vpScale; ctx.strokeStyle = 'rgba(10,14,22,0.85)';
+  ctx.strokeText(text, mx + 8*vpScale, my + 8*vpScale);
+  ctx.fillStyle = 'rgba(245,200,66,0.95)';
+  ctx.fillText(text, mx + 8*vpScale, my + 8*vpScale);
+  ctx.restore();
+}
+
 function drawEdgeWeight(x1, y1, x2, y2, w) {
   const mx = (x1+x2)/2, my = (y1+y2)/2;
   ctx.save();
@@ -1532,6 +1575,7 @@ function render(now) {
     const col = isSel ? '#FF5F5F' : (from.color || '#4A9EFF');
     drawArrow(fs.x, fs.y, ts.x, ts.y, col, e.weight||1, isSel);
     if (vpScale > 0.5) drawEdgeWeight(fs.x, fs.y, ts.x, ts.y, e.weight||1);
+    if (e.label && vpScale > 0.35) drawEdgeLabel(fs.x, fs.y, ts.x, ts.y, e.label);
     // ② 電流パルス（fromに電荷が乗っていれば流れて見える）
     drawCurrentPulse(fs.x, fs.y, ts.x, ts.y, from.charge||0, col);
   });
@@ -2200,6 +2244,7 @@ function openNodeSheet(id, isNew=false) {
   if (!n) return;
   ensurePhysicsFields(n);
   renderInboxBanner(n);
+  renderClusterOps(n);
 
   document.getElementById('nodeSheetTitle').textContent = isNew ? '新規ノード' : 'ノード編集';
   document.getElementById('nLabel').value = n.label || '';
@@ -2356,6 +2401,7 @@ function addNodeFromTransferItem(item, index, total, g, sourceApp) {
     tags: [...new Set([...(item.extraTags || []), ...extractTagsFromText(item.title, item.body)])],
     qrItemId: item.qrItemId || undefined,   // quick-ref の元メモID（まとまり要約のとき）
     kind: item.kind || undefined,
+    cluster: item.cluster || undefined,   // 要約の状態・次の一手・流れの行（あとで流れに展開するため）
     // 取り込み直後は「未処理」。ユーザーがノード編集シートで内容を確認し、
     // 「取り込み完了」を押すと 'done' になる。手動追加ノードにはこのフィールド自体が無い。
     triageStatus: 'inbox',
@@ -2687,7 +2733,7 @@ function closeSheet(id) {
   document.getElementById('overlay').classList.remove('open');
 }
 function closeAllSheets() {
-  ['nodeSheet','aiSheet','graphsSheet'].forEach(id => {
+  ['nodeSheet','aiSheet','graphsSheet','backSheet'].forEach(id => {
     document.getElementById(id).classList.remove('open');
   });
   document.getElementById('overlay').classList.remove('open');
@@ -3542,11 +3588,180 @@ async function pollEmotionBridge() {
     console.warn('[emotion-bridge] pull failed', e);
   }
 }
+// ═══════════════════════════════════
+// まとまり要約 ⇄ 流れ図（quick-ref との往復）
+//   quick-ref の要約（1つの塊ノード）→ 流れに展開して考える → 結果を quick-ref へメモとして返す
+// ═══════════════════════════════════
+// 要約の本文から「題名/状態/次の一手」と「流れ:」の行を取り出す（quick-ref の cluster-items.js と同じ読み方）
+function parseClusterSummary(text) {
+  const out = { title: '', state: '', next: '', flow: [] };
+  let inFlow = false;
+  String(text || '').split('\n').forEach(raw => {
+    const l = raw.trim(); let m;
+    if (/^元メモ\s*[:：]/.test(l)) { inFlow = false; return; }
+    if (!inFlow && (m = /^(題名|状態|次の一手)\s*[:：]\s*(.*)$/.exec(l))) {
+      if (m[1] === '題名') out.title = m[2].trim();
+      else if (m[1] === '状態') out.state = m[2].trim().replace(/[。.]/g, '');
+      else out.next = m[2].trim();
+      return;
+    }
+    if ((m = /^流れ\s*[:：]\s*(.*)$/.exec(l))) { inFlow = true; if (/->|→/.test(m[1])) out.flow.push(m[1].trim()); return; }
+    if (inFlow) { const t = l.replace(/^[-・*•]\s*/, ''); if (/->|→/.test(t)) out.flow.push(t); }
+  });
+  out.title = out.title.replace(/【\d+】/g, '').slice(0, 40);
+  return out;
+}
+// メモ欄の「元メモ:\n1. 題」から、番号→題の対応を取る
+function parseRefs(text) {
+  const refs = {}; let on = false;
+  String(text || '').split('\n').forEach(raw => {
+    const l = raw.trim();
+    if (/^元メモ\s*[:：]/.test(l)) { on = true; return; }
+    const m = on && /^(\d+)\.\s*(.+)$/.exec(l); if (m) refs[m[1]] = m[2];
+  });
+  return refs;
+}
+// 流れ図の書き方（1行1接続。-> か → で結ぶ。{判断} (始終) [四角]。行末に " : ラベル"）を読む。同じ段階は【n】を除いた文字で同一とみなす
+function parseFlowLines(lines) {
+  const nodes = {}, order = [], edges = [];
+  const tok = t => {
+    t = t.trim(); let shape = 'step', text = t, m;
+    if ((m = t.match(/^\{(.*)\}$/))) { shape = 'decision'; text = m[1]; }
+    else if ((m = t.match(/^\((.*)\)$/))) { shape = 'terminal'; text = m[1]; }
+    else if ((m = t.match(/^\[(.*)\]$/))) text = m[1];
+    const refs = (text.match(/【(\d+)】/g) || []).map(x => x.replace(/[【】]/g, ''));
+    return { key: text.replace(/【\d+】/g, '').trim(), shape, refs };
+  };
+  const add = p => {
+    if (!p.key) return null;
+    const cur = nodes[p.key];
+    if (!cur) { nodes[p.key] = { key: p.key, shape: p.shape, refs: p.refs.slice() }; order.push(p.key); }
+    else { if (p.shape !== 'step' && cur.shape === 'step') cur.shape = p.shape; p.refs.forEach(r => { if (!cur.refs.includes(r)) cur.refs.push(r); }); }
+    return p.key;
+  };
+  (lines || []).forEach(line => {
+    line = String(line).trim(); if (!line || line.charAt(0) === '#') return;
+    let label = ''; const mm = line.match(/^(.*)(?:\s+:\s+|\s*：\s*)(.+)$/);
+    if (mm) { line = mm[1]; label = mm[2].trim(); }
+    const ids = line.split(/\s*(?:->|→)\s*/).filter(Boolean).map(t => add(tok(t))).filter(Boolean);
+    for (let i = 0; i + 1 < ids.length; i++) edges.push({ from: ids[i], to: ids[i + 1], label: i === ids.length - 2 ? label : '' });
+  });
+  return { nodes, order, edges };
+}
+// 塊ノードの流れを、ノードと線にして広げる（作ったノードは fromCluster で元の塊に結ぶ）
+function expandClusterFlow(id) {
+  const g = currentGraph(), n = g && g.nodes[id];
+  if (!n) return 0;
+  const c = n.cluster || parseClusterSummary(n.memo);
+  if (!c || !c.flow || !c.flow.length) { showToast('展開できる流れが見つかりません'); return 0; }
+  if (n.flowExpandedAt) { showToast('展開済みです。やり直すときは、作ったノードを消してください'); return 0; }
+  const pf = parseFlowLines(c.flow);
+  if (!pf.order.length) { showToast('展開できる流れが見つかりません'); return 0; }
+  const refs = parseRefs(n.memo), idOf = {}, now = Date.now();
+  pf.order.forEach((k, i) => {
+    const p = pf.nodes[k], nid = 'fx_' + id + '_' + i; idOf[k] = nid;
+    if (g.nodes[nid]) return;
+    const why = p.refs.map(r => refs[r] ? r + '. ' + refs[r] : '').filter(Boolean).join('\n');
+    g.nodes[nid] = {
+      updatedAt: now, id: nid, label: k.slice(0, 28), memo: why ? '根拠のメモ:\n' + why : '',
+      weight: 3, color: p.shape === 'decision' ? '#F5C842' : '#4AE09A',
+      x: (n.x || 0), y: (n.y || 0) + 190 * (i + 1), charge: 0, fireHistory: [], lastFired: 0,
+      tags: ['流れ'], kind: 'flow-step', fromCluster: id, shape: p.shape
+    };
+  });
+  const hasIn = {}; pf.edges.forEach(e => { hasIn[e.to] = true; });
+  const pairs = pf.edges.map(e => ({ from: idOf[e.from], to: idOf[e.to], label: e.label }));
+  pf.order.filter(k => !hasIn[k]).forEach(k => pairs.push({ from: id, to: idOf[k], label: '' }));   // 塊 → 最初の段階
+  let added = 0;
+  pairs.forEach(p => {
+    if (!p.from || !p.to || p.from === p.to || g.edges.find(e => e.from === p.from && e.to === p.to)) return;
+    const e = { from: p.from, to: p.to, weight: 1, conductance: 1.0 }; if (p.label) e.label = p.label;
+    g.edges.push(e); added++;
+  });
+  n.flowExpandedAt = now; n.updatedAt = now;
+  applyFlowchartLayout(); saveGraphs(); updateScoreBar(); centerView();
+  showToast(pf.order.length + '個のステップに展開しました');
+  return pf.order.length;
+}
+// 塊ノードから先（線でつながったノード）を、quick-ref の流れ図の書き方に直す
+function composeThoughtFlow(rootId) {
+  const g = currentGraph(), root = g && g.nodes[rootId];
+  if (!root) return { text: '', nodeCount: 0, edgeCount: 0 };
+  const set = new Set([rootId]), q = [rootId];
+  while (q.length && set.size < 60) {
+    const c = q.shift();
+    g.edges.forEach(e => { if (e.from === c && g.nodes[e.to] && !set.has(e.to)) { set.add(e.to); q.push(e.to); } });
+  }
+  const clean = s => String(s || '').replace(/->|→/g, '－').replace(/[{}()\[\]]/g, '').replace(/[:：]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 28);
+  const used = {}, name = {};
+  [...set].forEach(id => {
+    const n = g.nodes[id]; let t = clean(id === rootId ? ((n.cluster && n.cluster.title) || n.label) : n.label) || '無題';
+    if (used[t]) { used[t]++; t = t + '(' + used[t] + ')'; } else used[t] = 1;
+    name[id] = t;
+  });
+  const tok = id => {
+    const n = g.nodes[id];
+    if (id === rootId) return '(' + name[id] + ')';
+    if (n.shape === 'decision' || /[?？]$/.test(n.label || '')) return '{' + name[id] + '}';
+    return name[id];
+  };
+  const lines = g.edges.filter(e => set.has(e.from) && set.has(e.to)).map(e => tok(e.from) + ' -> ' + tok(e.to) + (e.label ? ' : ' + clean(e.label) : ''));
+  return { text: lines.join('\n'), nodeCount: set.size, edgeCount: lines.length };
+}
+const FM_OUT_KEY = 'fm_out_thoughts';
+function loadOutThoughts() { try { const v = JSON.parse(localStorage.getItem(FM_OUT_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch (_) { return []; } }
+let backNodeId = null;
+function renderClusterOps(n) {
+  const box = document.getElementById('clusterOps'); if (!box) return;
+  const isCluster = n && (n.kind === 'cluster-summary' || n.cluster);
+  box.style.display = isCluster ? 'block' : 'none'; if (!isCluster) return;
+  const c = n.cluster || parseClusterSummary(n.memo);
+  const st = [];
+  st.push(n.flowExpandedAt ? '✓ 流れに展開済み' : (c.flow && c.flow.length ? '流れ ' + c.flow.length + '行を展開できます' : '展開できる流れがありません'));
+  if (n.sentBackAt) st.push('↩ ' + new Date(n.sentBackAt).toLocaleString('ja-JP') + ' に quick-ref へ返しました');
+  document.getElementById('clusterOpsState').textContent = st.join(' ／ ');
+  document.getElementById('expandFlowBtn').disabled = !!n.flowExpandedAt || !(c.flow && c.flow.length);
+}
+function openBackSheet(id) {
+  const g = currentGraph(), n = g && g.nodes[id]; if (!n) return;
+  backNodeId = id;
+  const t = n.thought || {}, c = n.cluster || parseClusterSummary(n.memo), fl = composeThoughtFlow(id);
+  document.getElementById('bkTitle').value = t.title || (c.title || n.label || '').slice(0, 40);
+  document.getElementById('bkDecided').value = t.decided || '';
+  document.getElementById('bkNext').value = t.next || c.next || '';
+  document.getElementById('bkFlow').value = fl.text || '（まだ流れに展開していません。展開しなくても返せます）';
+  document.getElementById('bkNote').textContent = '送ると、quick-ref の「まとまり」画面に「flow-mind から考察が届いています」と出ます。確認してからメモになります。';
+  closeSheet('nodeSheet'); openSheet('backSheet');
+}
+async function sendThoughtToQuickRef() {
+  const g = currentGraph(), n = g && g.nodes[backNodeId]; if (!n) return false;
+  const ep = (localStorage.getItem('qr_sync_endpoint') || '').trim().replace(/\/+$/, ''), tk = (localStorage.getItem('qr_sync_token') || '').trim();
+  if (!ep || !tk) { showToast('quick-ref の同期設定（エンドポイント・トークン）が未設定です'); return false; }
+  const title = document.getElementById('bkTitle').value.trim().slice(0, 40), decided = document.getElementById('bkDecided').value.trim().slice(0, 1500), next = document.getElementById('bkNext').value.trim().slice(0, 120);
+  if (!title) { showToast('題名を入れてください'); return false; }
+  if (!decided && !next) { showToast('「決めたこと」か「次の一手」のどちらかを書いてください'); return false; }
+  const fl = composeThoughtFlow(backNodeId), now = Date.now();
+  const rec = { id: 'th_' + backNodeId, title, decided, next, flow: fl.text, steps: fl.nodeCount, srcNoteId: n.qrItemId || '', graph: g.name || '', sentAt: now };
+  const list = [rec].concat(loadOutThoughts().filter(t => t.id !== rec.id)).slice(0, 30);
+  try {
+    const res = await fetch(ep + '/sync/flow-mind-out', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk }, body: JSON.stringify({ data: { version: 1, thoughts: list } }) });
+    if (!res.ok) throw new Error('PUT失敗 (' + res.status + ')');
+  } catch (e) { showToast('送れませんでした：' + ((e && e.message) || e)); return false; }
+  try { localStorage.setItem(FM_OUT_KEY, JSON.stringify(list)); } catch (_) {}
+  n.thought = { title, decided, next }; n.sentBackAt = now; n.updatedAt = now; saveGraphs();
+  closeSheet('backSheet'); showToast('quick-ref へ送りました。quick-ref のまとまり画面で確認してください');
+  return true;
+}
+
 // ── quick-ref (sync-worker) 専用の自動ノード取り込み ──
-async function pollQuickRefSync() {
+//   opts.auto: 起動・復帰・定期のとき。「flow-mind へ」を押した要約だけを取り込む（ふつうのメモは、設定の「保存」で従来どおり取り込む）
+let qrPollBusy = false;
+async function pollQuickRefSync(opts) {
+  const auto = !!(opts && opts.auto);
   const endpoint = localStorage.getItem('qr_sync_endpoint');
   const token = localStorage.getItem('qr_sync_token');
-  if (!endpoint || !token) return;
+  if (!endpoint || !token || qrPollBusy) return;
+  qrPollBusy = true;
 
   try {
     const baseUrl = endpoint.replace(/\/+$/, '');
@@ -3564,23 +3779,25 @@ async function pollQuickRefSync() {
 
     const importedIds = JSON.parse(localStorage.getItem('flow_mind_imported_quickref_ids') || '[]');
     const importedSet = new Set(importedIds);
-    let addedCount = 0;
+    let addedCount = 0, summaryCount = 0;
 
+    // HTML → 文字。<br> や段落の終わりは改行にする（落とすと「流れ:」の行が1本につながってしまう）。DOMParser は読み込み・実行をしない
     const stripHtml = html => {
-      // DOMParser は、画像の読み込みやイベント(onerror 等)を動かさない。innerHTML だと <img onerror> が動き得る
-      const doc = new DOMParser().parseFromString(String(html || ''), 'text/html');
-      return (doc.body && doc.body.textContent) || '';
+      const s = String(html || '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|li|h[1-6])>/gi, '\n');
+      return (new DOMParser().parseFromString(s, 'text/html').body.textContent || '');
     };
 
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       if (!item.id || importedSet.has(item.id)) continue;
       if (item.sensitive) { importedSet.add(item.id); continue; } // 機密メモは除外して記憶
+      if (item.origin && item.origin.app === 'flow-mind') { importedSet.add(item.id); continue; } // flow-mind が返したメモは、また取り込まない（循環の防止）
       // AIが作ったメモ(AI作成/まとまり/用語)は、利用者が quick-ref で「flow-mind へ」を押したものだけ取り込む。
       // 押されていないものは記憶せずに見送る（あとで押されたら取り込める）。
       const aiMade = (item.tags || []).some(t => t === 'AI作成' || t === 'まとまり' || t === '用語');
       const fmSend = item.ai && item.ai.flowMind && item.ai.flowMind.sentAt;
       if (aiMade && !fmSend) continue;
+      if (auto && !(aiMade && fmSend)) continue;
 
       const plainBody = stripHtml(item.body);
       const transferItem = {
@@ -3589,13 +3806,15 @@ async function pollQuickRefSync() {
         category: (item.tags && item.tags.length > 0) ? item.tags.join(', ') : 'quick-ref',
         source: 'quick-ref'
       };
-      if (aiMade && fmSend) {   // まとまり要約: 長めの本文＋元メモの一覧つきで、1つの塊ノードに
+      if (aiMade && fmSend) {   // まとまり要約: 長めの本文＋元メモの一覧つきで、1つの塊ノードに。流れの行は、あとで展開できるよう取っておく
         const refs = (Array.isArray(item.ai.flowMind.refs) ? item.ai.flowMind.refs : []).slice(0, 30)
           .map(r => String(r.n) + '. ' + String(r.title || '').slice(0, 60)).join('\n');
+        const parsed = parseClusterSummary(plainBody);
         Object.assign(transferItem, {
-          title: String(item.title || '').replace(/^まとまり要約:\s*/, '') || 'まとまり要約',
+          title: parsed.title || String(item.title || '').replace(/^まとまり要約:\s*/, '') || 'まとまり要約',
           body: plainBody + (refs ? '\n\n元メモ:\n' + refs : ''),
-          memoMax: 1500, extraTags: ['AI作成', 'まとまり'], qrItemId: item.id, kind: 'cluster-summary'
+          memoMax: 2500, extraTags: ['AI作成', 'まとまり'], qrItemId: item.id, kind: 'cluster-summary',
+          cluster: { state: parsed.state, next: parsed.next, flow: parsed.flow }
         });
       }
 
@@ -3603,19 +3822,24 @@ async function pollQuickRefSync() {
       if (id) {
         importedSet.add(item.id);
         addedCount++;
+        if (aiMade && fmSend) summaryCount++;
       }
     }
 
-    if (addedCount > 0) {
+    if (addedCount > 0 || importedSet.size !== importedIds.length) {
       localStorage.setItem('flow_mind_imported_quickref_ids', JSON.stringify([...importedSet]));
+    }
+    if (addedCount > 0) {
       applyFlowchartLayout();
       saveGraphs();
       updateScoreBar();
       updateInboxBadge();
-      showToast(`quick-refから ${addedCount} 件のメモを自動取り込みしました`);
+      showToast(summaryCount ? `quick-refから まとまり要約を ${summaryCount} 件受け取りました（Inbox）` : `quick-refから ${addedCount} 件のメモを自動取り込みしました`);
     }
   } catch (e) {
     console.warn('[quick-ref-sync] poll failed', e);
+  } finally {
+    qrPollBusy = false;
   }
 }
 
@@ -3635,7 +3859,8 @@ function wireQuickRefSyncModal() {
       localStorage.setItem('qr_sync_endpoint', ep);
       localStorage.setItem('qr_sync_token', tk);
       showToast('quick-ref同期設定を保存しました');
-      pollQuickRefSync(); // 保存直後に1回即時実行
+      // ふつうのメモも全部取り込むかを確認する（件数が多いと Inbox があふれる）。「キャンセル」なら、「flow-mind へ」を押した要約だけ受け取る
+      pollQuickRefSync(confirm('quick-ref のふつうのメモも、全部 Inbox に取り込みますか？\n（件数が多いとあふれます。「キャンセル」なら、「flow-mind へ」を押した要約だけ受け取ります）') ? undefined : { auto: true });
     });
   }
 }
@@ -3813,6 +4038,14 @@ function wireEvents() {
   document.getElementById('inboxBannerBtn').addEventListener('click', () => {
     if (editingNodeId) markNodeInboxDone(editingNodeId);
   });
+  document.getElementById('expandFlowBtn').addEventListener('click', () => {
+    if (!editingNodeId) return;
+    const id = editingNodeId;
+    if (expandClusterFlow(id)) { closeSheet('nodeSheet'); }
+  });
+  document.getElementById('sendBackBtn').addEventListener('click', () => { if (editingNodeId) openBackSheet(editingNodeId); });
+  document.getElementById('backSheetCancel').addEventListener('click', () => closeSheet('backSheet'));
+  document.getElementById('backSheetSend').addEventListener('click', () => { void sendThoughtToQuickRef(); });
 
   // 重みスライダー
   const slider = document.getElementById('nWeight');
@@ -3912,15 +4145,18 @@ function init() {
   checkEmotionTransfer();
   checkCloudOnLoad();
   checkCloudSyncOnLoad();
+  pollQuickRefSync({ auto: true }); // quick-ref で「flow-mind へ」を押した要約を受け取る
   pullSheetsNotes(); // 設定済みなら、電車の中で書いたメモを起動時に自動で取り込む
   pullVaultNotes(); // 設定済みなら、crypto-vaultの新規タイトルを起動時に自動で取り込む
 
   // 他アプリ(quick-ref等)からの自動送信を定期チェック + ページ復帰時にもチェック
   setInterval(checkEmotionTransfer, 4000);
+  setInterval(() => pollQuickRefSync({ auto: true }), 60000);
   let lastCloudCheck = 0;
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
       checkEmotionTransfer();
+      pollQuickRefSync({ auto: true });
       const now = Date.now();
       if (now - lastCloudCheck > 5000) {
         lastCloudCheck = now;
