@@ -3567,9 +3567,9 @@ async function pollQuickRefSync() {
     let addedCount = 0;
 
     const stripHtml = html => {
-      const tmp = document.createElement('div');
-      tmp.innerHTML = html || '';
-      return tmp.textContent || tmp.innerText || '';
+      // DOMParser は、画像の読み込みやイベント(onerror 等)を動かさない。innerHTML だと <img onerror> が動き得る
+      const doc = new DOMParser().parseFromString(String(html || ''), 'text/html');
+      return (doc.body && doc.body.textContent) || '';
     };
 
     for (let i = 0; i < items.length; i++) {
