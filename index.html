@@ -4186,7 +4186,9 @@ function init() {
 
 window.addEventListener("resize", resizeCanvas);
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("./flow-mind-sw.js");
+  navigator.serviceWorker.register("./flow-mind-sw.js", { updateViaCache: "none" }).then(function (reg) {
+    document.addEventListener("visibilitychange", function () { if (!document.hidden) reg.update().catch(function () {}); });
+  }).catch(function () {});
 }
 
 init();
