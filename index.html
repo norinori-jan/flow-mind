@@ -171,6 +171,7 @@ input[type=text], textarea {
 }
 input[type=text]:focus, textarea:focus { outline:2px solid var(--gold); border-color:var(--gold); }
 textarea { min-height:70px; resize:vertical; line-height:1.5; }
+#nMemo { min-height:34vh; font-size:15px; line-height:1.7; }
 
 /* 重みスライダー */
 .weight-row { display:flex; align-items:center; gap:12px; margin-top:4px; }
@@ -414,6 +415,11 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
     <button id="nodeSheetSave" style="color:var(--gold);font-weight:800;">保存</button>
   </div>
   <div class="sheet-body">
+    <div id="nodeAbout" style="margin:0 0 14px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.05);font-size:13px;line-height:1.7;"></div>
+    <label class="field-label" style="margin-top:0">役割（この考えを何として使うか）</label>
+    <div id="roleRow" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
+    <label class="field-label" style="margin-top:0">状態</label>
+    <div id="statusRow" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px"></div>
     <div id="clusterOps" style="display:none;margin:0 0 14px;padding:12px;border:1px solid rgba(74,158,255,0.35);border-radius:10px;">
       <div style="font-weight:700;margin-bottom:4px;">🧭 まとまり要約の操作</div>
       <div id="clusterOpsState" style="font-size:12px;color:var(--text-dim);margin-bottom:8px;"></div>
@@ -442,6 +448,14 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
     </label>
     <textarea id="nMemo" placeholder="補足・根拠など（任意）"></textarea>
 
+    <label class="field-label" style="margin-top:20px;">タグ</label>
+    <div id="nodeTagsWrap" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+
+    <label class="field-label" style="margin-top:20px;">つながり（線）<span style="font-weight:400;font-size:11px;"> 線＝「この2つは関係がある」という印。由来を右に書きます</span></label>
+    <div id="edgeInfo" style="font-size:13px;color:var(--text-dim);padding:4px 0;"></div>
+
+    <details id="nodeAdvanced" style="margin-top:22px;border-top:1px solid var(--border);padding-top:12px;">
+      <summary style="cursor:pointer;color:var(--text-dim);font-size:13px;font-weight:600;">詳細設定（確信度・色・他グラフへの埋め込み・引っかかりの内訳）</summary>
     <label class="field-label">自己評価の重み（確信度）</label>
     <div class="weight-row">
       <input type="range" id="nWeight" min="1" max="5" step="1" value="3">
@@ -458,20 +472,15 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
       <div class="color-swatch" data-color="#FB923C" style="background:#FB923C"></div>
     </div>
 
-    <label class="field-label" style="margin-top:20px;">タグ</label>
-    <div id="nodeTagsWrap" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
-
-    <label class="field-label" style="margin-top:20px;">接続エッジ</label>
-    <div id="edgeInfo" style="font-size:13px;color:var(--text-dim);padding:4px 0;"></div>
-
     <label class="field-label" style="margin-top:20px;display:flex;align-items:center;justify-content:space-between;">
       <span>🔗 埋め込み（他グラフのノード）</span>
       <button type="button" id="addEmbedBtn" style="background:none;border:none;color:var(--blue);font-size:12px;font-weight:600;padding:2px 4px;cursor:pointer;">＋ 追加</button>
     </label>
     <div id="embedWrap"></div>
 
-    <label class="field-label" style="margin-top:20px;">物理層ステータス</label>
-    <div class="physics-box" id="physicsBox">—</div>
+      <label class="field-label" style="margin-top:20px;">引っかかりの内訳（電荷・発火・帯域） <span style="font-weight:400;font-size:11px;">（無意識の流れ。上の「引っかかり」の元になる数字）</span></label>
+      <div class="physics-box" id="physicsBox">—</div>
+    </details>
   </div>
 </div>
 
@@ -1403,6 +1412,7 @@ function drawNode(n, id, score, phase) {
   const glowAmt = score * (0.5 + 0.5 * Math.sin(phase + (n.x+n.y)*0.01));
 
   ctx.save();
+  if (nodeStatus(n) === 'dropped') ctx.globalAlpha = 0.38;
 
   // グロー
   if (glowAmt > 0.3 || isSel || isConnFrom) {
@@ -1432,6 +1442,11 @@ function drawNode(n, id, score, phase) {
   ctx.lineWidth = 1.5*vpScale;
   ctx.stroke();
   ctx.shadowBlur = 0;
+
+  if (nodeStatus(n) === 'chosen') {   // 選んだ：金の太い輪
+    ctx.beginPath(); ctx.arc(s.x, s.y, r + 1.5 * vpScale, 0, Math.PI * 2);
+    ctx.strokeStyle = '#F5C842'; ctx.lineWidth = 3.5 * vpScale; ctx.stroke();
+  }
 
   // ① 電荷リング（charge量を内側の光輪で表現）
   if (n.charge > 0.03) {
@@ -1475,6 +1490,13 @@ function drawNode(n, id, score, phase) {
   lines.forEach((line, i) => {
     ctx.fillText(line, s.x, s.y - totalH/2 + lineH*(i+0.5));
   });
+
+  {   // 役割の印（左上）と、見送った印
+    const ri = roleInfo(nodeRole(n));
+    ctx.font = `${13 * vpScale}px -apple-system`; ctx.fillStyle = '#fff';
+    ctx.fillText(ri[2], s.x - r * 0.72, s.y - r * 0.78);
+    if (nodeStatus(n) === 'dropped') { ctx.font = `700 ${16 * vpScale}px -apple-system`; ctx.fillStyle = '#FF5F5F'; ctx.fillText('✕', s.x + r * 0.72, s.y + r * 0.72); }
+  }
 
   // 重みバッジ
   const badge = `W${n.weight||3}`;
@@ -2004,17 +2026,18 @@ function renderBacklinkPanel(inEdges, outEdges, g) {
     wrap.textContent = 'なし';
     return;
   }
-  const makeRow = (arrow, targetId, weight) => {
+  const WHY = { manual: '自分で接続', quick: 'すぐ記録の自動接続', daily: '日付順の自動接続', expand: '流れの展開', extract: '抜き出し', slice: 'スライスの中心から' };
+  const makeRow = (arrow, targetId, weight, src) => {
     const row = document.createElement('div');
     row.style.cssText = 'padding:6px 0;cursor:pointer;color:var(--blue);';
-    row.textContent = `${arrow} ${g.nodes[targetId]?.label || '?'} (×${weight || 1})`;
+    row.textContent = `${arrow} ${g.nodes[targetId]?.label || '?'}　（${WHY[src] || '由来不明'}）`;
     row.addEventListener('click', () => {
       if (g.nodes[targetId]) { fireNode(targetId); openNodeSheet(targetId); }
     });
     return row;
   };
-  inEdges.forEach(e => wrap.appendChild(makeRow('←', e.from, e.weight)));
-  outEdges.forEach(e => wrap.appendChild(makeRow('→', e.to, e.weight)));
+  inEdges.forEach(e => wrap.appendChild(makeRow('←', e.from, e.weight, e.src)));
+  outEdges.forEach(e => wrap.appendChild(makeRow('→', e.to, e.weight, e.src)));
 }
 
 // ═══════════════════════════════════
@@ -2244,6 +2267,70 @@ function wireSearchSheet() {
   });
 }
 
+// ── ノードの「役割」と「状態」（ノード＝ひとつの考え。何として使うか／いまどうなっているか）──
+const ROLES = [['question', '問い', '❓'], ['material', '材料', '📎'], ['thought', '考え', '💭'], ['option', '選択肢', '🔀'], ['decision', '決定', '✅'], ['next', '次の一手', '▶']];
+const STATUSES = [['new', 'まだ', '○'], ['thinking', '考え中', '…'], ['chosen', '選んだ', '◎'], ['dropped', '見送った', '✕']];
+function nodeRole(n) {
+  if (!n) return 'thought';
+  if (n.role) return n.role;
+  if (n.thought) return 'decision';
+  if (n.kind === 'cluster-summary' || n.cluster) return 'question';
+  if (n.kind === 'slice' || n.kind === 'slice-member' || n.dailyNoteDate || n.sourceApp) return 'material';
+  return 'thought';
+}
+function nodeStatus(n) { return (n && n.status) || (n && n.triageStatus === 'inbox' ? 'new' : 'thinking'); }
+function roleInfo(r) { return ROLES.find(x => x[0] === r) || ROLES[2]; }
+function statusInfo(st) { return STATUSES.find(x => x[0] === st) || STATUSES[1]; }
+// 引っかかり＝無意識の流れ。よく触れた・強く反応したノードほど強い（旧：電荷・発火回数）
+function hookLabel(n) {
+  const c = (n && n.charge) || 0, f = ((n && n.fireHistory) || []).length;
+  return (c >= 0.6 || f >= 10) ? '強' : (c >= 0.3 || f >= 4) ? '中' : (c > 0.03 || f >= 1) ? '弱' : 'なし';
+}
+let editingRole = 'thought', editingStatus = 'thinking';
+function renderRoleStatus(n) {
+  editingRole = nodeRole(n); editingStatus = nodeStatus(n);
+  const draw = () => {
+    const mk = (list, cur, key) => list.map(x => `<button type="button" class="tool-btn${x[0] === cur ? ' active' : ''}" data-${key}="${x[0]}" style="padding:7px 10px">${x[2]} ${x[1]}</button>`).join('');
+    document.getElementById('roleRow').innerHTML = mk(ROLES, editingRole, 'role');
+    document.getElementById('statusRow').innerHTML = mk(STATUSES, editingStatus, 'status');
+  };
+  draw();
+  const wire = id => { const el = document.getElementById(id); el.onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.role) editingRole = b.dataset.role; if (b.dataset.status) editingStatus = b.dataset.status; draw(); }; };
+  wire('roleRow'); wire('statusRow');
+}
+// 塊から先（線でつながった先）にある「決定」「次の一手」を、返すときの下書きにする
+function thoughtSeed(rootId) {
+  const g = currentGraph(); if (!g) return { decided: '', next: '' };
+  const seen = new Set([rootId]), q = [rootId];
+  while (q.length) { const c = q.shift(); g.edges.forEach(e => { if (e.from === c && !seen.has(e.to) && g.nodes[e.to]) { seen.add(e.to); q.push(e.to); } }); }
+  const ns = [...seen].filter(i => i !== rootId).map(i => g.nodes[i]).filter(n => nodeStatus(n) !== 'dropped');
+  const dec = ns.filter(n => (n.role === 'decision') && nodeStatus(n) !== 'new'), nx = ns.filter(n => n.role === 'next');
+  return { decided: dec.map(n => n.label).join('\n'), next: nx.length ? nx[0].label : '' };
+}
+// このノードは何か：種類・出どころ・つながり・状態を、先頭に日本語で書く
+function renderNodeAbout(n, g) {
+  const box = document.getElementById('nodeAbout'); if (!box) return;
+  const lab = id => (g.nodes[id] && g.nodes[id].label) || '?';
+  let kind = '✎ 自分で作ったノード', from = '';
+  if (n.kind === 'cluster-summary') { kind = '📥 quick-ref の「まとまり要約」（メモの集まりを1つにした塊）'; from = '元になったメモの一覧は、メモ欄の下のほうにあります'; }
+  else if (n.kind === 'slice') { kind = '📊 スライス（quick-ref の表で選んだメモの集まり）'; from = (n.sliceCount || 0) + '件のメモが、線で中心につながっています'; }
+  else if (n.kind === 'slice-member') { kind = '📊 スライスの中の1件のメモ'; from = 'スライス「' + lab(n.fromSlice) + '」の一員'; }
+  else if (n.kind === 'flow-step') { kind = '🔀 流れの一段（要約の「流れ」から展開）'; from = '塊「' + lab(n.fromCluster) + '」の流れの一段'; }
+  else if (n.extractedFrom) { kind = '✂ メモから抜き出した文'; from = '「' + lab(n.extractedFrom) + '」から抜き出し'; }
+  else if (n.dailyNoteDate) { kind = '📅 デイリーノート'; from = n.dailyNoteDate + ' の記録'; }
+  else if (n.sourceApp === 'quick-ref') { kind = '📥 quick-ref のメモ'; from = 'quick-ref から取り込み'; }
+  else if (n.sourceApp) { kind = '📥 ' + n.sourceApp + ' から取り込み'; }
+  const nin = g.edges.filter(e => e.to === n.id).length, nout = g.edges.filter(e => e.from === n.id).length;
+  const st = [];
+  if (n.cluster && n.cluster.state) st.push('状態: ' + n.cluster.state);
+  if (n.cluster && n.cluster.next) st.push('次の一手: ' + n.cluster.next);
+  if (n.thought && n.thought.next) st.push('返した次の一手: ' + n.thought.next);
+  const d = n.updatedAt ? new Date(n.updatedAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+  const ri = roleInfo(nodeRole(n)), si = statusInfo(nodeStatus(n));
+  box.innerHTML = '<b>' + ri[2] + ' ' + ri[1] + '</b> ／ ' + si[2] + ' ' + si[1] + ' ／ 引っかかり: ' + hookLabel(n) + '<br>' + escHtml(kind) + (from ? '<br>' + escHtml(from) : '') +
+    '<br>つながり: 前 ' + nin + '本 ／ 先 ' + nout + '本' + (d ? ' ・更新 ' + d : '') +
+    (st.length ? '<br>' + st.map(escHtml).join('<br>') : '');
+}
 function openNodeSheet(id, isNew=false) {
   editingNodeId = id;
   const g = currentGraph();
@@ -2252,6 +2339,8 @@ function openNodeSheet(id, isNew=false) {
   ensurePhysicsFields(n);
   renderInboxBanner(n);
   renderClusterOps(n);
+  renderNodeAbout(n, g);
+  renderRoleStatus(n);
 
   document.getElementById('nodeSheetTitle').textContent = isNew ? '新規ノード' : 'ノード編集';
   document.getElementById('nLabel').value = n.label || '';
@@ -2298,6 +2387,8 @@ function saveNodeSheet() {
   n.memo   = document.getElementById('nMemo').value;
   n.weight = parseInt(document.getElementById('nWeight').value);
   n.color  = editingNodeColor;
+  n.role   = editingRole;
+  n.status = editingStatus;
   n.tags   = extractTagsFromText(n.label, n.memo);
   n.updatedAt = Date.now();
   saveGraphs();
@@ -2328,7 +2419,9 @@ function graphInfo(g) {
   if (ns.some(n => n.kind === 'cluster-summary' || n.cluster)) kinds.push('📥 quick-ref の塊');
   if (ns.some(n => n.dailyNoteDate)) kinds.push('📅 デイリー');
   const prev = ns.slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)).slice(0, 3).map(n => String(n.label || '').slice(0, 12)).join(' / ');
-  return { count: ns.length, upd, kinds, prev };
+  const qn = ns.filter(n => nodeRole(n) === 'question' && nodeStatus(n) !== 'dropped').sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0];
+  const chosen = ns.filter(n => nodeStatus(n) === 'chosen').length, thinking = ns.filter(n => nodeStatus(n) === 'thinking').length, fresh = ns.filter(n => nodeStatus(n) === 'new').length;
+  return { count: ns.length, upd, kinds, prev, q: qn ? String(qn.label || '').slice(0, 24) : '', chosen, thinking, fresh };
 }
 function renderGraphList() {
   const wrap = document.getElementById('graphListWrap');
@@ -2345,6 +2438,8 @@ function renderGraphList() {
       <div style="min-width:0;flex:1">
         <div class="graph-item-name">${escHtml(g.name)}${isCur?' ✓':''}</div>
         <div class="graph-item-meta">ノード ${f.count}個${when ? ' ・更新 ' + when : ''}${f.kinds.length ? ' ・' + f.kinds.join(' ') : ''}</div>
+        ${f.q ? `<div class="graph-item-meta" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">❓ ${escHtml(f.q)}</div>` : ''}
+        ${f.count ? `<div class="graph-item-meta">◎選んだ ${f.chosen} ／ …考え中 ${f.thinking} ／ ○まだ ${f.fresh}</div>` : ''}
         ${f.prev ? `<div class="graph-item-meta" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(f.prev)}</div>` : '<div class="graph-item-meta">（空）</div>'}
       </div>
       <button class="graph-item-del" data-ren="${id}" style="color:var(--text-dim)">✎</button>
@@ -3803,8 +3898,9 @@ function openBackSheet(id) {
   backNodeId = id;
   const t = n.thought || {}, c = n.cluster || parseClusterSummary(n.memo), fl = composeThoughtFlow(id);
   document.getElementById('bkTitle').value = t.title || (c.title || n.label || '').slice(0, 40);
-  document.getElementById('bkDecided').value = t.decided || '';
-  document.getElementById('bkNext').value = t.next || c.next || '';
+  const seed = thoughtSeed(id);
+  document.getElementById('bkDecided').value = t.decided || seed.decided || '';
+  document.getElementById('bkNext').value = t.next || seed.next || c.next || '';
   document.getElementById('bkFlow').value = fl.text || '（まだ流れに展開していません。展開しなくても返せます）';
   document.getElementById('bkNote').textContent = '送ると、quick-ref の「まとまり」画面に「flow-mind から考察が届いています」と出ます。確認してからメモになります。';
   closeSheet('nodeSheet'); openSheet('backSheet');
