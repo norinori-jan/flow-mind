@@ -437,6 +437,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 
     <label class="field-label" style="display:flex;align-items:center;justify-content:space-between;">
       <span>メモ</span>
+      <button type="button" id="nMemoExtractBtn" style="background:none;border:none;color:var(--gold);font-size:12px;font-weight:700;padding:2px 4px;cursor:pointer;margin-left:auto;">✂ 選択を抜き出す</button>
       <button type="button" id="nMemoCopyBtn" style="background:none;border:none;color:var(--blue);font-size:12px;font-weight:600;padding:2px 4px;cursor:pointer;">📋 コピー</button>
     </label>
     <textarea id="nMemo" placeholder="補足・根拠など（任意）"></textarea>
@@ -1943,6 +1944,7 @@ async function copyTextToClipboard(text, successMsg) {
 }
 
 function wireCopyButtons() {
+  document.getElementById('nMemoExtractBtn')?.addEventListener('click', extractFromMemo);
   document.getElementById('nMemoCopyBtn')?.addEventListener('click', () => {
     copyTextToClipboard(document.getElementById('nMemo').value, 'メモをコピーしました');
   });
@@ -2310,7 +2312,7 @@ function saveNodeSheet() {
 // ═══════════════════════════════════
 function showEdgeHint(e) {
   const g = currentGraph();
-  const why = ({ manual: '自分で接続', quick: 'すぐ記録で、直前に触れたノードから自動接続', daily: 'デイリーノートの日付順に自動接続', expand: 'quick-ref の流れを展開して作成' })[e.src] || '由来不明（以前の版で作成）';
+  const why = ({ manual: '自分で接続', quick: 'すぐ記録で、直前に触れたノードから自動接続', daily: 'デイリーノートの日付順に自動接続', expand: 'quick-ref の流れを展開して作成', extract: 'メモから抜き出して作成' })[e.src] || '由来不明（以前の版で作成）';
   const label = `${g?.nodes[e.from]?.label||'?'} → ${g?.nodes[e.to]?.label||'?'}\n［この線の由来］${why}\nこの線を削除しますか？`;
   document.getElementById('edgeHintLabel').textContent = label;
   document.getElementById('edgeHint').classList.add('show');
@@ -3743,7 +3745,7 @@ function composeThoughtFlow(rootId) {
 // ── ツールバーの「🔀 展開」「↩ 返す」：塊ノードがあるグラフでだけ出す（ノード編集シートの奥に埋もれないように） ──
 function fmTargetCluster(wantExpanded) {
   const g = currentGraph(); if (!g) return null;
-  const isC = n => n && (n.kind === 'cluster-summary' || n.cluster);
+  const isC = n => n && (n.kind === 'cluster-summary' || n.cluster || n.kind === 'slice');
   if (selectedNode && isC(g.nodes[selectedNode])) return selectedNode;
   const ids = Object.keys(g.nodes).filter(id => isC(g.nodes[id]));
   const pick = ids.filter(id => wantExpanded ? !!g.nodes[id].flowExpandedAt : !g.nodes[id].flowExpandedAt);
@@ -3754,8 +3756,8 @@ function fmTargetCluster(wantExpanded) {
 function refreshFmBar() {
   const ex = document.getElementById('fmExpandTb'), bk = document.getElementById('fmBackTb'); if (!ex || !bk) return;
   const g = currentGraph(); let has = false;
-  if (g) for (const id in g.nodes) { const n = g.nodes[id]; if (n && (n.kind === 'cluster-summary' || n.cluster)) { has = true; break; } }
-  const eid = has ? fmTargetCluster(false) : null, canEx = !!(eid && !g.nodes[eid].flowExpandedAt);
+  if (g) for (const id in g.nodes) { const n = g.nodes[id]; if (n && (n.kind === 'cluster-summary' || n.cluster || n.kind === 'slice')) { has = true; break; } }
+  const eid = has ? fmTargetCluster(false) : null, canEx = !!(eid && !g.nodes[eid].flowExpandedAt && g.nodes[eid].kind !== 'slice');
   ex.style.display = canEx ? '' : 'none'; bk.style.display = has ? '' : 'none';
 }
 setInterval(refreshFmBar, 800);
@@ -3764,19 +3766,37 @@ document.addEventListener('DOMContentLoaded', () => {
   if (ex) ex.addEventListener('click', () => { const id = fmTargetCluster(false); if (id) expandClusterFlow(id); refreshFmBar(); });
   if (bk) bk.addEventListener('click', () => { const id = fmTargetCluster(true); if (id) openBackSheet(id); });
 });
+// ── ✂ 抜き出し：メモの一部を選ぶ → 強調（【】）して、新しいノードにする。同じ元から抜いたノードは、元ノードの下に並ぶ ──
+function extractFromMemo() {
+  const ta = document.getElementById('nMemo'), g = currentGraph(), src = g && g.nodes[editingNodeId];
+  if (!ta || !src) return;
+  const a = ta.selectionStart, b = ta.selectionEnd;
+  if (typeof a !== 'number' || b - a < 2) { showToast('メモの中の、抜き出したい文を指で選んでから押してください'); return; }
+  const text = ta.value.slice(a, b).trim(); if (!text) return;
+  ta.value = ta.value.slice(0, a) + '【' + ta.value.slice(a, b) + '】' + ta.value.slice(b);
+  src.memo = ta.value;
+  const id = uid(), now = Date.now(), first = text.split('\n')[0].slice(0, 18);
+  g.nodes[id] = { updatedAt: now, id, label: first, memo: text, x: src.x + 40, y: src.y + 160, weight: 5, color: '#F5C842',
+    charge: 0, fireHistory: [], lastFired: 0, tags: ['抜き出し'], extractedFrom: src.id };
+  g.edges.push({ from: src.id, to: id, weight: 1, conductance: 1.0, src: 'extract', label: '抜き出し' });
+  src.updatedAt = now;
+  applyFlowchartLayout(); saveGraphs(); updateScoreBar();
+  showToast('抜き出しました（金色のノード）。元のメモには【 】で印を付けました');
+}
 const FM_OUT_KEY = 'fm_out_thoughts';
 function loadOutThoughts() { try { const v = JSON.parse(localStorage.getItem(FM_OUT_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch (_) { return []; } }
 let backNodeId = null;
 function renderClusterOps(n) {
   const box = document.getElementById('clusterOps'); if (!box) return;
-  const isCluster = n && (n.kind === 'cluster-summary' || n.cluster);
+  const isCluster = n && (n.kind === 'cluster-summary' || n.cluster || n.kind === 'slice');
   box.style.display = isCluster ? 'block' : 'none'; if (!isCluster) return;
   const c = n.cluster || parseClusterSummary(n.memo);
   const st = [];
-  st.push(n.flowExpandedAt ? '✓ 流れに展開済み' : (c.flow && c.flow.length ? '流れ ' + c.flow.length + '行を展開できます' : '展開できる流れがありません'));
+  if (n.kind === 'slice') st.push('スライス ' + (n.sliceCount || 0) + '件。メモ同士の関係を線でつないで考え、できたら「返す」');
+  else st.push(n.flowExpandedAt ? '✓ 流れに展開済み' : (c.flow && c.flow.length ? '流れ ' + c.flow.length + '行を展開できます' : '展開できる流れがありません'));
   if (n.sentBackAt) st.push('↩ ' + new Date(n.sentBackAt).toLocaleString('ja-JP') + ' に quick-ref へ返しました');
   document.getElementById('clusterOpsState').textContent = st.join(' ／ ');
-  document.getElementById('expandFlowBtn').disabled = !!n.flowExpandedAt || !(c.flow && c.flow.length);
+  document.getElementById('expandFlowBtn').disabled = n.kind === 'slice' || !!n.flowExpandedAt || !(c.flow && c.flow.length);
 }
 function openBackSheet(id) {
   const g = currentGraph(), n = g && g.nodes[id]; if (!n) return;
@@ -3811,6 +3831,22 @@ async function sendThoughtToQuickRef() {
 
 // ── quick-ref (sync-worker) 専用の自動ノード取り込み ──
 //   opts.auto: 起動・復帰・定期のとき。「flow-mind へ」を押した要約だけを取り込む（ふつうのメモは、設定の「保存」で従来どおり取り込む）
+// quick-ref の「表」で作ったスライス：中心ノード1つ＋メモごとのノード。中心から各メモへ線を引くだけ（メモ同士のつながりは、自分で考えてつなぐ）
+function addSliceFromItem(item, plainBody, index, total, g) {
+  const sl = item.ai.slice, refs = sl.refs.slice(0, 40);
+  const hub = addNodeFromTransferItem({ id: undefined, title: String(sl.name || 'スライス'), body: plainBody, memoMax: 900, extraTags: ['スライス'], qrItemId: item.id, kind: 'slice' }, index, total, g, 'quick-ref');
+  if (!hub) return null;
+  const h = g.nodes[hub], now = Date.now(), R = 260;
+  refs.forEach((r, k) => {
+    const nid = 'sl_' + hub + '_' + k, a = (k / refs.length) * Math.PI * 2;
+    g.nodes[nid] = { updatedAt: now, id: nid, label: String(r.title || '(無題)').slice(0, 20), memo: String(r.text || '').slice(0, 300),
+      weight: 3, color: '#4AE09A', x: (h.x || 0) + Math.cos(a) * R, y: (h.y || 0) + Math.sin(a) * R, charge: 0, fireHistory: [], lastFired: 0,
+      tags: ['スライス'].concat((r.tags || []).slice(0, 2)), qrItemId: r.id || undefined, kind: 'slice-member', fromSlice: hub };
+    g.edges.push({ from: hub, to: nid, weight: 1, conductance: 1.0, src: 'slice' });
+  });
+  h.sliceCount = refs.length;
+  return hub;
+}
 let qrPollBusy = false;
 async function pollQuickRefSync(opts) {
   const auto = !!(opts && opts.auto);
@@ -3850,12 +3886,17 @@ async function pollQuickRefSync(opts) {
       if (item.origin && item.origin.app === 'flow-mind') { importedSet.add(item.id); continue; } // flow-mind が返したメモは、また取り込まない（循環の防止）
       // AIが作ったメモ(AI作成/まとまり/用語)は、利用者が quick-ref で「flow-mind へ」を押したものだけ取り込む。
       // 押されていないものは記憶せずに見送る（あとで押されたら取り込める）。
-      const aiMade = (item.tags || []).some(t => t === 'AI作成' || t === 'まとまり' || t === '用語');
+      const aiMade = (item.tags || []).some(t => t === 'AI作成' || t === 'まとまり' || t === '用語' || t === 'スライス');
       const fmSend = item.ai && item.ai.flowMind && item.ai.flowMind.sentAt;
       if (aiMade && !fmSend) continue;
       if (auto && !(aiMade && fmSend)) continue;
 
       const plainBody = stripHtml(item.body);
+      if (aiMade && fmSend && (item.tags || []).includes('スライス') && item.ai.slice && Array.isArray(item.ai.slice.refs)) {   // quick-ref の「表」で作ったスライス
+        const hub = addSliceFromItem(item, plainBody, i, items.length, g);
+        if (hub) { importedSet.add(item.id); addedCount++; summaryCount++; }
+        continue;
+      }
       const transferItem = {
         title: item.title || plainBody.slice(0, 20) || 'quick-ref メモ',
         body: plainBody,
