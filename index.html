@@ -250,7 +250,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
   box-shadow:0 4px 30px rgba(0,0,0,0.5);
 }
 #edgeHint.show { display:block; }
-#edgeHint p { font-size:14px; margin-bottom:12px; color:var(--text-mid); }
+#edgeHint p { white-space:pre-line; font-size:14px; margin-bottom:12px; color:var(--text-mid); }
 #edgeHint button { margin:0 4px; padding:8px 16px; border-radius:8px; border:1px solid var(--border2);
   font-size:14px; font-weight:600; cursor:pointer; }
 #edgeDeleteBtn { background:rgba(255,95,95,0.15); color:var(--red); border-color:rgba(255,95,95,0.3); }
@@ -529,6 +529,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
     <button id="newGraphBtn" style="color:var(--gold);font-weight:800;">＋ 新規</button>
   </div>
   <div class="sheet-body">
+    <button class="tool-btn" id="cleanEmptyBtn" style="display:none;width:100%;justify-content:center;margin-bottom:10px;">🧹 空のグラフを整理</button>
     <div id="graphListWrap"></div>
     <div style="margin-top:8px;border-top:1px solid var(--border);padding-top:14px;">
       <button class="tool-btn" id="importTransferBtn" style="width:100%;justify-content:center;">
@@ -704,6 +705,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
     <button class="qc-mic-btn" id="qcMicBtn" title="音声で記録">🎙</button>
     <button class="qc-send-btn" id="qcSendBtn" title="ノードとして追加">＋</button>
   </div>
+  <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-dim);padding:2px 4px 6px;"><input type="checkbox" id="qcChain"> 直前に触れたノードに線でつなぐ（オフなら、つなぎません）</label>
   <div class="qc-status" id="qcStatus"></div>
 </div>
 
@@ -1007,11 +1009,12 @@ function loadGraphs() {
     currentGraphId = localStorage.getItem(LS_CURRENT) || null;
     if (!currentGraphId || !graphs[currentGraphId]) {
       // デフォルトグラフ作成
-      createGraph('はじめてのグラフ');
+      createGraph(defaultGraphName());
     }
   } catch(e) { graphs = {}; createGraph('グラフ1'); }
 }
 
+function defaultGraphName() { const d = new Date(); return 'グラフ ' + (d.getMonth() + 1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
 function createGraph(name) {
   const id = uid();
   graphs[id] = { name, nodes:{}, edges:[], createdAt: Date.now() };
@@ -1816,7 +1819,7 @@ function addEdge(from, to) {
   if (!g) return;
   // 重複チェック
   if (g.edges.find(e => e.from===from && e.to===to)) { showToast('すでに接続済みです'); return; }
-  g.edges.push({ from, to, weight:1, conductance:1.0 });
+  g.edges.push({ from, to, weight:1, conductance:1.0, src:'manual' });
   if (g.deletedEdges) delete g.deletedEdges[from + '->' + to]; // 10 再接続時はtombstoneを解除（クラウドマージで消えないように）
   applyFlowchartLayout();
   saveGraphs();
@@ -1870,7 +1873,7 @@ function openOrCreateDailyNode() {
     tags: ['デイリー'],
     dailyNoteDate: today,
   };
-  if (prevId) g.edges.push({ from: prevId, to: id, weight: 1, conductance: 1.0 });
+  if (prevId) g.edges.push({ from: prevId, to: id, weight: 1, conductance: 1.0, src: 'daily' });
 
   applyFlowchartLayout();
   saveGraphs();
@@ -2307,7 +2310,8 @@ function saveNodeSheet() {
 // ═══════════════════════════════════
 function showEdgeHint(e) {
   const g = currentGraph();
-  const label = `${g?.nodes[e.from]?.label||'?'} → ${g?.nodes[e.to]?.label||'?'} (×${e.weight||1}) を削除しますか？`;
+  const why = ({ manual: '自分で接続', quick: 'すぐ記録で、直前に触れたノードから自動接続', daily: 'デイリーノートの日付順に自動接続', expand: 'quick-ref の流れを展開して作成' })[e.src] || '由来不明（以前の版で作成）';
+  const label = `${g?.nodes[e.from]?.label||'?'} → ${g?.nodes[e.to]?.label||'?'}\n［この線の由来］${why}\nこの線を削除しますか？`;
   document.getElementById('edgeHintLabel').textContent = label;
   document.getElementById('edgeHint').classList.add('show');
 }
@@ -2315,25 +2319,50 @@ function showEdgeHint(e) {
 // ═══════════════════════════════════
 // GRAPH LIST
 // ═══════════════════════════════════
+function graphInfo(g) {
+  const ns = Object.values(g.nodes || {});
+  const upd = ns.reduce((m, n) => Math.max(m, n.updatedAt || 0), g.createdAt || 0);
+  const kinds = [];
+  if (ns.some(n => n.kind === 'cluster-summary' || n.cluster)) kinds.push('📥 quick-ref の塊');
+  if (ns.some(n => n.dailyNoteDate)) kinds.push('📅 デイリー');
+  const prev = ns.slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)).slice(0, 3).map(n => String(n.label || '').slice(0, 12)).join(' / ');
+  return { count: ns.length, upd, kinds, prev };
+}
 function renderGraphList() {
   const wrap = document.getElementById('graphListWrap');
-  const ids = Object.keys(graphs).sort((a,b) => (graphs[b].createdAt||0)-(graphs[a].createdAt||0));
+  const info = {}; Object.keys(graphs).forEach(id => { info[id] = graphInfo(graphs[id]); });
+  const ids = Object.keys(graphs).sort((a, b) => ((info[b].count ? 1 : 0) - (info[a].count ? 1 : 0)) || (info[b].upd - info[a].upd));
+  const emptyIds = ids.filter(id => !info[id].count && id !== currentGraphId);
+  const cleanBtn = document.getElementById('cleanEmptyBtn');
+  if (cleanBtn) { cleanBtn.style.display = emptyIds.length ? '' : 'none'; cleanBtn.textContent = '🧹 空のグラフ ' + emptyIds.length + '件を整理'; }
   wrap.innerHTML = ids.map(id => {
-    const g = graphs[id];
-    const nodeCount = Object.keys(g.nodes||{}).length;
+    const g = graphs[id], f = info[id];
     const isCur = id === currentGraphId;
+    const when = f.upd ? new Date(f.upd).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
     return `<div class="graph-item ${isCur?'current':''}" data-id="${id}">
-      <div>
+      <div style="min-width:0;flex:1">
         <div class="graph-item-name">${escHtml(g.name)}${isCur?' ✓':''}</div>
-        <div class="graph-item-meta">ノード ${nodeCount}個</div>
+        <div class="graph-item-meta">ノード ${f.count}個${when ? ' ・更新 ' + when : ''}${f.kinds.length ? ' ・' + f.kinds.join(' ') : ''}</div>
+        ${f.prev ? `<div class="graph-item-meta" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(f.prev)}</div>` : '<div class="graph-item-meta">（空）</div>'}
       </div>
+      <button class="graph-item-del" data-ren="${id}" style="color:var(--text-dim)">✎</button>
       <button class="graph-item-del" data-del="${id}">🗑</button>
     </div>`;
   }).join('') || '<div style="text-align:center;color:var(--text-dim);padding:30px;">グラフがありません</div>';
 
+  wrap.querySelectorAll('[data-ren]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = btn.dataset.ren, g = graphs[id]; if (!g) return;
+      const name = prompt('グラフの名前', g.name || '');
+      if (!name || !name.trim()) return;
+      g.name = name.trim().slice(0, 40); g.updatedAt = Date.now();
+      saveGraphs(); renderGraphList();
+    });
+  });
   wrap.querySelectorAll('.graph-item[data-id]').forEach(el => {
     el.addEventListener('click', ev => {
-      if (ev.target.dataset.del) return;
+      if (ev.target.dataset.del || ev.target.dataset.ren) return;
       switchGraph(el.dataset.id);
       closeSheet('graphsSheet');
     });
@@ -2815,7 +2844,8 @@ function quickAddNode(text) {
   const trimmed = text.trim();
   if (!trimmed) { showToast('内容を入力してください'); return; }
 
-  const connectSourceId = (lastFiredNodeId && g.nodes[lastFiredNodeId]) ? lastFiredNodeId : null;
+  const chainOn = !!(document.getElementById('qcChain') && document.getElementById('qcChain').checked);
+  const connectSourceId = (chainOn && lastFiredNodeId && g.nodes[lastFiredNodeId]) ? lastFiredNodeId : null;
   const basePos = connectSourceId
     ? { x: g.nodes[connectSourceId].x, y: g.nodes[connectSourceId].y }
     : screenToWorld(canvas.width/2, canvas.height/2);
@@ -2840,7 +2870,7 @@ function quickAddNode(text) {
   };
   // 直前に発火したノードがあれば、因果の連鎖として自動接続
   if (connectSourceId) {
-    g.edges.push({ from: connectSourceId, to: id, weight: 1, conductance: 1.0 });
+    g.edges.push({ from: connectSourceId, to: id, weight: 1, conductance: 1.0, src: 'quick' });
   }
 
   applyFlowchartLayout();
@@ -2854,7 +2884,7 @@ function quickAddNode(text) {
 
   // 全文・接続を確認できるよう、ノード編集シートを自動で開く
   openNodeSheet(id, true);
-  showToast(connectSourceId ? '記録して接続しました' : '記録しました');
+  showToast(connectSourceId ? '記録して接続しました（直前に触れたノードへ）' : '記録しました（線はつないでいません）');
 }
 
 // ── 音声入力（MediaRecorderで録音 → AI(Whisper系)で文字起こし）──
@@ -3120,7 +3150,7 @@ async function checkCloudSyncOnLoad() {
     const ids = Object.keys(graphs);
     if (!graphs[currentGraphId]) {
       currentGraphId = ids[0] || null;
-      if (!currentGraphId) createGraph('はじめてのグラフ');
+      if (!currentGraphId) createGraph(defaultGraphName());
       else localStorage.setItem(LS_CURRENT, currentGraphId);
     }
 
@@ -3149,7 +3179,7 @@ async function checkCloudSyncOnResume() {
     const ids = Object.keys(graphs);
     if (!graphs[currentGraphId]) {
       currentGraphId = ids[0] || null;
-      if (!currentGraphId) createGraph('はじめてのグラフ');
+      if (!currentGraphId) createGraph(defaultGraphName());
       else localStorage.setItem(LS_CURRENT, currentGraphId);
     }
 
@@ -3214,7 +3244,7 @@ async function checkCloudOnLoad() {
         const ids = Object.keys(graphs);
         if (!graphs[currentGraphId]) {
           currentGraphId = ids[0] || null;
-          if (!currentGraphId) createGraph('はじめてのグラフ');
+          if (!currentGraphId) createGraph(defaultGraphName());
           else localStorage.setItem(LS_CURRENT, currentGraphId);
         }
         applyFlowchartLayout();
@@ -3678,7 +3708,7 @@ function expandClusterFlow(id) {
   pairs.forEach(p => {
     if (!p.from || !p.to || p.from === p.to || g.edges.find(e => e.from === p.from && e.to === p.to)) return;
     const e = { from: p.from, to: p.to, weight: 1, conductance: 1.0 }; if (p.label) e.label = p.label;
-    g.edges.push(e); added++;
+    e.src = 'expand'; g.edges.push(e); added++;
   });
   n.flowExpandedAt = now; n.updatedAt = now;
   applyFlowchartLayout(); saveGraphs(); updateScoreBar(); centerView();
@@ -3972,7 +4002,7 @@ function wireSyncSheet() {
     graphs = payload.data;
     const ids = Object.keys(graphs);
     currentGraphId = ids[0] || null;
-    if (!currentGraphId) createGraph('はじめてのグラフ');
+    if (!currentGraphId) createGraph(defaultGraphName());
     else localStorage.setItem(LS_CURRENT, currentGraphId);
     applyFlowchartLayout();
     saveGraphs();
@@ -4131,6 +4161,13 @@ function wireEvents() {
   // グラフ一覧
   document.getElementById('graphsBtn').addEventListener('click', () => { renderGraphList(); openSheet('graphsSheet'); });
   document.getElementById('graphsSheetClose').addEventListener('click', () => closeSheet('graphsSheet'));
+  document.getElementById('cleanEmptyBtn').addEventListener('click', () => {
+    const ids = Object.keys(graphs).filter(id => id !== currentGraphId && !Object.keys(graphs[id].nodes || {}).length);
+    if (!ids.length) return;
+    if (!confirm('ノードが1つもない空のグラフ ' + ids.length + '件を削除します。中身のあるグラフは消えません。よろしいですか？')) return;
+    ids.forEach(id => { delete graphs[id]; });
+    saveGraphs(); renderGraphList(); showToast(ids.length + '件を整理しました');
+  });
   document.getElementById('newGraphBtn').addEventListener('click', () => {
     const name = prompt('グラフ名を入力してください', '新しいグラフ');
     if (!name) return;
