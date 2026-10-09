@@ -113,6 +113,77 @@ header button { pointer-events:auto; }
 .attractor-chip.show { display:flex; }
 .attractor-dot { width:7px; height:7px; border-radius:50%; }
 
+
+/* ── 道筋ビュー（既定の画面） ── */
+body.pathMode #graphCanvas, body.pathMode #scoreBar, body.pathMode #attractorBar,
+body.pathMode #syncClusterPanel, body.pathMode #modeLabel, body.pathMode #toolbar { display:none !important; }
+body:not(.pathMode) #pathView, body:not(.pathMode) #pathBar { display:none; }
+#pathView {
+  position:fixed; left:0; right:0; z-index:12; top:70px;
+  bottom:calc(env(safe-area-inset-bottom, 0px) + 74px);
+  overflow-y:auto; -webkit-overflow-scrolling:touch; padding:6px 14px 120px;
+}
+#pathBar {
+  position:fixed; left:0; right:0; bottom:0; z-index:20; display:flex; gap:8px; align-items:center;
+  padding:10px 14px calc(env(safe-area-inset-bottom, 0px) + 10px);
+  background:linear-gradient(to top, rgba(13,15,20,0.97) 70%, transparent);
+}
+#pathBar .pbtn { background:rgba(255,255,255,0.06); border:1px solid var(--border2); color:var(--text);
+  border-radius:12px; font-size:14px; font-weight:700; padding:12px 14px; cursor:pointer; white-space:nowrap; }
+#pathBar .pbtn.main { flex:1; background:rgba(255,159,67,0.16); border-color:rgba(255,159,67,0.6); color:#FF9F43; font-size:16px; }
+.p-legend { display:flex; flex-wrap:wrap; align-items:center; gap:4px 6px; font-size:11px; color:var(--text-mid);
+  padding:8px 10px; border-radius:10px; background:rgba(255,255,255,0.04); margin-bottom:12px; line-height:1.6; }
+.p-legend b { color:var(--text); font-weight:700; }
+.p-sec { font-size:12px; font-weight:800; letter-spacing:.04em; color:var(--text-mid); margin:16px 2px 8px; }
+.p-sec.warn { color:#FF9F43; }
+.p-chain { border:1px solid var(--border); border-radius:14px; background:var(--surface); margin-bottom:12px; overflow:hidden; }
+.p-chain.unres { border-color:rgba(255,159,67,0.45); }
+.p-chead { display:flex; align-items:center; gap:10px; padding:11px 12px; cursor:pointer; }
+.p-chead .pt { flex:1; min-width:0; font-size:14px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.p-chead .pc { font-size:11px; color:var(--text-dim); white-space:nowrap; }
+.p-dots { display:flex; gap:3px; }
+.p-dot { width:8px; height:8px; border-radius:50%; border:1.5px solid var(--text-dim); }
+.p-dot.chosen { background:var(--green); border-color:var(--green); }
+.p-dot.unres { border-color:#FF9F43; background:#FF9F43; animation:p-pulse 1.6s infinite; }
+.p-dot.dropped { opacity:.35; }
+.p-cbody { padding:0 10px 10px; }
+.p-step { position:relative; padding-left:12px; margin-left:8px; border-left:2px solid var(--border2); padding-bottom:8px; }
+.p-card { display:flex; gap:10px; align-items:flex-start; background:var(--surface2); border:1px solid var(--border);
+  border-radius:12px; padding:10px 10px; cursor:pointer; }
+.p-card.unres { border-color:rgba(255,159,67,0.7); box-shadow:0 0 0 0 rgba(255,159,67,0.5); animation:p-glow 2s infinite; }
+.p-card.chosen { border-color:rgba(74,224,154,0.5); }
+.p-card.dropped { opacity:.5; }
+.p-ico { width:30px; height:30px; flex-shrink:0; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-size:15px; background:rgba(255,255,255,0.08); }
+.p-body { flex:1; min-width:0; }
+.p-label { font-size:15px; font-weight:700; line-height:1.4; word-break:break-word; }
+.p-memo { font-size:12px; color:var(--text-mid); margin-top:2px; line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.p-meta { font-size:11px; color:var(--text-dim); margin-top:5px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.p-pill { border-radius:100px; padding:1px 8px; border:1px solid var(--border2); }
+.p-pill.unres { color:#FF9F43; border-color:rgba(255,159,67,0.6); }
+.p-pill.chosen { color:var(--green); border-color:rgba(74,224,154,0.5); }
+.p-del { background:none; border:none; color:var(--text-dim); font-size:11px; padding:2px 4px; margin-left:auto; cursor:pointer; }
+.p-next { margin:8px 0 0 0; width:100%; background:rgba(245,200,66,0.10); border:1px dashed rgba(245,200,66,0.55);
+  color:var(--gold); border-radius:10px; font-size:13px; font-weight:700; padding:9px 10px; cursor:pointer; text-align:left; }
+.p-empty { text-align:center; padding:36px 16px; color:var(--text-mid); font-size:14px; line-height:1.8; }
+.p-empty b { color:#FF9F43; }
+.p-more { width:100%; background:none; border:1px solid var(--border2); color:var(--text-mid); border-radius:10px; padding:10px; font-size:13px; margin-bottom:12px; cursor:pointer; }
+.p-ai { margin:8px 0 0; width:100%; background:rgba(74,158,255,0.12); border:1px solid rgba(74,158,255,0.5); color:var(--blue);
+  border-radius:10px; font-size:13px; font-weight:700; padding:10px; cursor:pointer; }
+.p-insight { border:1px solid var(--border); border-radius:14px; background:var(--surface); padding:12px 14px; font-size:13px; line-height:1.8; color:var(--text-mid); margin-bottom:12px; }
+.p-insight b { color:var(--text); }
+.ap-principle { background:var(--gold-dim); border:1px solid rgba(245,200,66,0.4); border-radius:12px; padding:12px; font-size:14px; line-height:1.6; margin-bottom:14px; }
+.ap-card { background:var(--surface2); border:1px solid var(--border2); border-radius:12px; padding:12px; margin-bottom:10px; }
+.ap-card.bridge { border-color:rgba(176,124,255,0.7); }
+.ap-title { font-size:15px; font-weight:800; margin-bottom:4px; }
+.ap-tag { display:inline-block; font-size:11px; font-weight:700; border-radius:100px; padding:1px 8px; margin-bottom:6px; background:rgba(176,124,255,0.18); color:#B07CFF; }
+.ap-text { font-size:13px; color:var(--text-mid); line-height:1.6; margin-bottom:6px; }
+.ap-chip { display:inline-block; font-size:12px; border-radius:100px; border:1px solid var(--border2); padding:3px 10px; margin:0 6px 6px 0; cursor:pointer; color:var(--text); }
+.ap-go { width:100%; margin-top:6px; background:rgba(245,200,66,0.12); border:1px solid rgba(245,200,66,0.55); color:var(--gold); border-radius:10px; font-size:13px; font-weight:700; padding:9px; cursor:pointer; }
+.ap-h { font-size:12px; font-weight:800; color:var(--text-mid); margin:14px 2px 8px; letter-spacing:.04em; }
+@keyframes p-pulse { 0%,100% { opacity:1; } 50% { opacity:.35; } }
+@keyframes p-glow { 0%,100% { box-shadow:0 0 0 0 rgba(255,159,67,0.45); } 50% { box-shadow:0 0 12px 2px rgba(255,159,67,0.45); } }
+
 /* ── TOOLBAR (下部) ── */
 #toolbar {
   position:fixed; bottom:0; left:0; right:0; z-index:20;
@@ -388,6 +459,14 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
   <div id="syncClusterList"></div>
 </div>
 
+<!-- 道筋ビュー -->
+<div id="pathView"></div>
+<div id="pathBar">
+  <button class="pbtn main" id="pathOddityBtn">⚠️ 違和感</button>
+  <button class="pbtn" id="pathAddBtn">＋ 考え</button>
+  <button class="pbtn" id="pathPhysBtn" title="物理ビュー">⬡</button>
+</div>
+
 <!-- MODE LABEL -->
 <div id="modeLabel">タップで新しいノードを追加</div>
 
@@ -396,6 +475,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
   <button class="tool-btn" id="addModeBtn">＋ 追加</button>
   <button class="tool-btn" id="connectModeBtn">→ 接続</button>
   <button class="tool-btn" id="editModeBtn">✎ 編集</button>
+  <button class="tool-btn" id="oddityBtn" style="padding:9px 10px;border-color:rgba(255,159,67,0.5);color:#FF9F43">🧭 道筋</button>
   <button class="tool-btn" id="fmExpandTb" style="display:none">🔀 展開</button>
   <button class="tool-btn" id="fmBackTb" style="display:none">↩ 返す</button>
   <div class="tool-spacer"></div>
@@ -503,6 +583,17 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
     <textarea id="bkFlow" readonly style="min-height:120px;font-size:12px;"></textarea>
     <div id="bkNote" style="font-size:12px;color:var(--text-dim);margin-top:8px;"></div>
   </div>
+</div>
+
+<!-- 応用を考えるシート -->
+<div class="sheet" id="appSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <button id="appSheetClose">閉じる</button>
+    <h2>💡 応用を考える</h2>
+    <span style="width:48px"></span>
+  </div>
+  <div class="sheet-body" id="appSheetBody"></div>
 </div>
 
 <!-- AI ANALYSIS SHEET -->
@@ -1010,6 +1101,7 @@ function saveGraphs() {
   if (window.SyncBridge) SyncBridge.autoSave('flow-mind', graphs);
   // クラウド(全端末共通)が設定済みならそちらにも自動書き込み
   if (window.CloudSync) CloudSync.cloudSave('flow-mind', graphs);
+  if (typeof schedulePathRender === 'function') schedulePathRender();
 }
 
 function loadGraphs() {
@@ -1907,6 +1999,347 @@ function openOrCreateDailyNode() {
   showToast(prevId ? '今日のノードを作成し、前回と接続しました' : '今日のノードを作成しました');
 }
 
+// 「いつもと違う」を、ワンタップで記録する。引っかかり(電荷)を高めに置き、状態は「まだ」から始める
+function addOddityNode() {
+  const g = currentGraph();
+  if (!g) return;
+  const id = uid();
+  const pos = screenToWorld(canvas.width / 2, canvas.height / 2);
+  g.nodes[id] = {
+    updatedAt: Date.now(),
+    id, label: '違和感',
+    x: pos.x, y: pos.y,
+    weight: 4,
+    color: '#FF9F43',
+    memo: '',
+    charge: 0.8,
+    fireHistory: [],
+    lastFired: 0,
+    tags: [],
+    role: 'oddity',
+    status: 'new',
+  };
+  applyFlowchartLayout();
+  saveGraphs();
+  updateScoreBar();
+  pendingNewNodeId = id;
+  openNodeSheet(id, true);
+  document.getElementById('nodeSheetTitle').textContent = '違和感を記録';
+}
+
+// ═══════════════════════════════════
+// 道筋ビュー：考えの道筋を、上から下へ一本の流れで見せる（既定の画面）
+// 違和感 → 問い → 調べた／試した（材料）→ 分かった（考え）→ 応用（次の一手）
+// ═══════════════════════════════════
+const LS_VIEW_MODE = 'fm_view_mode';
+const ROLE_COLORS = { oddity:'#FF9F43', question:'#B07CFF', material:'#4A9EFF', thought:'#F5C842', option:'#4AE09A', decision:'#4AE09A', next:'#FF7AB6' };
+const STAGE_NEXT = {
+  oddity:   { role:'question', status:'thinking', label:'問いを書く（なぜ？原理は？）' },
+  question: { role:'material', status:'thinking', label:'調べた・試したことを書く' },
+  material: { role:'thought',  status:'chosen',   label:'分かったことを書く' },
+  thought:  { role:'next',     status:'new',      label:'応用・次の一手を書く' },
+  option:   { role:'decision', status:'new',      label:'どれにするか決める' },
+  decision: { role:'next',     status:'new',      label:'次の一手を書く' },
+};
+let pathOpen = new Set(), pathShowAll = false, pathMoreOthers = false, pathRenderTimer = null, pendingNewNodeId = null;
+
+function isPathMode() { return document.body.classList.contains('pathMode'); }
+function applyViewMode() {
+  let m = 'path';
+  try { m = localStorage.getItem(LS_VIEW_MODE) || 'path'; } catch (e) {}
+  document.body.classList.toggle('pathMode', m === 'path');
+  if (m === 'path') renderPathView(); else resizeCanvas();
+}
+function setViewMode(m) {
+  try { localStorage.setItem(LS_VIEW_MODE, m); } catch (e) {}
+  applyViewMode();
+}
+function schedulePathRender() {
+  if (!isPathMode()) return;
+  clearTimeout(pathRenderTimer);
+  pathRenderTimer = setTimeout(renderPathView, 60);
+}
+
+function pathAnalyze(g) {
+  const ids = Object.keys(g.nodes);
+  const out = {}, inn = {}, und = {};
+  ids.forEach(i => { out[i] = []; inn[i] = []; und[i] = []; });
+  g.edges.forEach(e => {
+    if (g.nodes[e.from] && g.nodes[e.to] && e.from !== e.to) { out[e.from].push(e.to); inn[e.to].push(e.from); und[e.from].push(e.to); und[e.to].push(e.from); }
+  });
+  const descendants = id => { const seen = new Set(), st = [id]; while (st.length) { const c = st.pop(); out[c].forEach(x => { if (!seen.has(x)) { seen.add(x); st.push(x); } }); } return seen; };
+  const unresolved = new Set();
+  ids.forEach(id => {
+    const n = g.nodes[id], r = n.role, s = nodeStatus(n); // 自分で役割を決めたノードだけを「未解決」の対象にする（取り込みノードの推定役割は除く）
+    if ((r === 'oddity' || r === 'question') && (s === 'new' || s === 'thinking')) {
+      const solved = [...descendants(id)].some(d => { const m = g.nodes[d]; return nodeStatus(m) === 'chosen' || nodeRole(m) === 'decision'; });
+      if (!solved) unresolved.add(id);
+    }
+  });
+  const seen = new Set(), comps = [];
+  ids.forEach(start => {
+    if (seen.has(start)) return;
+    const members = [], st = [start]; seen.add(start);
+    while (st.length) { const c = st.pop(); members.push(c); und[c].forEach(x => { if (!seen.has(x)) { seen.add(x); st.push(x); } }); }
+    const mset = new Set(members);
+    let roots = members.filter(i => !inn[i].some(x => mset.has(x)));
+    if (!roots.length) roots = [members.slice().sort((a, b) => (g.nodes[a].updatedAt || 0) - (g.nodes[b].updatedAt || 0))[0]];
+    roots.sort((a, b) => (g.nodes[a].y || 0) - (g.nodes[b].y || 0));
+    const order = [], vis = new Set();
+    const walk = (id, depth) => {
+      if (vis.has(id)) return; vis.add(id);
+      order.push({ id, depth: Math.min(depth, 3), kids: out[id].length });
+      out[id].slice().sort((a, b) => (g.nodes[a].y || 0) - (g.nodes[b].y || 0)).forEach(k => walk(k, depth + 1));
+    };
+    roots.forEach(r => walk(r, 0));
+    members.forEach(m => walk(m, 0)); // 循環などで漏れたもの
+    const latest = members.reduce((m, i) => Math.max(m, g.nodes[i].updatedAt || 0), 0);
+    comps.push({ key: order[0].id, members, order, latest, unres: members.filter(i => unresolved.has(i)) });
+  });
+  return { comps, unresolved };
+}
+
+function pathCardHtml(g, item, unresolved) {
+  const n = g.nodes[item.id], role = nodeRole(n), st = nodeStatus(n), ri = roleInfo(role), si = statusInfo(st);
+  const un = unresolved.has(item.id);
+  const cls = un ? 'unres' : st === 'chosen' ? 'chosen' : st === 'dropped' ? 'dropped' : '';
+  const memo = (n.memo || '').replace(/\s+/g, ' ').trim();
+  const nx = STAGE_NEXT[role];
+  const d = n.updatedAt ? new Date(n.updatedAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+  const pill = un ? '<span class="p-pill unres">未解決</span>' : st === 'chosen' ? '<span class="p-pill chosen">' + si[2] + ' ' + si[1] + '</span>' : '<span class="p-pill">' + si[2] + ' ' + si[1] + '</span>';
+  let h = '<div class="p-step" style="margin-left:' + (8 + item.depth * 14) + 'px"><div class="p-card ' + cls + '" data-open="' + item.id + '">' +
+    '<div class="p-ico" style="color:' + (ROLE_COLORS[role] || '#fff') + '">' + ri[2] + '</div><div class="p-body">' +
+    '<div class="p-label">' + escHtml(n.label || '?') + '</div>' + (memo ? '<div class="p-memo">' + escHtml(memo) + '</div>' : '') +
+    '<div class="p-meta"><span>' + ri[1] + '</span>' + pill + (d ? '<span>' + d + '</span>' : '') + '<button class="p-del" data-del="' + item.id + '">削除</button></div>' +
+    '</div></div>';
+  if (!item.kids && nx) h += '<button class="p-next" data-next="' + item.id + '">＋ ' + escHtml(nx.label) + '</button>';
+  return h + '</div>';
+}
+
+function pathChainHtml(g, c, unresolved, open) {
+  const first = g.nodes[c.order[0].id];
+  const dots = c.order.slice(0, 12).map(it => {
+    const st = nodeStatus(g.nodes[it.id]);
+    return '<span class="p-dot ' + (unresolved.has(it.id) ? 'unres' : st) + '"></span>';
+  }).join('');
+  let h = '<div class="p-chain' + (c.unres.length ? ' unres' : '') + '"><div class="p-chead" data-toggle="' + c.key + '">' +
+    '<div class="pt">' + (c.unres.length ? '⚠️ ' : '') + escHtml(first.label || '?') + '</div>' +
+    '<div class="p-dots">' + dots + '</div><div class="pc">' + c.members.length + '個 ' + (open ? '▾' : '▸') + '</div></div>';
+  if (open) h += '<div class="p-cbody">' + c.order.map(it => pathCardHtml(g, it, unresolved)).join('') +
+    (c.members.length > 1 ? '<button class="p-ai" data-app="' + c.key + '">💡 応用を考える（過去のメモとの関係も探す）</button>' : '') + '</div>';
+  return h + '</div>';
+}
+
+function renderPathView() {
+  const el = document.getElementById('pathView');
+  if (!el) return;
+  const hd = document.querySelector('header');
+  if (hd) el.style.top = (hd.offsetHeight + 2) + 'px';
+  const g = currentGraph();
+  if (!g) { el.innerHTML = ''; return; }
+  const { comps, unresolved } = pathAnalyze(g);
+  const scroll = el.scrollTop;
+  const chains = comps.filter(c => c.members.length > 1 || c.unres.length);
+  const singles = comps.filter(c => !(c.members.length > 1 || c.unres.length));
+  const byLatest = (a, b) => b.latest - a.latest;
+  const hot = chains.filter(c => c.unres.length).sort(byLatest);
+  const rest = chains.filter(c => !c.unres.length).sort(byLatest);
+  let h = '<div class="p-legend"><b>⚠️違和感</b>→<b>❓問い</b>→<b>📎調べた・試した</b>→<b>💭分かった</b>→<b>▶応用</b><span>　一本の道筋で、いまどこで止まっているかが見えます</span></div>';
+  if (!hot.length && !rest.length && !singles.length) {
+    h += '<div class="p-empty">まだ何もありません。<br>いつもと違うことがあったら、まず下の<b>⚠️違和感</b>を押してください。<br>そこから「問い→調べた→分かった→応用」と道筋が伸びていきます。</div>';
+  }
+  if (hot.length) {
+    h += '<div class="p-sec warn">⚠️ 未解決の道筋（' + hot.length + '）</div>';
+    hot.forEach(c => { h += pathChainHtml(g, c, unresolved, !pathOpen.has('-' + c.key)); });
+  }
+  if (rest.length) {
+    h += '<div class="p-sec">ほかの道筋（' + rest.length + '）</div>';
+    const lim = pathShowAll ? rest.length : 8;
+    rest.slice(0, lim).forEach(c => { h += pathChainHtml(g, c, unresolved, pathOpen.has(c.key)); });
+    if (rest.length > lim) h += '<button class="p-more" data-more="all">残り ' + (rest.length - lim) + ' 件を表示</button>';
+  }
+  if (singles.length) {
+    h += '<div class="p-sec">つながっていないメモ（' + singles.length + '）</div>';
+    const lim = pathMoreOthers ? singles.length : 6;
+    singles.sort(byLatest).slice(0, lim).forEach(c => { h += pathCardHtml(g, { id: c.order[0].id, depth: 0, kids: 0 }, unresolved).replace(/<button class="p-next"[^>]*>.*?<\/button>/, '').replace('margin-left:8px', 'margin-left:0;border-left:none;padding-left:0'); });
+    if (singles.length > lim) h += '<button class="p-more" data-more="singles">残り ' + (singles.length - lim) + ' 件を表示</button>';
+  }
+  h += pathInsightsHtml(g, comps);
+  el.innerHTML = h;
+  el.scrollTop = scroll;
+}
+
+// ── 考え方の傾向（リンクの形ではなく、道筋の進み方を見る） ──
+const STAGE_RANK = { oddity: 0, question: 1, material: 2, thought: 3, option: 3, decision: 4, next: 4 };
+const STAGE_NAME = ['違和感', '問い', '調べた・試した', '分かった', '応用'];
+function pathInsightsHtml(g, comps) {
+  const chains = comps.filter(c => c.members.length > 1 && c.order.some(o => g.nodes[o.id].role));
+  if (chains.length < 2) return '';
+  const reach = chains.map(c => Math.max(...c.order.map(o => { const r = g.nodes[o.id].role; return r in STAGE_RANK ? STAGE_RANK[r] : 0; })));
+  const cnt = [0, 0, 0, 0, 0]; reach.forEach(r => cnt[r]++);
+  const understood = reach.filter(r => r >= 3).length, applied = reach.filter(r => r >= 4).length;
+  let stall = -1, stallN = 0; for (let i = 0; i < 4; i++) if (cnt[i] > stallN) { stallN = cnt[i]; stall = i; }
+  const tagN = {};
+  Object.values(g.nodes).filter(n => n.role === 'oddity').forEach(n => (n.tags || []).forEach(t => { tagN[t] = (tagN[t] || 0) + 1; }));
+  const topTags = Object.entries(tagN).sort((a, b) => b[1] - a[1]).slice(0, 3).map(x => x[0]);
+  return '<div class="p-sec">🧠 考え方の傾向</div><div class="p-insight">道筋 <b>' + chains.length + '本</b>のうち、<b>分かった</b>まで届いたのは <b>' + understood + '本</b>、<b>応用</b>まで進んだのは <b>' + applied + '本</b>。' +
+    (stall >= 0 && stallN > 0 ? '<br>止まりやすい場所は <b>' + STAGE_NAME[stall] + '</b>（' + stallN + '本がここで止まっています）。' : '') +
+    (topTags.length ? '<br>違和感が出やすい話題：<b>' + topTags.map(escHtml).join('、') + '</b>' : '') + '</div>';
+}
+
+// ── 応用を考える：過去のメモとの関係をまず手元で探し、AIに「原理」「応用3つ」「関係」「タグ」を出してもらう ──
+let lastApp = null;
+function bigramSet(text) {
+  const t = (text || '').slice(0, 400).replace(/[\s　、。，．,.!！?？()（）「」『』\[\]【】・:：;；\-_\/*#]+/g, '');
+  const set = new Set(); for (let i = 0; i < t.length - 1; i++) set.add(t.slice(i, i + 2)); return set;
+}
+function findRelatedPast(memberIds, text, tagSet, limit) {
+  const mine = bigramSet(text), skip = new Set(memberIds), res = [];
+  Object.entries(graphs).forEach(([gid, gr]) => {
+    Object.values(gr.nodes || {}).forEach(n => {
+      if (!n || !n.label || skip.has(n.id) || n.dailyNoteDate) return;
+      const tt = bigramSet(n.label + ' ' + (n.memo || ''));
+      let inter = 0; tt.forEach(x => { if (mine.has(x)) inter++; });
+      const jac = inter / ((mine.size + tt.size - inter) || 1);
+      const tagHit = (n.tags || []).filter(t => tagSet.has(t)).length;
+      const score = jac + 0.08 * tagHit;
+      if (score >= 0.04) res.push({ gid, id: n.id, label: n.label, memo: n.memo || '', tags: n.tags || [], score, gname: gr.name || '' });
+    });
+  });
+  return res.sort((a, b) => b.score - a.score).slice(0, limit);
+}
+function appPrompt(lines, cands) {
+  return 'あなたは、ユーザーの「考えの道筋」を深める助手です。以下は、ユーザーが実体験から得た道筋です（違和感→問い→調べた・試した→分かった）。\n\n【道筋】\n' + lines.join('\n') +
+    '\n\n【ユーザーの過去のメモ候補】\n' + (cands.length ? cands.map(c => c.alias + ' 「' + c.label.slice(0, 40) + '」' + (c.tags.length ? ' [' + c.tags.slice(0, 4).join(',') + ']' : '') + (c.memo ? ' ' + c.memo.replace(/\s+/g, ' ').slice(0, 50) : '')).join('\n') : '（なし）') +
+    '\n\n次を日本語で、どれも簡潔に出してください。\n1. principle: この道筋から取り出せる一般的な「原理」を1文で。\n2. applications: 次に調べる・試す応用を3つ。各: title(30字以内), how(具体的なやり方。1〜2文), why(なぜ有望か。1文), related(関係する過去メモの記号の配列。なければ空), bridge(true/false)。3つのうち1つは必ず、全く別の分野の過去メモにこの原理を当てはめる意外な応用(bridge:true)にすること。\n3. tags: この道筋全体に付ける短い名詞タグを3〜6個。過去メモ候補のタグがあれば優先して使う。\n4. connections: 過去メモ候補のうち、この道筋と本当に関係があるものだけ。各: id(記号), reason(どう関係するか一言)。無理にこじつけない。\n\n出力はJSONのみ（前置き・コードブロック不要）: {"principle":"","applications":[{"title":"","how":"","why":"","related":[],"bridge":false}],"tags":[],"connections":[{"id":"","reason":""}]}';
+}
+async function openAppSheet(chainKey) {
+  const g = currentGraph(); if (!g) return;
+  const { comps } = pathAnalyze(g), c = comps.find(x => x.key === chainKey);
+  if (!c) return;
+  const body = document.getElementById('appSheetBody');
+  body.innerHTML = '<div class="p-empty">道筋を読んで、過去のメモとの関係を探しています…<br>（数秒かかります）</div>';
+  openSheet('appSheet');
+  const lines = c.order.map((o, i) => { const n = g.nodes[o.id]; return (i + 1) + '. [' + roleInfo(nodeRole(n))[1] + '] ' + (n.label || '') + (n.memo ? '：' + n.memo.replace(/\s+/g, ' ').slice(0, 120) : ''); });
+  const tagSet = new Set(); c.members.forEach(i => (g.nodes[i].tags || []).forEach(t => tagSet.add(t)));
+  const text = c.order.map(o => (g.nodes[o.id].label || '') + ' ' + (g.nodes[o.id].memo || '')).join(' ');
+  const cands = findRelatedPast(c.members, text, tagSet, 8).map((x, i) => Object.assign(x, { alias: 'm' + (i + 1) }));
+  try {
+    const raw = await callAI(appPrompt(lines, cands));
+    const m = raw.replace(/```json|```/g, '').match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('AIの返答を読み取れませんでした。もう一度お試しください');
+    const r = JSON.parse(m[0]);
+    const tail = [...c.order].reverse().find(o => !o.kids && nodeStatus(g.nodes[o.id]) !== 'dropped') || c.order[c.order.length - 1];
+    lastApp = { chainKey, tailId: tail.id, cands, apps: (r.applications || []).slice(0, 3), tags: (r.tags || []).map(String).slice(0, 6) };
+    // タグを道筋のノードに自動で付ける（既存タグは消さない）
+    let added = 0;
+    c.members.forEach(i => { const n = g.nodes[i]; const before = (n.tags || []).length; n.tags = [...new Set([...(n.tags || []), ...lastApp.tags])]; if (n.tags.length !== before) { n.updatedAt = Date.now(); added++; } });
+    if (added) saveGraphs();
+    const byAlias = {}; cands.forEach(x => { byAlias[x.alias] = x; });
+    const chip = x => '<span class="ap-chip" data-rel="' + x.gid + '|' + x.id + '">' + escHtml(x.label.slice(0, 24)) + '</span>';
+    let h = '<div class="ap-h">🔑 この道筋の原理</div><div class="ap-principle">' + escHtml(r.principle || '') + '</div><div class="ap-h">次に調べる・試す応用</div>';
+    lastApp.apps.forEach((a, i) => {
+      const rel = (a.related || []).map(k => byAlias[k]).filter(Boolean);
+      h += '<div class="ap-card' + (a.bridge ? ' bridge' : '') + '">' + (a.bridge ? '<span class="ap-tag">🌉 意外な橋（別の分野へ）</span>' : '') +
+        '<div class="ap-title">' + escHtml(a.title || '') + '</div><div class="ap-text">' + escHtml(a.how || '') + '</div><div class="ap-text">なぜ：' + escHtml(a.why || '') + '</div>' +
+        (rel.length ? '<div class="ap-text">関係しそうなメモ：</div>' + rel.map(chip).join('') : '') +
+        '<button class="ap-go" data-go="' + i + '">＋ これを次の一手にする</button></div>';
+    });
+    const conns = (r.connections || []).map(k => ({ x: byAlias[k.id], reason: k.reason })).filter(k => k.x);
+    h += '<div class="ap-h">🔗 今までのメモとの関係</div>';
+    h += conns.length ? conns.map(k => '<div class="ap-card">' + chip(k.x) + '<div class="ap-text">' + escHtml(k.reason || '') + (k.x.gname && k.x.gid !== currentGraphId ? '（グラフ：' + escHtml(k.x.gname) + '）' : '') + '</div></div>').join('')
+      : '<div class="ap-text">今のところ、はっきり関係するメモは見つかりませんでした。メモが増えるほど見つかります。</div>';
+    h += '<div class="ap-h">🏷 付けたタグ</div><div class="ap-text">' + (lastApp.tags.length ? lastApp.tags.map(escHtml).join('、') : 'なし') + '（道筋の全ノードに自動で付けました）</div>';
+    body.innerHTML = h;
+  } catch (e) {
+    body.innerHTML = '<div class="p-empty">' + escHtml(e.message || '失敗しました') + '</div>';
+  }
+}
+function openRelatedNode(ref) {
+  const [gid, id] = ref.split('|');
+  closeSheet('appSheet');
+  if (gid !== currentGraphId && graphs[gid]) { switchGraph(gid); applyViewMode(); }
+  setTimeout(() => openNodeSheet(id), 150);
+}
+function addAppliedNode(i) {
+  const g = currentGraph(); if (!g || !lastApp || !lastApp.apps[i]) return;
+  const a = lastApp.apps[i], src = g.nodes[lastApp.tailId]; if (!src) return;
+  const id = makePathNode('next', 'new', (a.title || '応用').slice(0, 40), src.x, (src.y || 0) + 160);
+  const rel = (a.related || []).map(k => lastApp.cands.find(x => x.alias === k)).filter(Boolean);
+  g.nodes[id].memo = (a.how || '') + (a.why ? '\n理由：' + a.why : '') + (rel.length ? '\n関係するメモ：' + rel.map(x => x.label.slice(0, 30)).join('、') : '');
+  g.nodes[id].tags = [...new Set([...(lastApp.tags || []), ...extractTagsFromText(g.nodes[id].label, g.nodes[id].memo)])];
+  g.edges.push({ from: lastApp.tailId, to: id, weight: 1, conductance: 1.0, src: 'path' });
+  applyFlowchartLayout(); saveGraphs(); updateScoreBar();
+  closeSheet('appSheet');
+  showToast('▶ 次の一手に追加しました');
+}
+
+function wirePathView() {
+  const el = document.getElementById('pathView');
+  el.addEventListener('click', e => {
+    const t = e.target;
+    const del = t.closest('[data-del]');
+    if (del) { e.stopPropagation(); if (confirm('このノードを削除しますか？')) { deleteNode(del.dataset.del); renderPathView(); } return; }
+    const nx = t.closest('[data-next]');
+    if (nx) { addNextStep(nx.dataset.next); return; }
+    const ap = t.closest('[data-app]');
+    if (ap) { openAppSheet(ap.dataset.app); return; }
+    const mr = t.closest('[data-more]');
+    if (mr) { if (mr.dataset.more === 'all') pathShowAll = true; else pathMoreOthers = true; renderPathView(); return; }
+    const tg = t.closest('[data-toggle]');
+    if (tg) {
+      const k = tg.dataset.toggle, g = currentGraph();
+      const { comps } = pathAnalyze(g), c = comps.find(x => x.key === k);
+      if (c && c.unres.length) { const kk = '-' + k; pathOpen.has(kk) ? pathOpen.delete(kk) : pathOpen.add(kk); }
+      else { pathOpen.has(k) ? pathOpen.delete(k) : pathOpen.add(k); }
+      renderPathView(); return;
+    }
+    const op = t.closest('[data-open]');
+    if (op) openNodeSheet(op.dataset.open);
+  });
+  document.getElementById('appSheetClose').addEventListener('click', () => closeSheet('appSheet'));
+  document.getElementById('appSheetBody').addEventListener('click', e => {
+    const r = e.target.closest('[data-rel]'); if (r) { openRelatedNode(r.dataset.rel); return; }
+    const go = e.target.closest('[data-go]'); if (go) addAppliedNode(+go.dataset.go);
+  });
+  document.getElementById('pathOddityBtn').addEventListener('click', addOddityNode);
+  document.getElementById('pathAddBtn').addEventListener('click', () => addPathNode('thought'));
+  document.getElementById('pathPhysBtn').addEventListener('click', () => setViewMode('physics'));
+  document.getElementById('oddityBtn').addEventListener('click', () => setViewMode('path'));
+  window.addEventListener('resize', schedulePathRender);
+}
+
+function makePathNode(role, status, label, x, y) {
+  const g = currentGraph(); const id = uid();
+  g.nodes[id] = { updatedAt: Date.now(), id, label, x, y, weight: role === 'oddity' ? 4 : 3, color: ROLE_COLORS[role] || '#4A9EFF',
+    memo: '', charge: role === 'oddity' ? 0.8 : 0, fireHistory: [], lastFired: 0, tags: [], role, status };
+  return id;
+}
+function addPathNode(role) {
+  const g = currentGraph(); if (!g) return;
+  const pos = screenToWorld(canvas.width / 2, canvas.height / 2);
+  const id = makePathNode(role, 'thinking', '', pos.x, pos.y);
+  g.nodes[id].label = roleInfo(role)[1];
+  pendingNewNodeId = id;
+  applyFlowchartLayout(); saveGraphs(); updateScoreBar();
+  openNodeSheet(id, true);
+}
+function addNextStep(fromId) {
+  const g = currentGraph(); const src = g && g.nodes[fromId]; if (!src) return;
+  const st = STAGE_NEXT[nodeRole(src)]; if (!st) return;
+  const id = makePathNode(st.role, st.status, roleInfo(st.role)[1], src.x, (src.y || 0) + 160);
+  g.edges.push({ from: fromId, to: id, weight: 1, conductance: 1.0, src: 'path' });
+  pendingNewNodeId = id;
+  applyFlowchartLayout(); saveGraphs(); updateScoreBar();
+  openNodeSheet(id, true);
+  document.getElementById('nodeSheetTitle').textContent = st.label;
+}
+function cancelNodeSheet() {
+  const id = editingNodeId;
+  closeSheet('nodeSheet');
+  if (pendingNewNodeId && pendingNewNodeId === id) { pendingNewNodeId = null; deleteNode(id); schedulePathRender(); }
+}
+
 function deleteNode(id) {
   const g = currentGraph();
   if (!g) return;
@@ -2268,7 +2701,7 @@ function wireSearchSheet() {
 }
 
 // ── ノードの「役割」と「状態」（ノード＝ひとつの考え。何として使うか／いまどうなっているか）──
-const ROLES = [['question', '問い', '❓'], ['material', '材料', '📎'], ['thought', '考え', '💭'], ['option', '選択肢', '🔀'], ['decision', '決定', '✅'], ['next', '次の一手', '▶']];
+const ROLES = [['oddity', '違和感', '⚠️'], ['question', '問い', '❓'], ['material', '材料', '📎'], ['thought', '考え', '💭'], ['option', '選択肢', '🔀'], ['decision', '決定', '✅'], ['next', '次の一手', '▶']];
 const STATUSES = [['new', 'まだ', '○'], ['thinking', '考え中', '…'], ['chosen', '選んだ', '◎'], ['dropped', '見送った', '✕']];
 function nodeRole(n) {
   if (!n) return 'thought';
@@ -2279,7 +2712,7 @@ function nodeRole(n) {
   return 'thought';
 }
 function nodeStatus(n) { return (n && n.status) || (n && n.triageStatus === 'inbox' ? 'new' : 'thinking'); }
-function roleInfo(r) { return ROLES.find(x => x[0] === r) || ROLES[2]; }
+function roleInfo(r) { return ROLES.find(x => x[0] === r) || ROLES.find(x => x[0] === 'thought'); }
 function statusInfo(st) { return STATUSES.find(x => x[0] === st) || STATUSES[1]; }
 // 引っかかり＝無意識の流れ。よく触れた・強く反応したノードほど強い（旧：電荷・発火回数）
 function hookLabel(n) {
@@ -2389,8 +2822,9 @@ function saveNodeSheet() {
   n.color  = editingNodeColor;
   n.role   = editingRole;
   n.status = editingStatus;
-  n.tags   = extractTagsFromText(n.label, n.memo);
+  n.tags   = [...new Set([...(n.tags || []), ...extractTagsFromText(n.label, n.memo)])]; // 既存タグ（Gemini等で付けたもの）は消さずに足す
   n.updatedAt = Date.now();
+  if (pendingNewNodeId === editingNodeId) pendingNewNodeId = null;
   saveGraphs();
   updateScoreBar();
   closeSheet('nodeSheet');
@@ -2403,7 +2837,7 @@ function saveNodeSheet() {
 // ═══════════════════════════════════
 function showEdgeHint(e) {
   const g = currentGraph();
-  const why = ({ manual: '自分で接続', quick: 'すぐ記録で、直前に触れたノードから自動接続', daily: 'デイリーノートの日付順に自動接続', expand: 'quick-ref の流れを展開して作成', extract: 'メモから抜き出して作成' })[e.src] || '由来不明（以前の版で作成）';
+  const why = ({ manual: '自分で接続', quick: 'すぐ記録で、直前に触れたノードから自動接続', daily: 'デイリーノートの日付順に自動接続', expand: 'quick-ref の流れを展開して作成', extract: 'メモから抜き出して作成', path: '道筋ビューで「次の一歩」として作成' })[e.src] || '由来不明（以前の版で作成）';
   const label = `${g?.nodes[e.from]?.label||'?'} → ${g?.nodes[e.to]?.label||'?'}\n［この線の由来］${why}\nこの線を削除しますか？`;
   document.getElementById('edgeHintLabel').textContent = label;
   document.getElementById('edgeHint').classList.add('show');
@@ -2861,7 +3295,7 @@ function closeSheet(id) {
   document.getElementById('overlay').classList.remove('open');
 }
 function closeAllSheets() {
-  ['nodeSheet','aiSheet','graphsSheet','backSheet'].forEach(id => {
+  ['nodeSheet','aiSheet','graphsSheet','backSheet','appSheet'].forEach(id => {
     document.getElementById(id).classList.remove('open');
   });
   document.getElementById('overlay').classList.remove('open');
@@ -4224,9 +4658,10 @@ function wireEvents() {
   document.getElementById('addModeBtn').addEventListener('click', () => setMode(MODE.ADD));
   document.getElementById('connectModeBtn').addEventListener('click', () => setMode(MODE.CONNECT));
   document.getElementById('editModeBtn').addEventListener('click', () => setMode(MODE.EDIT));
+  wirePathView();
 
   // ノードシート
-  document.getElementById('nodeSheetCancel').addEventListener('click', () => closeSheet('nodeSheet'));
+  document.getElementById('nodeSheetCancel').addEventListener('click', cancelNodeSheet);
   document.getElementById('nodeSheetSave').addEventListener('click', saveNodeSheet);
   document.getElementById('inboxBannerBtn').addEventListener('click', () => {
     if (editingNodeId) markNodeInboxDone(editingNodeId);
@@ -4341,6 +4776,7 @@ function init() {
   wireEmbeds();
   updateScoreBar();
   updateInboxBadge();
+  applyViewMode();
   checkCaptureHash();
   checkEmotionTransfer();
   checkCloudOnLoad();
