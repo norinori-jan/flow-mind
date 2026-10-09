@@ -130,7 +130,7 @@ body:not(.pathMode) #pathView, body:not(.pathMode) #pathBar { display:none; }
 }
 #pathBar .pbtn { background:rgba(255,255,255,0.06); border:1px solid var(--border2); color:var(--text);
   border-radius:12px; font-size:14px; font-weight:700; padding:12px 14px; cursor:pointer; white-space:nowrap; }
-#pathBar .pbtn.main { flex:1; background:rgba(255,159,67,0.16); border-color:rgba(255,159,67,0.6); color:#FF9F43; font-size:16px; }
+
 .p-legend { display:flex; flex-wrap:wrap; align-items:center; gap:4px 6px; font-size:11px; color:var(--text-mid);
   padding:8px 10px; border-radius:10px; background:rgba(255,255,255,0.04); margin-bottom:12px; line-height:1.6; }
 .p-legend b { color:var(--text); font-weight:700; }
@@ -181,6 +181,26 @@ body:not(.pathMode) #pathView, body:not(.pathMode) #pathBar { display:none; }
 .ap-chip { display:inline-block; font-size:12px; border-radius:100px; border:1px solid var(--border2); padding:3px 10px; margin:0 6px 6px 0; cursor:pointer; color:var(--text); }
 .ap-go { width:100%; margin-top:6px; background:rgba(245,200,66,0.12); border:1px solid rgba(245,200,66,0.55); color:var(--gold); border-radius:10px; font-size:13px; font-weight:700; padding:9px; cursor:pointer; }
 .ap-h { font-size:12px; font-weight:800; color:var(--text-mid); margin:14px 2px 8px; letter-spacing:.04em; }
+.p-sum { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+.p-sum span { font-size:12px; font-weight:800; border-radius:100px; padding:5px 12px; border:1px solid var(--border2); color:var(--text-mid); }
+.p-sum span.hot { color:#FF9F43; border-color:rgba(255,159,67,0.6); }
+.p-sum span.inb { color:var(--blue); border-color:rgba(74,158,255,0.5); }
+.p-inbox { border:1px solid rgba(74,158,255,0.4); border-radius:14px; background:var(--surface); margin-bottom:10px; padding:10px; }
+.p-inbox .p-label { font-size:14px; }
+.p-acts { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+.p-act { background:rgba(255,255,255,0.06); border:1px solid var(--border2); color:var(--text); border-radius:10px; font-size:13px; font-weight:700; padding:8px 12px; cursor:pointer; }
+.p-act.main { background:rgba(74,158,255,0.14); border-color:rgba(74,158,255,0.6); color:var(--blue); }
+.p-act.dim { color:var(--text-dim); }
+.p-pick { margin-top:8px; border-top:1px dashed var(--border2); padding-top:8px; }
+.p-pickh { font-size:12px; color:var(--text-mid); margin-bottom:6px; font-weight:700; }
+.p-pickrow { display:block; width:100%; text-align:left; background:var(--surface2); border:1px solid var(--border); color:var(--text); border-radius:10px; padding:9px 10px; margin-bottom:6px; cursor:pointer; font-size:13px; line-height:1.5; }
+.p-pickrow.hot { border-color:rgba(255,159,67,0.6); }
+.p-pickrow small { display:block; color:var(--text-dim); font-size:11px; }
+.p-st { background:none; border:1px solid var(--border2); color:var(--text-mid); border-radius:100px; font-size:11px; font-weight:700; padding:2px 9px; cursor:pointer; }
+.p-st.on { color:var(--green); border-color:rgba(74,224,154,0.6); background:rgba(74,224,154,0.10); }
+.p-st.on.drop { color:var(--text-dim); border-color:var(--text-dim); background:rgba(255,255,255,0.06); }
+body.pathMode #quickCaptureFab, body.pathMode #analyzeBtn, body.pathMode #dailyNoteBtn { display:none !important; }
+#pathBar .pbtn.main { flex:1; background:rgba(74,158,255,0.14); border-color:rgba(74,158,255,0.55); color:var(--blue); font-size:15px; }
 @keyframes p-pulse { 0%,100% { opacity:1; } 50% { opacity:.35; } }
 @keyframes p-glow { 0%,100% { box-shadow:0 0 0 0 rgba(255,159,67,0.45); } 50% { box-shadow:0 0 12px 2px rgba(255,159,67,0.45); } }
 
@@ -462,8 +482,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 <!-- 道筋ビュー -->
 <div id="pathView"></div>
 <div id="pathBar">
-  <button class="pbtn main" id="pathOddityBtn">⚠️ 違和感</button>
-  <button class="pbtn" id="pathAddBtn">＋ 考え</button>
+  <button class="pbtn main" id="pathQuickBtn">＋ 一言（思いついたこと）</button>
   <button class="pbtn" id="pathPhysBtn" title="物理ビュー">⬡</button>
 </div>
 
@@ -2110,7 +2129,8 @@ function pathCardHtml(g, item, unresolved) {
   let h = '<div class="p-step" style="margin-left:' + (8 + item.depth * 14) + 'px"><div class="p-card ' + cls + '" data-open="' + item.id + '">' +
     '<div class="p-ico" style="color:' + (ROLE_COLORS[role] || '#fff') + '">' + ri[2] + '</div><div class="p-body">' +
     '<div class="p-label">' + escHtml(n.label || '?') + '</div>' + (memo ? '<div class="p-memo">' + escHtml(memo) + '</div>' : '') +
-    '<div class="p-meta"><span>' + ri[1] + '</span>' + pill + (d ? '<span>' + d + '</span>' : '') + '<button class="p-del" data-del="' + item.id + '">削除</button></div>' +
+    '<div class="p-meta"><span>' + ri[1] + '</span>' + pill + (d ? '<span>' + d + '</span>' : '') + '<button class="p-st' + (st === 'chosen' ? ' on' : '') + '" data-st="' + item.id + '|chosen">◎ 選ぶ</button><button class="p-st drop' + (st === 'dropped' ? ' on' : '') + '" data-st="' + item.id + '|dropped">✕ 見送る</button>' +
+    '<button class="p-del" data-del="' + item.id + '">削除</button></div>' +
     '</div></div>';
   if (!item.kids && nx) h += '<button class="p-next" data-next="' + item.id + '">＋ ' + escHtml(nx.label) + '</button>';
   return h + '</div>';
@@ -2130,6 +2150,37 @@ function pathChainHtml(g, c, unresolved, open) {
   return h + '</div>';
 }
 
+// 未整理＝線が1本もなく、役割をまだ決めていないメモ（見送ったもの・デイリーノートは除く）
+function pathUnorganized(g, comps) {
+  return comps.filter(c => c.members.length === 1).map(c => g.nodes[c.members[0]])
+    .filter(n => n && !n.role && !n.dailyNoteDate && nodeStatus(n) !== 'dropped').sort((x, y) => (y.updatedAt || 0) - (x.updatedAt || 0));
+}
+function pathInboxHtml(g, n, picking, chains) {
+  const memo = (n.memo || '').replace(/\s+/g, ' ').trim();
+  const src = n.sourceApp ? '📥 ' + n.sourceApp : (n.kind === 'cluster-summary' ? '🧩 要約' : '✎ 自分で書いた');
+  const d = n.updatedAt ? new Date(n.updatedAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+  let h = '<div class="p-inbox"><div data-open="' + n.id + '" style="cursor:pointer"><div class="p-label">' + escHtml(n.label || '?') + '</div>' +
+    (memo && memo !== n.label ? '<div class="p-memo">' + escHtml(memo) + '</div>' : '') +
+    '<div class="p-meta"><span>' + escHtml(src) + '</span>' + (d ? '<span>' + d + '</span>' : '') + '</div></div>' +
+    '<div class="p-acts"><button class="p-act main" data-pick="' + n.id + '">' + (picking ? '▾ つなぐ先を選ぶ' : 'つなぐ ▸') + '</button>' +
+    '<button class="p-act" data-newpath="' + n.id + '">新しい道筋</button><button class="p-act dim" data-pass="' + n.id + '">見送る</button></div>';
+  if (picking) {
+    h += '<div class="p-pick"><div class="p-pickh">どの道筋の続きにしますか？（その道筋の最後につながります）</div>';
+    if (!chains.length) h += '<div class="p-memo">つなげる道筋がまだありません。「新しい道筋」を押してください。</div>';
+    chains.slice(0, 8).forEach(c => {
+      const first = g.nodes[c.order[0].id], tail = g.nodes[c.tailId];
+      h += '<button class="p-pickrow' + (c.unres.length ? ' hot' : '') + '" data-join="' + n.id + '|' + c.tailId + '">' + (c.unres.length ? '⚠️ ' : '') + escHtml(first.label || '?') +
+        '<small>' + c.members.length + '個 ／ 続き：' + escHtml((tail.label || '?').slice(0, 20)) + '（' + roleInfo(nodeRole(tail))[1] + '）</small></button>';
+    });
+    h += '</div>';
+  }
+  return h + '</div>';
+}
+let pathPick = null, pathShowInbox = false;
+function pathTail(g, c) {
+  const leaf = [...c.order].reverse().find(o => !o.kids && nodeStatus(g.nodes[o.id]) !== 'dropped');
+  return (leaf || c.order[c.order.length - 1]).id;
+}
 function renderPathView() {
   const el = document.getElementById('pathView');
   if (!el) return;
@@ -2139,14 +2190,23 @@ function renderPathView() {
   if (!g) { el.innerHTML = ''; return; }
   const { comps, unresolved } = pathAnalyze(g);
   const scroll = el.scrollTop;
-  const chains = comps.filter(c => c.members.length > 1 || c.unres.length);
-  const singles = comps.filter(c => !(c.members.length > 1 || c.unres.length));
+  const isChain = c => c.members.length > 1 || c.unres.length;
   const byLatest = (a, b) => b.latest - a.latest;
-  const hot = chains.filter(c => c.unres.length).sort(byLatest);
-  const rest = chains.filter(c => !c.unres.length).sort(byLatest);
-  let h = '<div class="p-legend"><b>⚠️違和感</b>→<b>❓問い</b>→<b>📎調べた・試した</b>→<b>💭分かった</b>→<b>▶応用</b><span>　一本の道筋で、いまどこで止まっているかが見えます</span></div>';
-  if (!hot.length && !rest.length && !singles.length) {
-    h += '<div class="p-empty">まだ何もありません。<br>いつもと違うことがあったら、まず下の<b>⚠️違和感</b>を押してください。<br>そこから「問い→調べた→分かった→応用」と道筋が伸びていきます。</div>';
+  const unorg = pathUnorganized(g, comps), unorgIds = new Set(unorg.map(n => n.id));
+  const hot = comps.filter(c => isChain(c) && c.unres.length).sort(byLatest);
+  const rest = comps.filter(c => isChain(c) && !c.unres.length).sort(byLatest);
+  const singles = comps.filter(c => !isChain(c) && !unorgIds.has(c.members[0])).sort(byLatest);
+  comps.forEach(c => { c.tailId = pathTail(g, c); });
+  const chainsForPick = hot.concat(rest);
+  let h = '<div class="p-sum"><span class="inb">📥 未整理 ' + unorg.length + '</span><span class="hot">⚠️ 未解決 ' + hot.length + '</span><span>🧭 道筋 ' + (hot.length + rest.length) + '</span></div>';
+  if (!unorg.length && !hot.length && !rest.length && !singles.length) {
+    h += '<div class="p-empty">まだ何もありません。<br>メモは<b>quick-ref</b>で取ってください。ここに届いて、道筋に並べられます。<br>いま思いついたことは、下の<b>＋ 一言</b>で書けます。</div>';
+  }
+  if (unorg.length) {
+    h += '<div class="p-sec">📥 未整理のメモ（' + unorg.length + '）<span style="font-weight:400"> 一覧から選んで、道筋につなぎます</span></div>';
+    const lim = pathShowInbox ? unorg.length : 5;
+    unorg.slice(0, lim).forEach(n => { h += pathInboxHtml(g, n, pathPick === n.id, chainsForPick); });
+    if (unorg.length > lim) h += '<button class="p-more" data-more="inbox">残り ' + (unorg.length - lim) + ' 件を表示</button>';
   }
   if (hot.length) {
     h += '<div class="p-sec warn">⚠️ 未解決の道筋（' + hot.length + '）</div>';
@@ -2158,15 +2218,49 @@ function renderPathView() {
     rest.slice(0, lim).forEach(c => { h += pathChainHtml(g, c, unresolved, pathOpen.has(c.key)); });
     if (rest.length > lim) h += '<button class="p-more" data-more="all">残り ' + (rest.length - lim) + ' 件を表示</button>';
   }
+  h += pathInsightsHtml(g, comps);
   if (singles.length) {
-    h += '<div class="p-sec">つながっていないメモ（' + singles.length + '）</div>';
-    const lim = pathMoreOthers ? singles.length : 6;
-    singles.sort(byLatest).slice(0, lim).forEach(c => { h += pathCardHtml(g, { id: c.order[0].id, depth: 0, kids: 0 }, unresolved).replace(/<button class="p-next"[^>]*>.*?<\/button>/, '').replace('margin-left:8px', 'margin-left:0;border-left:none;padding-left:0'); });
+    h += '<div class="p-sec">ほかの単独ノード（' + singles.length + '）</div>';
+    const lim = pathMoreOthers ? singles.length : 4;
+    singles.slice(0, lim).forEach(c => { h += pathCardHtml(g, { id: c.members[0], depth: 0, kids: 0 }, unresolved).replace(/<button class="p-next"[^>]*>.*?<\/button>/, '').replace('margin-left:8px', 'margin-left:0;border-left:none;padding-left:0'); });
     if (singles.length > lim) h += '<button class="p-more" data-more="singles">残り ' + (singles.length - lim) + ' 件を表示</button>';
   }
-  h += pathInsightsHtml(g, comps);
   el.innerHTML = h;
   el.scrollTop = scroll;
+}
+
+// ── 未整理メモの操作 ──
+function pathTouch(n) { n.updatedAt = Date.now(); if (n.triageStatus === 'inbox') n.triageStatus = 'done'; }
+function joinInboxTo(nodeId, tailId) {
+  const g = currentGraph(); const n = g && g.nodes[nodeId], tail = g && g.nodes[tailId];
+  if (!n || !tail) return;
+  g.edges.push({ from: tailId, to: nodeId, weight: 1, conductance: 1.0, src: 'path' });
+  if (g.deletedEdges) delete g.deletedEdges[tailId + '->' + nodeId];
+  if (!n.role) n.role = (STAGE_NEXT[nodeRole(tail)] || {}).role || 'thought';
+  n.status = n.status || 'thinking';
+  n.x = tail.x; n.y = (tail.y || 0) + 160;
+  pathTouch(n); pathPick = null;
+  applyFlowchartLayout(); saveGraphs(); updateScoreBar();
+  showToast('道筋につなぎました');
+}
+function startPathFrom(nodeId) {
+  const g = currentGraph(); const n = g && g.nodes[nodeId]; if (!n) return;
+  n.role = n.role || ((n.tags || []).includes('違和感') ? 'oddity' : 'question');
+  n.status = 'thinking';
+  pathTouch(n); pathPick = null;
+  saveGraphs(); updateScoreBar();
+  showToast('新しい道筋にしました（未解決に出ます）');
+}
+function passNode(nodeId) {
+  const g = currentGraph(); const n = g && g.nodes[nodeId]; if (!n) return;
+  n.status = 'dropped'; pathTouch(n); pathPick = null;
+  saveGraphs(); updateScoreBar();
+  showToast('見送りました');
+}
+function setNodeStatusQuick(nodeId, st) {
+  const g = currentGraph(); const n = g && g.nodes[nodeId]; if (!n) return;
+  n.status = (nodeStatus(n) === st) ? 'thinking' : st;
+  pathTouch(n); saveGraphs(); updateScoreBar();
 }
 
 // ── 考え方の傾向（リンクの形ではなく、道筋の進み方を見る） ──
@@ -2280,12 +2374,22 @@ function wirePathView() {
     const t = e.target;
     const del = t.closest('[data-del]');
     if (del) { e.stopPropagation(); if (confirm('このノードを削除しますか？')) { deleteNode(del.dataset.del); renderPathView(); } return; }
+    const st = t.closest('[data-st]');
+    if (st) { e.stopPropagation(); const [i, v] = st.dataset.st.split('|'); setNodeStatusQuick(i, v); return; }
+    const pk = t.closest('[data-pick]');
+    if (pk) { pathPick = (pathPick === pk.dataset.pick) ? null : pk.dataset.pick; renderPathView(); return; }
+    const jn = t.closest('[data-join]');
+    if (jn) { const [i, tl] = jn.dataset.join.split('|'); joinInboxTo(i, tl); return; }
+    const np = t.closest('[data-newpath]');
+    if (np) { startPathFrom(np.dataset.newpath); return; }
+    const ps = t.closest('[data-pass]');
+    if (ps) { passNode(ps.dataset.pass); return; }
     const nx = t.closest('[data-next]');
     if (nx) { addNextStep(nx.dataset.next); return; }
     const ap = t.closest('[data-app]');
     if (ap) { openAppSheet(ap.dataset.app); return; }
     const mr = t.closest('[data-more]');
-    if (mr) { if (mr.dataset.more === 'all') pathShowAll = true; else pathMoreOthers = true; renderPathView(); return; }
+    if (mr) { if (mr.dataset.more === 'all') pathShowAll = true; else if (mr.dataset.more === 'inbox') pathShowInbox = true; else pathMoreOthers = true; renderPathView(); return; }
     const tg = t.closest('[data-toggle]');
     if (tg) {
       const k = tg.dataset.toggle, g = currentGraph();
@@ -2302,8 +2406,7 @@ function wirePathView() {
     const r = e.target.closest('[data-rel]'); if (r) { openRelatedNode(r.dataset.rel); return; }
     const go = e.target.closest('[data-go]'); if (go) addAppliedNode(+go.dataset.go);
   });
-  document.getElementById('pathOddityBtn').addEventListener('click', addOddityNode);
-  document.getElementById('pathAddBtn').addEventListener('click', () => addPathNode('thought'));
+  document.getElementById('pathQuickBtn').addEventListener('click', () => openQuickCapture());
   document.getElementById('pathPhysBtn').addEventListener('click', () => setViewMode('physics'));
   document.getElementById('oddityBtn').addEventListener('click', () => setViewMode('path'));
   window.addEventListener('resize', schedulePathRender);
@@ -2950,12 +3053,14 @@ function addNodeFromTransferItem(item, index, total, g, sourceApp) {
     id,
     label: (item.title || '無題').slice(0,20),
     memo: (item.body || '').replace(/<[^>]+>/g,'').slice(0, item.memoMax || 200),   // まとまり要約だけ長めに保つ
-    weight: 3,
+    weight: item.role === 'oddity' ? 4 : 3,
+    role: item.role || undefined,
+    status: item.status || undefined,
     // 感情メタがあればその帯域の色を使う。なければ従来通り虹色を割り当て。
-    color: bandStyle ? bandStyle.color : cols[index % cols.length],
+    color: item.color || (bandStyle ? bandStyle.color : cols[index % cols.length]),
     x: Math.cos(angle) * dist,
     y: Math.sin(angle) * dist,
-    charge: 0,
+    charge: item.charge || 0,
     fireHistory: [],
     lastFired: 0,
     sourceApp: resolvedSource || undefined,
@@ -4418,8 +4523,9 @@ async function pollQuickRefSync(opts) {
       // 押されていないものは記憶せずに見送る（あとで押されたら取り込める）。
       const aiMade = (item.tags || []).some(t => t === 'AI作成' || t === 'まとまり' || t === '用語' || t === 'スライス');
       const fmSend = item.ai && item.ai.flowMind && item.ai.flowMind.sentAt;
+      const isOdd = (item.tags || []).includes('違和感');   // quick-ref の ⚠️違和感 ボタンで作ったメモ
       if (aiMade && !fmSend) continue;
-      if (auto && !(aiMade && fmSend)) continue;
+      if (auto && !(aiMade && fmSend) && !isOdd) continue;
 
       const plainBody = stripHtml(item.body);
       if (aiMade && fmSend && (item.tags || []).includes('スライス') && item.ai.slice && Array.isArray(item.ai.slice.refs)) {   // quick-ref の「表」で作ったスライス
@@ -4433,6 +4539,12 @@ async function pollQuickRefSync(opts) {
         category: (item.tags && item.tags.length > 0) ? item.tags.join(', ') : 'quick-ref',
         source: 'quick-ref'
       };
+      if (isOdd && !aiMade) {   // 違和感メモ：道筋の起点（未解決）として入れる
+        Object.assign(transferItem, {
+          title: String(item.title || '').replace(/^違和感[：:]\s*/, '').trim() || '違和感',
+          extraTags: ['違和感'], role: 'oddity', status: 'new', charge: 0.8, color: '#FF9F43', qrItemId: item.id
+        });
+      }
       if (aiMade && fmSend) {   // まとまり要約: 長めの本文＋元メモの一覧つきで、1つの塊ノードに。流れの行は、あとで展開できるよう取っておく
         const refs = (Array.isArray(item.ai.flowMind.refs) ? item.ai.flowMind.refs : []).slice(0, 30)
           .map(r => String(r.n) + '. ' + String(r.title || '').slice(0, 60)).join('\n');
