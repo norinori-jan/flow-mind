@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -201,6 +201,11 @@ body:not(.pathMode) #pathView, body:not(.pathMode) #pathBar { display:none; }
 .p-st.on.drop { color:var(--text-dim); border-color:var(--text-dim); background:rgba(255,255,255,0.06); }
 body.pathMode #quickCaptureFab, body.pathMode #analyzeBtn, body.pathMode #dailyNoteBtn { display:none !important; }
 #pathBar .pbtn.main { flex:1; background:rgba(74,158,255,0.14); border-color:rgba(74,158,255,0.55); color:var(--blue); font-size:15px; }
+.p-zoom { margin-left:auto; display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-mid); }
+.p-zb { background:rgba(255,255,255,0.08); border:1px solid var(--border2); color:var(--text); border-radius:10px; font-size:15px; font-weight:800; padding:6px 12px; cursor:pointer; }
+#pathBar .pbtn { zoom:var(--pbz,1); }
+#pathBar .pbtn.mic { flex:1.4; font-size:18px; padding:14px 12px; background:rgba(255,95,95,0.14); border-color:rgba(255,95,95,0.6); color:#FF8A8A; }
+#pathBar .pbtn.mic.recording { animation:qc-pulse 1.1s infinite; background:rgba(255,95,95,0.35); }
 @keyframes p-pulse { 0%,100% { opacity:1; } 50% { opacity:.35; } }
 @keyframes p-glow { 0%,100% { box-shadow:0 0 0 0 rgba(255,159,67,0.45); } 50% { box-shadow:0 0 12px 2px rgba(255,159,67,0.45); } }
 
@@ -482,7 +487,8 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 <!-- 道筋ビュー -->
 <div id="pathView"></div>
 <div id="pathBar">
-  <button class="pbtn main" id="pathQuickBtn">＋ 一言（思いついたこと）</button>
+  <button class="pbtn mic" id="pathMicBtn">🎙 声で記録</button>
+  <button class="pbtn" id="pathQuickBtn">＋ 一言</button>
   <button class="pbtn" id="pathPhysBtn" title="物理ビュー">⬡</button>
 </div>
 
@@ -2177,6 +2183,11 @@ function pathInboxHtml(g, n, picking, chains) {
   return h + '</div>';
 }
 let pathPick = null, pathShowInbox = false;
+const PZ_STEPS = [1, 1.25, 1.5, 1.75, 2, 2.4], LS_PZ = 'fm_path_zoom_i';
+function pathZoomIdx() { let i = 1; try { const v = parseInt(localStorage.getItem(LS_PZ), 10); if (v >= 0 && v < PZ_STEPS.length) i = v; } catch (e) {} return i; }
+function pathZoom() { return PZ_STEPS[pathZoomIdx()]; }
+function pathZoomStep(d) { const i = Math.max(0, Math.min(PZ_STEPS.length - 1, pathZoomIdx() + d)); try { localStorage.setItem(LS_PZ, String(i)); } catch (e) {} renderPathView(); }
+let qcAutoSend = false;   // 「🎙 声で記録」から始めた録音は、文字起こしが終わったら自動で未整理に入れる
 function pathTail(g, c) {
   const leaf = [...c.order].reverse().find(o => !o.kids && nodeStatus(g.nodes[o.id]) !== 'dropped');
   return (leaf || c.order[c.order.length - 1]).id;
@@ -2198,7 +2209,7 @@ function renderPathView() {
   const singles = comps.filter(c => !isChain(c) && !unorgIds.has(c.members[0])).sort(byLatest);
   comps.forEach(c => { c.tailId = pathTail(g, c); });
   const chainsForPick = hot.concat(rest);
-  let h = '<div class="p-sum"><span class="inb">📥 未整理 ' + unorg.length + '</span><span class="hot">⚠️ 未解決 ' + hot.length + '</span><span>🧭 道筋 ' + (hot.length + rest.length) + '</span></div>';
+  let h = '<div class="p-sum"><span class="inb">📥 未整理 ' + unorg.length + '</span><span class="hot">⚠️ 未解決 ' + hot.length + '</span><span>🧭 道筋 ' + (hot.length + rest.length) + '</span><span class="p-zoom">文字 <button class="p-zb" data-z="-1">A−</button><button class="p-zb" data-z="1">A＋</button></span></div>';
   if (!unorg.length && !hot.length && !rest.length && !singles.length) {
     h += '<div class="p-empty">まだ何もありません。<br>メモは<b>quick-ref</b>で取ってください。ここに届いて、道筋に並べられます。<br>いま思いついたことは、下の<b>＋ 一言</b>で書けます。</div>';
   }
@@ -2225,7 +2236,9 @@ function renderPathView() {
     singles.slice(0, lim).forEach(c => { h += pathCardHtml(g, { id: c.members[0], depth: 0, kids: 0 }, unresolved).replace(/<button class="p-next"[^>]*>.*?<\/button>/, '').replace('margin-left:8px', 'margin-left:0;border-left:none;padding-left:0'); });
     if (singles.length > lim) h += '<button class="p-more" data-more="singles">残り ' + (singles.length - lim) + ' 件を表示</button>';
   }
-  el.innerHTML = h;
+  document.documentElement.style.setProperty('--pbz', String(Math.min(pathZoom(), 1.5)));
+  el.innerHTML = '<div id="pathInner" style="zoom:' + pathZoom() + '">' + h + '</div>';
+  const pb = document.getElementById('pathBar'); if (pb) el.style.bottom = (pb.offsetHeight + 4) + 'px';
   el.scrollTop = scroll;
 }
 
@@ -2374,6 +2387,8 @@ function wirePathView() {
     const t = e.target;
     const del = t.closest('[data-del]');
     if (del) { e.stopPropagation(); if (confirm('このノードを削除しますか？')) { deleteNode(del.dataset.del); renderPathView(); } return; }
+    const zb = t.closest('[data-z]');
+    if (zb) { pathZoomStep(+zb.dataset.z); return; }
     const st = t.closest('[data-st]');
     if (st) { e.stopPropagation(); const [i, v] = st.dataset.st.split('|'); setNodeStatusQuick(i, v); return; }
     const pk = t.closest('[data-pick]');
@@ -2407,6 +2422,10 @@ function wirePathView() {
     const go = e.target.closest('[data-go]'); if (go) addAppliedNode(+go.dataset.go);
   });
   document.getElementById('pathQuickBtn').addEventListener('click', () => openQuickCapture());
+  document.getElementById('pathMicBtn').addEventListener('click', () => {
+    if (qcRecording) { stopQcRecording(); return; }   // 録音中にもう一度押すと止めて文字起こし
+    openQuickCapture(); qcAutoSend = true; startQcRecording();   // ユーザー操作の直接の結果として録音を始める（iOSの許可条件）
+  });
   document.getElementById('pathPhysBtn').addEventListener('click', () => setViewMode('physics'));
   document.getElementById('oddityBtn').addEventListener('click', () => setViewMode('path'));
   window.addEventListener('resize', schedulePathRender);
@@ -3448,6 +3467,7 @@ let qcChunks = [];
 let qcRecording = false;
 
 function openQuickCapture(prefillText) {
+  qcAutoSend = false;
   document.getElementById('quickCaptureBar').classList.add('open');
   const input = document.getElementById('qcInput');
   if (typeof prefillText === 'string') input.value = prefillText;
@@ -3456,6 +3476,7 @@ function openQuickCapture(prefillText) {
 }
 
 function closeQuickCapture() {
+  qcAutoSend = false;
   document.getElementById('quickCaptureBar').classList.remove('open');
   if (qcRecording) stopQcRecording();
 }
@@ -3474,7 +3495,7 @@ function setQcStatus(msg, busy) {
 
 // テキストからノードを即時作成し、直前に発火したノードへ因果エッジで接続する
 // （＝孤立ノードにせず、既存の思考グラフの中に位置づける）
-function quickAddNode(text) {
+function quickAddNode(text, opts) {
   const g = currentGraph();
   if (!g) return;
   const trimmed = text.trim();
@@ -3519,6 +3540,7 @@ function quickAddNode(text) {
   autoGrowQc();
 
   // 全文・接続を確認できるよう、ノード編集シートを自動で開く
+  if (opts && opts.silent) { showToast('🎙 記録しました（「未整理」に入りました）'); return; }
   openNodeSheet(id, true);
   showToast(connectSourceId ? '記録して接続しました（直前に触れたノードへ）' : '記録しました（線はつないでいません）');
 }
@@ -3567,6 +3589,7 @@ function startQcRecording() {
     qcRecording = true;
     document.getElementById('qcMicBtn').classList.add('recording');
     document.getElementById('quickCaptureFab').classList.add('recording');
+    { const pm = document.getElementById('pathMicBtn'); if (pm) { pm.classList.add('recording'); pm.textContent = '⏹ 止めて保存'; } }
     setQcStatus('🎙 録音中…もう一度タップで文字起こし', true);
   }).catch(err => {
     console.error(err);
@@ -3590,6 +3613,7 @@ function stopQcRecording() {
   qcRecording = false;
   document.getElementById('qcMicBtn').classList.remove('recording');
   document.getElementById('quickCaptureFab').classList.remove('recording');
+  { const pm = document.getElementById('pathMicBtn'); if (pm) { pm.classList.remove('recording'); pm.textContent = '🎙 声で記録'; } }
   if (qcRecorder.state !== 'inactive') qcRecorder.stop();
 }
 
@@ -3630,6 +3654,7 @@ async function transcribeAndFill(blob) {
     input.value = (input.value ? input.value + '\n' : '') + text.trim();
     autoGrowQc();
     setQcStatus('');
+    if (qcAutoSend) { qcAutoSend = false; if (input.value.trim()) quickAddNode(input.value, { silent: true }); }
   } catch(e) {
     console.error(e);
     setQcStatus('');
