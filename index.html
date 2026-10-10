@@ -202,6 +202,15 @@ body:not(.pathMode) #pathView, body:not(.pathMode) #pathBar { display:none; }
 body.pathMode #quickCaptureFab, body.pathMode #analyzeBtn, body.pathMode #dailyNoteBtn { display:none !important; }
 #pathBar .pbtn.main { flex:1; background:rgba(74,158,255,0.14); border-color:rgba(74,158,255,0.55); color:var(--blue); font-size:15px; }
 body:not(.pathMode) .hdr-btn.zm{display:none;}
+body.pathMode #helpBtn{display:none;}
+body.pathMode .app-title{max-width:16px;overflow:hidden;white-space:nowrap;}
+body.pathMode header .hdr-btn{padding:6px 9px;}
+body.pathMode header{gap:5px;}
+.next-btn{width:100%;margin:12px 0 0;padding:14px;border-radius:12px;border:1px solid rgba(245,200,66,0.6);background:rgba(245,200,66,0.12);color:var(--gold);font-size:16px;font-weight:800;cursor:pointer;}
+.ns-h{font-size:14px;font-weight:800;margin:16px 0 6px;color:var(--gold);}
+.ns-q{font-size:16px;line-height:1.6;font-weight:700;}
+.ns-search{display:inline-block;margin:0 6px 8px 0;padding:10px 14px;border-radius:100px;border:1px solid var(--border2);color:var(--blue);font-size:14px;text-decoration:none;background:rgba(255,255,255,0.05);}
+.ns-note{font-size:13px;line-height:1.7;color:var(--text-mid);}
 .hdr-btn.zm{font-size:15px;font-weight:800;padding:6px 10px;}
 .p-acts{display:flex;flex-wrap:wrap;gap:8px;}
 .p-act{flex:1 1 auto;}
@@ -477,6 +486,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 <header>
   <span class="app-title">⬡ flow-mind</span>
   <div class="header-spacer"></div>
+  <button class="hdr-btn" id="uiPrefBtn" title="文字の設定" style="font-weight:800;font-size:15px">Aa</button>
   <button class="hdr-btn zm" id="zmMinus" title="文字を小さく">A−</button>
   <button class="hdr-btn zm" id="zmPlus" title="文字を大きく">A＋</button>
   <button class="hdr-btn" id="graphsBtn" title="グラフ一覧">📂<span class="inbox-badge" id="inboxBadge">0</span></button>
@@ -543,6 +553,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
       <button type="button" id="nMemoCopyBtn" style="background:none;border:none;color:var(--blue);font-size:12px;font-weight:600;padding:2px 4px;cursor:pointer;">📋 コピー</button>
     </label>
     <textarea id="nMemo" placeholder="補足・根拠など（任意）"></textarea>
+    <button type="button" class="next-btn" id="nodeNextBtn">💡 ここからどう進める？<br><span style="font-size:12px;font-weight:600">次に調べること・試すことを出します</span></button>
 
     <label class="field-label" style="margin-top:18px">① これは何ですか？（ひとつ選ぶ）</label>
     <div id="roleRow" class="opt-list"></div>
@@ -630,7 +641,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
   <div class="sheet-handle"></div>
   <div class="sheet-header">
     <button id="appSheetClose">閉じる</button>
-    <h2>💡 応用を考える</h2>
+    <h2 id="appSheetTitle">💡 応用を考える</h2>
     <span style="width:48px"></span>
   </div>
   <div class="sheet-body" id="appSheetBody"></div>
@@ -2219,10 +2230,11 @@ function pathInboxHtml(g, n, picking, chains) {
   return h + '</div>';
 }
 let pathPick = null, pathShowInbox = false;
-const PZ_STEPS = [1, 1.25, 1.5, 1.75, 2, 2.4], LS_PZ = 'fm_path_zoom_i';
+const PZ_STEPS = [0.9, 1, 1.25, 1.5, 1.8, 2.2], LS_PZ = 'ui_scale_i';
 function pathZoomIdx() { let i = 1; try { const v = parseInt(localStorage.getItem(LS_PZ), 10); if (v >= 0 && v < PZ_STEPS.length) i = v; } catch (e) {} return i; }
 function pathZoom() { return PZ_STEPS[pathZoomIdx()]; }
-function pathZoomStep(d) { const i = Math.max(0, Math.min(PZ_STEPS.length - 1, pathZoomIdx() + d)); try { localStorage.setItem(LS_PZ, String(i)); } catch (e) {} renderPathView(); }
+function pathZoomStep(d) { if (window.UIPrefs) window.UIPrefs.step(d); else { const i = Math.max(0, Math.min(PZ_STEPS.length - 1, pathZoomIdx() + d)); try { localStorage.setItem(LS_PZ, String(i)); } catch (e) {} renderPathView(); } }
+window.__uiHook = function () { try { renderPathView(); } catch (e) {} };
 let qcAutoSend = false;   // 「🎙 声で記録」から始めた録音は、文字起こしが終わったら自動で未整理に入れる
 function pathTail(g, c) {
   const leaf = [...c.order].reverse().find(o => !o.kids && nodeStatus(g.nodes[o.id]) !== 'dropped');
@@ -2362,6 +2374,7 @@ async function openAppSheet(chainKey) {
   if (!c) return;
   const body = document.getElementById('appSheetBody');
   body.innerHTML = '<div class="p-empty">道筋を読んで、過去のメモとの関係を探しています…<br>（数秒かかります）</div>';
+  document.getElementById('appSheetTitle').textContent = '💡 応用を考える';
   openSheet('appSheet');
   const lines = c.order.map((o, i) => { const n = g.nodes[o.id]; return (i + 1) + '. [' + roleInfo(nodeRole(n))[1] + '] ' + (n.label || '') + (n.memo ? '：' + n.memo.replace(/\s+/g, ' ').slice(0, 120) : ''); });
   const tagSet = new Set(); c.members.forEach(i => (g.nodes[i].tags || []).forEach(t => tagSet.add(t)));
@@ -2397,6 +2410,135 @@ async function openAppSheet(chainKey) {
   } catch (e) {
     body.innerHTML = '<div class="p-empty">' + escHtml(e.message || '失敗しました') + '</div>';
   }
+}
+// ── 「ここからどう進める？」：1つの考えから、次に調べる・試すことを出す ──
+let lastNext = null;
+const NS_STOP = new Set(['今現状', '現状', 'こと', 'もの', 'ため', 'それ', 'これ', 'どう', 'いう', 'など', 'よう', 'ところ', '場合', '自分', '今回', '必要', 'とき', '時']);
+function kwList(text) {
+  const re = /[一-龥々ァ-ヴーA-Za-z0-9][一-龥々ァ-ヴーA-Za-z0-9\-_.]*/g, cnt = {}, ord = []; let m;
+  while ((m = re.exec(String(text || '')))) { const w = m[0]; if (w.length < 2 || NS_STOP.has(w) || /^[0-9.\-_]+$/.test(w)) continue; if (!(w in cnt)) { cnt[w] = 0; ord.push(w); } cnt[w]++; }
+  return ord.sort((a, b) => (cnt[b] * 3 + b.length) - (cnt[a] * 3 + a.length)).slice(0, 5);
+}
+function localFrames(role, kw) {
+  const k = kw[0] || 'これ';
+  const f = [
+    { role: 'question', title: 'なぜ？ 原因の仮説を3つ', how: '「' + k + '」はなぜ起きる？ 思いつく原因を、短く3つ書き出す。当たっていなくてよい。' },
+    { role: 'material', title: '信頼できる情報を3件', how: '「' + k + '」について、公式・公的機関・論文など、書いた人が分かる情報を3件探し、分かったことを1行ずつ書く。' },
+    { role: 'thought', title: '小さく試す', how: '一番ありそうな仮説をひとつ選び、1つだけ変えて結果を見る小さな実験にする。' },
+    { role: 'next', title: '使い道を1つ決める', how: '分かったことを、自分のアプリ・仕事・暮らしのどこに使えるか、1つだけ決める。' }
+  ];
+  if (role === 'oddity') f.unshift({ role: 'question', title: 'いつ・何が変わった？', how: 'いつから？ その直前に何を変えた？ いつもとの違いを、時刻・場所・操作で書く。' });
+  return f.slice(0, 4);
+}
+function nextSecHint(text) {
+  if (!/流出|漏洩|漏えい|個人情報|パスワード|暗号|セキュリティ/.test(text)) return '';
+  return '<div class="ns-h">🧱 考える足場（守る側から見た整理）</div><div class="ns-note">' +
+    '<b>盗まれる入口は、だいたい4つ</b><br>① だまして入力させる（偽サイト・フィッシング）<br>② 端末に入り込む（情報を盗むウイルス）<br>③ 預け先が破られる（サーバーへの侵入・設定ミス）<br>④ 同じパスワードの使い回しで連鎖する<br><br>' +
+    '<b>暗号アプリが効くのは</b> ③（預け先が破られても、中身は読めない暗号文）と、端末をなくしたとき。<br><b>効かないのは</b> ①②（入力中・表示中に盗まれる）。<br>→ だから「どの入口を、どの仕組みで塞ぐか」を1つずつ調べるのが次の一手です。</div>';
+}
+function nextPrompt(n, role, memo, lines, cands) {
+  return 'あなたは、ユーザーが「ここから何を調べればいいか分からない」ときに、道を示す助手です。ユーザーは個人開発者で、暗号化メモやフローチャートなどのアプリを自分で作っています。専門用語は使わず、やさしい日本語で、具体的に答えてください。\n\n【いまの考え】\n役割: ' + roleInfo(role)[1] + '\n題名: ' + (n.label || '') + '\n内容: ' + memo.slice(0, 600) +
+    (lines.length ? '\n\n【ここまでの道筋】\n' + lines.join('\n') : '') +
+    '\n\n【ユーザーの過去のメモ候補】\n' + (cands.length ? cands.map(c => c.alias + ' 「' + c.label.slice(0, 40) + '」' + (c.memo ? ' ' + c.memo.replace(/\s+/g, ' ').slice(0, 50) : '')).join('\n') : '（なし）') +
+    '\n\n次を出してください。\n1. understand: この考えを1〜2文で言い直す。\n2. question: いま一番大事な問いを1文で。\n3. steps: 次にやること4つ。各: role(question か material か next), title(30字以内), how(何をどう調べる・試すか。1〜2文。検索に使う言葉も含める)。\n4. searches: 検索に使う言葉を3つ。\n5. apply: この考えを、ユーザー自身のアプリ（暗号化・メモ・フロー等）にどう活かせるか1〜2文。無理なら空文字。\n6. connections: 過去メモ候補のうち本当に関係あるものだけ。各: id(記号), reason(一言)。\n7. tags: 短い名詞タグ3〜5個。\n\n出力はJSONのみ（前置き・コードブロック不要）: {"understand":"","question":"","steps":[{"role":"","title":"","how":""}],"searches":[],"apply":"","connections":[{"id":"","reason":""}],"tags":[]}';
+}
+async function openNextSheet() {
+  const g = currentGraph(), id = editingNodeId, n = g && g.nodes[id]; if (!n) return;
+  const label = document.getElementById('nLabel').value.trim(), memo = document.getElementById('nMemo').value.trim();
+  const text = (label + ' ' + memo).trim();
+  if (!text) { showToast('先に題名かメモを書いてください'); return; }
+  const role = editingRole, kw = kwList(text);
+  lastNext = { nodeId: id, kw, frames: localFrames(role, kw), steps: [], tags: [], label, memo };
+  const qs = [kw[0] ? kw[0] + ' 仕組み' : '', kw[0] ? kw[0] + ' 原因 対策' : '', kw[0] ? kw[0] + ' 事例' : '', kw[1] ? kw[0] + ' ' + kw[1] : ''].filter(Boolean);
+  const search = q => '<a class="ns-search" target="_blank" rel="noopener" href="https://www.google.com/search?q=' + encodeURIComponent(q) + '">🔍 ' + escHtml(q) + '</a>';
+  let h = '<div class="ns-h">🔍 まず、これを検索してみる</div>' + (qs.length ? qs.map(search).join('') : '<div class="ns-note">題名かメモに言葉を足すと、検索の言葉を出せます。</div>') +
+    '<div class="ns-h">🧭 考えを前に進める4つの問い（足すと次の一手になります）</div>' +
+    lastNext.frames.map((f, i) => '<div class="ap-card"><div class="ap-title">' + escHtml(f.title) + '</div><div class="ap-text">' + escHtml(f.how) + '</div><button class="ap-go" data-ns="f' + i + '">＋ これを足す</button></div>').join('') +
+    nextSecHint(text) +
+    '<div class="ns-h">🤖 AI の提案</div><div id="nsAI" class="ns-note">AI が考えています…（数秒かかります）</div>';
+  document.getElementById('appSheetBody').innerHTML = '<button class="next-btn" data-nssend="1" style="margin:0 0 4px">📝 この内容にタグを付けて quick-ref に書く</button>' + h;
+  document.getElementById('appSheetTitle').textContent = '💡 ここからどう進める？';
+  openSheet('appSheet');
+  const comp = pathAnalyze(g).comps.find(c => c.members.includes(id));
+  const lines = comp ? comp.order.map((o, i) => { const x = g.nodes[o.id]; return (i + 1) + '. [' + roleInfo(nodeRole(x))[1] + '] ' + (x.label || '') + (x.memo ? '：' + x.memo.replace(/\s+/g, ' ').slice(0, 100) : ''); }) : [];
+  const cands = findRelatedPast([id], text, new Set(n.tags || []), 6).map((x, i) => Object.assign(x, { alias: 'm' + (i + 1) }));
+  const box = () => document.getElementById('nsAI');
+  try {
+    const raw = await callAI(nextPrompt(Object.assign({}, n, { label }), role, memo, lines, cands));
+    const m = raw.replace(/```json|```/g, '').match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('AIの返答を読み取れませんでした。もう一度お試しください');
+    const r = JSON.parse(m[0]);
+    if (!lastNext || lastNext.nodeId !== id || !box()) return;
+    lastNext.ai = { understand: r.understand || '', question: r.question || '', apply: r.apply || '', searches: (r.searches || []).slice(0, 3).map(String) };
+    lastNext.steps = (r.steps || []).slice(0, 4);
+    lastNext.tags = (r.tags || []).map(String).slice(0, 5);
+    lastNext.cands = cands;
+    const byAlias = {}; cands.forEach(x => { byAlias[x.alias] = x; });
+    const chip = x => '<span class="ap-chip" data-rel="' + x.gid + '|' + x.id + '">' + escHtml(x.label.slice(0, 24)) + '</span>';
+    let a = '';
+    if (r.understand) a += '<div class="ns-note">' + escHtml(r.understand) + '</div>';
+    if (r.question) a += '<div class="ns-h">❓ いま一番大事な問い</div><div class="ns-q">' + escHtml(r.question) + '</div>';
+    a += '<div class="ns-h">次にやること</div>' + lastNext.steps.map((s, i) => '<div class="ap-card"><div class="ap-title">' + escHtml(s.title || '') + '</div><div class="ap-text">' + escHtml(s.how || '') + '</div><button class="ap-go" data-ns="a' + i + '">＋ これを足す</button></div>').join('');
+    if ((r.searches || []).length) a += '<div class="ns-h">🔍 AIがすすめる検索の言葉</div>' + r.searches.slice(0, 3).map(q => search(String(q))).join('');
+    if (r.apply) a += '<div class="ns-h">🛠 自分のアプリに活かすなら</div><div class="ns-note">' + escHtml(r.apply) + '</div>';
+    const conns = (r.connections || []).map(k => ({ x: byAlias[k.id], reason: k.reason })).filter(k => k.x);
+    if (conns.length) a += '<div class="ns-h">🔗 今までのメモとの関係</div>' + conns.map(k => '<div class="ap-card">' + chip(k.x) + '<div class="ap-text">' + escHtml(k.reason || '') + '</div></div>').join('');
+    box().innerHTML = a;
+  } catch (e) {
+    if (box()) box().innerHTML = escHtml(e.message || '失敗しました') + '<br>（AIを使わなくても、上の検索と4つの問いは使えます）';
+  }
+}
+function composePlanText() {
+  const L = lastNext, out = [];
+  const lb = String(L.label || '').replace(/…$/, ''); out.push('【もとの考え】' + (L.memo && L.memo.indexOf(lb) === 0 ? L.memo : (L.label || '') + (L.memo ? '\n' + L.memo : '')));
+  const qs = L.kw[0] ? [L.kw[0] + ' 仕組み', L.kw[0] + ' 原因 対策', L.kw[0] + ' 事例'] : [];
+  const ss = (L.ai && L.ai.searches && L.ai.searches.length) ? L.ai.searches : qs;
+  if (ss.length) out.push('【検索する言葉】' + ss.join(' ／ '));
+  if (L.ai && L.ai.question) out.push('【いま一番大事な問い】' + L.ai.question);
+  const steps = (L.steps && L.steps.length) ? L.steps : L.frames;
+  out.push('【次にやること】\n' + steps.map((s, i) => (i + 1) + '. ' + (s.title || '') + '：' + (s.how || '')).join('\n'));
+  if (L.ai && L.ai.apply) out.push('【自分のアプリに活かすなら】' + L.ai.apply);
+  const hint = nextSecHint(L.label + ' ' + L.memo);
+  if (hint) out.push('【考える足場】盗まれる入口は ①だまして入力させる ②端末に入り込む ③預け先が破られる ④パスワードの使い回し。暗号アプリが効くのは③と端末の紛失。①②には効かない。');
+  return out.join('\n\n');
+}
+function planTags() {
+  const L = lastNext, t = [...L.kw.slice(0, 3), ...(L.tags || []), '次の一手', '調べる計画'];
+  return [...new Set(t.map(x => String(x).replace(/\s+/g, '').slice(0, 16)).filter(Boolean))].slice(0, 8);
+}
+async function sendPlanToQuickRef(btn) {
+  const g = currentGraph(); if (!g || !lastNext) return;
+  const n = g.nodes[lastNext.nodeId]; if (!n) return;
+  const text = composePlanText(), tags = planTags();
+  const ep = (localStorage.getItem('qr_sync_endpoint') || '').trim().replace(/\/+$/, ''), tk = (localStorage.getItem('qr_sync_token') || '').trim();
+  if (!ep || !tk) {
+    try { await navigator.clipboard.writeText(text + '\n\nタグ: ' + tags.map(x => '#' + x).join(' ')); showToast('同期の設定が無いので、コピーしました。quick-ref に貼り付けてください'); }
+    catch (e) { showToast('quick-ref の同期設定が未設定です'); }
+    return;
+  }
+  const now = Date.now(), title = ('調べる計画：' + (lastNext.label || smartTitle(lastNext.memo, ''))).slice(0, 40);
+  const rec = { id: 'ns_' + lastNext.nodeId, kind: 'plan', title, decided: text.slice(0, 3000), next: String(((lastNext.steps[0] || lastNext.frames[0]) || {}).title || '').slice(0, 120), flow: '', steps: 0, srcNoteId: n.qrItemId || '', graph: g.name || '', tags, sentAt: now };
+  const list = [rec].concat(loadOutThoughts().filter(t => t.id !== rec.id)).slice(0, 30);
+  btn.disabled = true; btn.textContent = '送っています…';
+  try {
+    const res = await fetch(ep + '/sync/flow-mind-out', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk }, body: JSON.stringify({ data: { version: 1, thoughts: list } }) });
+    if (!res.ok) throw new Error('PUT失敗 (' + res.status + ')');
+    try { localStorage.setItem(FM_OUT_KEY, JSON.stringify(list)); } catch (_) {}
+    btn.textContent = '✓ 送りました（タグ：' + tags.join('、') + '）'; showToast('quick-ref の「まとまり」画面で「メモにする」を押すと、メモになります');
+  } catch (e) { btn.disabled = false; btn.textContent = '📝 この内容にタグを付けて quick-ref に書く'; showToast('送れませんでした：' + ((e && e.message) || e)); }
+}
+function addNextNode(btn, key) {
+  const g = currentGraph(); if (!g || !lastNext) return;
+  const src = g.nodes[lastNext.nodeId]; if (!src) return;
+  const item = key[0] === 'f' ? lastNext.frames[+key.slice(1)] : lastNext.steps[+key.slice(1)];
+  if (!item) return;
+  const role = ROLES.some(r => r[0] === item.role) ? item.role : 'question';
+  const id = makePathNode(role, 'new', String(item.title || '次の一手').slice(0, 40), src.x, (src.y || 0) + 160);
+  g.nodes[id].memo = item.how || '';
+  g.nodes[id].tags = [...new Set([...(lastNext.tags || []), ...extractTagsFromText(g.nodes[id].label, g.nodes[id].memo)])];
+  g.edges.push({ from: lastNext.nodeId, to: id, weight: 1, conductance: 1.0, src: 'path' });
+  applyFlowchartLayout(); saveGraphs(); updateScoreBar();
+  btn.textContent = '✓ 足しました'; btn.disabled = true; btn.style.opacity = '.6';
 }
 function openRelatedNode(ref) {
   const [gid, id] = ref.split('|');
@@ -2455,7 +2597,9 @@ function wirePathView() {
   document.getElementById('appSheetClose').addEventListener('click', () => closeSheet('appSheet'));
   document.getElementById('appSheetBody').addEventListener('click', e => {
     const r = e.target.closest('[data-rel]'); if (r) { openRelatedNode(r.dataset.rel); return; }
-    const go = e.target.closest('[data-go]'); if (go) addAppliedNode(+go.dataset.go);
+    const go = e.target.closest('[data-go]'); if (go) { addAppliedNode(+go.dataset.go); return; }
+    const ns = e.target.closest('[data-ns]'); if (ns) { addNextNode(ns, ns.dataset.ns); return; }
+    const nsend = e.target.closest('[data-nssend]'); if (nsend) { sendPlanToQuickRef(nsend); return; }
   });
   document.getElementById('pathQuickBtn').addEventListener('click', () => openQuickCapture());
   document.getElementById('pathMicBtn').addEventListener('click', () => {
@@ -2877,16 +3021,17 @@ function hookLabel(n) {
   const c = (n && n.charge) || 0, f = ((n && n.fireHistory) || []).length;
   return (c >= 0.6 || f >= 10) ? '強' : (c >= 0.3 || f >= 4) ? '中' : (c > 0.03 || f >= 1) ? '弱' : 'なし';
 }
-let editingRole = 'thought', editingStatus = 'thinking';
+let editingRole = 'thought', editingStatus = 'thinking', roleOpen = false, statusOpen = false;
 function renderRoleStatus(n) {
-  editingRole = nodeRole(n); editingStatus = nodeStatus(n);
+  editingRole = nodeRole(n); editingStatus = nodeStatus(n); roleOpen = false; statusOpen = false;
   const draw = () => {
-    const mk = (list, cur, key) => list.map(x => `<button type="button" class="opt-row${x[0] === cur ? ' active' : ''}" data-${key}="${x[0]}"><span class="oi">${x[2]}</span><span><b>${x[1]}</b><small>${escHtml((key === 'role' ? ROLE_DESC : STATUS_DESC)[x[0]] || '')}</small></span></button>`).join('');
-    document.getElementById('roleRow').innerHTML = mk(ROLES, editingRole, 'role');
-    document.getElementById('statusRow').innerHTML = mk(STATUSES, editingStatus, 'status');
+    const row = (x, key, active, tail) => `<button type="button" class="opt-row${active ? ' active' : ''}" data-${key}="${x[0]}"><span class="oi">${x[2]}</span><span style="flex:1"><b>${x[1]}</b><small>${escHtml((/role$/.test(key) ? ROLE_DESC : STATUS_DESC)[x[0]] || '')}</small></span>${tail || ''}</button>`;
+    const mk = (list, cur, key, open) => open ? list.map(x => row(x, key, x[0] === cur)).join('') : row(list.find(x => x[0] === cur) || list[0], 'open-' + key, true, '<span style="opacity:.75;font-size:13px;white-space:nowrap">変える ▾</span>');
+    document.getElementById('roleRow').innerHTML = mk(ROLES, editingRole, 'role', roleOpen);
+    document.getElementById('statusRow').innerHTML = mk(STATUSES, editingStatus, 'status', statusOpen);
   };
   draw();
-  const wire = id => { const el = document.getElementById(id); el.onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.role) editingRole = b.dataset.role; if (b.dataset.status) editingStatus = b.dataset.status; draw(); }; };
+  const wire = id => { const el = document.getElementById(id); el.onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.openRole) roleOpen = true; if (b.dataset.openStatus) statusOpen = true; if (b.dataset.role) { editingRole = b.dataset.role; roleOpen = false; } if (b.dataset.status) { editingStatus = b.dataset.status; statusOpen = false; } draw(); }; };
   wire('roleRow'); wire('statusRow');
 }
 // 塊から先（線でつながった先）にある「決定」「次の一手」を、返すときの下書きにする
@@ -3452,11 +3597,11 @@ function openSheet(id) {
 }
 function closeSheet(id) {
   document.getElementById(id).classList.remove('open');
-  document.getElementById('overlay').classList.remove('open');
+  if (!document.querySelector('.sheet.open')) document.getElementById('overlay').classList.remove('open');
 }
 function closeAllSheets() {
-  ['nodeSheet','aiSheet','graphsSheet','backSheet','appSheet'].forEach(id => {
-    document.getElementById(id).classList.remove('open');
+  ['nodeSheet','aiSheet','graphsSheet','backSheet','appSheet','uiSheet'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.classList.remove('open');
   });
   document.getElementById('overlay').classList.remove('open');
 }
@@ -4821,6 +4966,7 @@ function wireOnboarding() {
   document.getElementById('onboardingSkip').addEventListener('click', closeOnboardingAndMark);
   document.getElementById('helpBtn').addEventListener('click', openOnboarding);
   document.getElementById('dailyNoteBtn').addEventListener('click', openOrCreateDailyNode);
+  document.getElementById('nodeNextBtn').addEventListener('click', openNextSheet);
   document.getElementById('zmMinus').addEventListener('click', () => pathZoomStep(-1));
   document.getElementById('zmPlus').addEventListener('click', () => pathZoomStep(1));
 }
@@ -5003,6 +5149,77 @@ if ("serviceWorker" in navigator) {
 }
 
 init();
+</script>
+<script>
+/* 文字の設定（quick-ref と flow-mind で共通。同じ localStorage キーを使う） */
+(function () {
+  var SC = [0.9, 1, 1.25, 1.5, 1.8, 2.2], SCN = ['小', '標準', '大', '特大', '最大', '特々大'];
+  var FONTS = [
+    ['sys', '標準（iPhoneの字）', '-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif'],
+    ['kaku', 'くっきりゴシック', '"Hiragino Kaku Gothic ProN","Hiragino Sans",sans-serif'],
+    ['maru', 'やわらか丸ゴシック', '"Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif'],
+    ['min', '明朝（本のような字）', '"Hiragino Mincho ProN","Yu Mincho",serif'],
+    ['mono', '等幅（文字が揃う）', 'ui-monospace,Menlo,"Hiragino Sans",monospace']
+  ];
+  function get(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }
+  function set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function si() { var i = parseInt(get('ui_scale_i', '1'), 10); return (i >= 0 && i < SC.length) ? i : 1; }
+  function apply() {
+    var f = FONTS.filter(function (x) { return x[0] === get('ui_font', 'sys'); })[0] || FONTS[0];
+    var bold = get('ui_bold', '0') === '1';
+    document.documentElement.style.setProperty('--uiz', String(SC[si()]));
+    var st = document.getElementById('uiPrefStyle');
+    if (!st) { st = document.createElement('style'); st.id = 'uiPrefStyle'; document.head.appendChild(st); }
+    var css = 'html,body,button,input,textarea,select{font-family:' + f[2] + ' !important}' +
+      (bold ? 'body,input,textarea{font-weight:600}' : '') +
+      '.sheet-body>*{zoom:var(--uiz,1)}#uiSheet .sheet-body>*{zoom:1 !important}#uiSample{zoom:var(--uiz,1)}';
+    if (document.getElementById('cardList')) css += '#cardList{zoom:var(--uiz,1)}';
+    st.textContent = css;
+  }
+  function hook() { try { if (typeof window.__uiHook === 'function') window.__uiHook(); } catch (e) {} }
+  function step(d) { set('ui_scale_i', String(Math.max(0, Math.min(SC.length - 1, si() + d)))); apply(); hook(); drawSheet(); }
+  function build() {
+    if (document.getElementById('uiSheet')) return;
+    var s = document.createElement('div'); s.className = 'sheet'; s.id = 'uiSheet'; s.style.zIndex = '60';
+    s.innerHTML = '<div class="sheet-handle"></div><div class="sheet-header"><span></span><h2>🔤 文字の設定</h2><button type="button" id="uiClose">閉じる</button></div>' +
+      '<div class="sheet-body"><div id="uiBody"></div></div>';
+    document.body.appendChild(s);
+    document.getElementById('uiClose').addEventListener('click', close);
+    document.getElementById('uiBody').addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.sz != null) { set('ui_scale_i', b.dataset.sz); apply(); hook(); }
+      else if (b.dataset.fn) { set('ui_font', b.dataset.fn); apply(); hook(); }
+      else if (b.dataset.bold) { set('ui_bold', get('ui_bold', '0') === '1' ? '0' : '1'); apply(); hook(); }
+      else if (b.dataset.reset) { set('ui_scale_i', '1'); set('ui_font', 'sys'); set('ui_bold', '0'); apply(); hook(); }
+      drawSheet();
+    });
+    var ov = document.getElementById('overlay');
+    if (ov) ov.addEventListener('click', close);
+  }
+  var BTN = 'border:1px solid rgba(127,127,127,.55);border-radius:12px;padding:12px 6px;font-size:16px;background:rgba(127,127,127,.12);color:inherit;cursor:pointer;';
+  var ON = 'outline:3px solid #4A9EFF;font-weight:800;';
+  function drawSheet() {
+    var el = document.getElementById('uiBody'); if (!el) return;
+    var cur = si(), fn = get('ui_font', 'sys'), bold = get('ui_bold', '0') === '1';
+    var h = '<div id="uiSample" style="border:1px solid rgba(127,127,127,.5);border-radius:12px;padding:12px;margin-bottom:16px;line-height:1.7">いつもと違う → なぜ？ → 調べた → 分かった。<br>ABC abc 123 / 場所：渋谷　期限：10/15</div>';
+    h += '<div style="font-weight:700;margin:6px 0">文字の大きさ</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">';
+    SCN.forEach(function (n, i) { h += '<button type="button" data-sz="' + i + '" style="' + BTN + (i === cur ? ON : '') + '">' + n + '</button>'; });
+    h += '</div><div style="font-weight:700;margin:16px 0 6px">字の形</div><div style="display:flex;flex-direction:column;gap:8px">';
+    FONTS.forEach(function (f) { h += '<button type="button" data-fn="' + f[0] + '" style="' + BTN + 'text-align:left;padding:12px 14px;font-family:' + f[2].replace(/"/g, "'") + ' !important;' + (f[0] === fn ? ON : '') + '">' + f[1] + '　あいうアイウ漢字</button>'; });
+    h += '</div><div style="margin-top:14px"><button type="button" data-bold="1" style="' + BTN + 'width:100%;' + (bold ? ON : '') + '">' + (bold ? '✓ ' : '') + '太めの字にする</button></div>';
+    h += '<div style="margin-top:10px"><button type="button" data-reset="1" style="' + BTN + 'width:100%;opacity:.8">もとに戻す</button></div>';
+    h += '<div style="margin:14px 0 4px;font-size:13px;opacity:.75;line-height:1.6">この設定は quick-ref と flow-mind で共通です。画面を指で広げて拡大もできます。</div>';
+    el.innerHTML = h;
+  }
+  function open() { build(); drawSheet(); document.getElementById('uiSheet').classList.add('open'); var ov = document.getElementById('overlay'); if (ov) ov.classList.add('open'); }
+  function close() {
+    var s = document.getElementById('uiSheet'); if (!s) return; s.classList.remove('open');
+    var ov = document.getElementById('overlay'); if (ov && !document.querySelector('.sheet.open')) ov.classList.remove('open');
+  }
+  window.UIPrefs = { apply: apply, step: step, open: open, scale: function () { return SC[si()]; } };
+  apply();
+  var b = document.getElementById('uiPrefBtn'); if (b) b.addEventListener('click', open);
+})();
 </script>
 </body>
 </html>

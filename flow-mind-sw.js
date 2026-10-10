@@ -4,7 +4,7 @@
 //  - 画像・マニフェストなど変わらないものだけキャッシュ優先
 //  - インストールは1ファイル失敗しても止まらない(addAllは全滅するため個別add)
 //  - 外部通信(同期Worker等)は一切さわらない
-const CACHE_NAME = 'flow-mind-shell-v5';
+const CACHE_NAME = 'flow-mind-shell-v6';
 
 const APP_SHELL = [
   './index.html',
