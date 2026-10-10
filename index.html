@@ -201,6 +201,17 @@ body:not(.pathMode) #pathView, body:not(.pathMode) #pathBar { display:none; }
 .p-st.on.drop { color:var(--text-dim); border-color:var(--text-dim); background:rgba(255,255,255,0.06); }
 body.pathMode #quickCaptureFab, body.pathMode #analyzeBtn, body.pathMode #dailyNoteBtn { display:none !important; }
 #pathBar .pbtn.main { flex:1; background:rgba(74,158,255,0.14); border-color:rgba(74,158,255,0.55); color:var(--blue); font-size:15px; }
+body:not(.pathMode) .hdr-btn.zm{display:none;}
+.hdr-btn.zm{font-size:15px;font-weight:800;padding:6px 10px;}
+.p-acts{display:flex;flex-wrap:wrap;gap:8px;}
+.p-act{flex:1 1 auto;}
+.p-help{font-size:13px;line-height:1.6;color:var(--text-mid);margin:2px 0 8px;}
+.opt-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+.opt-row{display:flex;align-items:center;gap:10px;text-align:left;padding:10px 12px;border-radius:12px;border:1px solid var(--border2);background:rgba(255,255,255,0.05);color:var(--text);font-size:15px;cursor:pointer;}
+.opt-row b{display:block;font-size:15px;}
+.opt-row small{display:block;font-size:12.5px;color:var(--text-mid);margin-top:2px;line-height:1.4;}
+.opt-row.active{border-color:var(--gold);background:var(--gold-dim);}
+.opt-row .oi{font-size:20px;flex:0 0 auto;}
 .p-zoom { margin-left:auto; display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-mid); }
 .p-zb { background:rgba(255,255,255,0.08); border:1px solid var(--border2); color:var(--text); border-radius:10px; font-size:15px; font-weight:800; padding:6px 12px; cursor:pointer; }
 #pathBar .pbtn { zoom:var(--pbz,1); }
@@ -466,6 +477,8 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 <header>
   <span class="app-title">⬡ flow-mind</span>
   <div class="header-spacer"></div>
+  <button class="hdr-btn zm" id="zmMinus" title="文字を小さく">A−</button>
+  <button class="hdr-btn zm" id="zmPlus" title="文字を大きく">A＋</button>
   <button class="hdr-btn" id="graphsBtn" title="グラフ一覧">📂<span class="inbox-badge" id="inboxBadge">0</span></button>
   <button class="hdr-btn" id="searchBtn" title="全グラフ横断検索">🔍</button>
   <button class="hdr-btn" id="syncBtn" title="クラウド同期">☁️</button>
@@ -520,11 +533,22 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
     <button id="nodeSheetSave" style="color:var(--gold);font-weight:800;">保存</button>
   </div>
   <div class="sheet-body">
+    <label class="field-label" style="margin-top:0">題名（短く）</label>
+    <input type="text" id="nLabel" placeholder="アイデア・概念を入力" maxlength="40" list="nLabelSuggestions">
+    <datalist id="nLabelSuggestions"></datalist>
+
+    <label class="field-label" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>メモ</span>
+      <button type="button" id="nMemoExtractBtn" style="background:none;border:none;color:var(--gold);font-size:12px;font-weight:700;padding:2px 4px;cursor:pointer;margin-left:auto;">✂ 選択を抜き出す</button>
+      <button type="button" id="nMemoCopyBtn" style="background:none;border:none;color:var(--blue);font-size:12px;font-weight:600;padding:2px 4px;cursor:pointer;">📋 コピー</button>
+    </label>
+    <textarea id="nMemo" placeholder="補足・根拠など（任意）"></textarea>
+
+    <label class="field-label" style="margin-top:18px">① これは何ですか？（ひとつ選ぶ）</label>
+    <div id="roleRow" class="opt-list"></div>
+    <label class="field-label" style="margin-top:0">② いまの状態は？</label>
+    <div id="statusRow" class="opt-list"></div>
     <div id="nodeAbout" style="margin:0 0 14px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.05);font-size:13px;line-height:1.7;"></div>
-    <label class="field-label" style="margin-top:0">役割（この考えを何として使うか）</label>
-    <div id="roleRow" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
-    <label class="field-label" style="margin-top:0">状態</label>
-    <div id="statusRow" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px"></div>
     <div id="clusterOps" style="display:none;margin:0 0 14px;padding:12px;border:1px solid rgba(74,158,255,0.35);border-radius:10px;">
       <div style="font-weight:700;margin-bottom:4px;">🧭 まとまり要約の操作</div>
       <div id="clusterOpsState" style="font-size:12px;color:var(--text-dim);margin-bottom:8px;"></div>
@@ -542,16 +566,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
       <button type="button" class="inbox-banner-btn" id="inboxBannerBtn">取り込み完了</button>
     </div>
 
-    <label class="field-label">ラベル</label>
-    <input type="text" id="nLabel" placeholder="アイデア・概念を入力" maxlength="40" list="nLabelSuggestions">
-    <datalist id="nLabelSuggestions"></datalist>
 
-    <label class="field-label" style="display:flex;align-items:center;justify-content:space-between;">
-      <span>メモ</span>
-      <button type="button" id="nMemoExtractBtn" style="background:none;border:none;color:var(--gold);font-size:12px;font-weight:700;padding:2px 4px;cursor:pointer;margin-left:auto;">✂ 選択を抜き出す</button>
-      <button type="button" id="nMemoCopyBtn" style="background:none;border:none;color:var(--blue);font-size:12px;font-weight:600;padding:2px 4px;cursor:pointer;">📋 コピー</button>
-    </label>
-    <textarea id="nMemo" placeholder="補足・根拠など（任意）"></textarea>
 
     <label class="field-label" style="margin-top:20px;">タグ</label>
     <div id="nodeTagsWrap" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
@@ -2124,6 +2139,27 @@ function pathAnalyze(g) {
   return { comps, unresolved };
 }
 
+function mdStrip(t) { const f = x => String(x || '').replace(/^\s*(#{1,6}|[-*•>]+|\d+[.)、]|[①-⑩])\s*/, '').replace(/\*\*|__|`/g, '').trim(); return f(f(t)); }
+function isFillerLine(l) {
+  const t = mdStrip(l);
+  if (!t) return true;
+  if (/^(はい|了解|承知|わかりました|いくつか|以下|それでは|では|まず|ご質問|ありがとう)/.test(t) && t.length <= 30) return true;
+  if (t.length <= 24 && /(します|ましょう|ください|です)[。:：]?$/.test(t) && /(整理|まとめ|説明|紹介|確認|解説)/.test(t)) return true;
+  return false;
+}
+function smartTitle(memo, label) {
+  const lines = String(memo || '').split(/\n/).map(x => x.trim()).filter(Boolean);
+  let pick = lines.find(l => /^#{1,6}\s/.test(l) && !isFillerLine(l));
+  if (!pick) pick = lines.find(l => !isFillerLine(l));
+  if (!pick) pick = lines[0] || label || '';
+  pick = mdStrip(pick).replace(/[。：:]+$/, '');
+  return pick.length > 22 ? pick.slice(0, 22) + '…' : (pick || label || '記録');
+}
+function isDefaultLabel(l) { const t = String(l || '').trim(); return !t || /^(新しいノード|記録|無題|\?)$/.test(t) || isFillerLine(t); }
+function dispLabel(n) { return isDefaultLabel(n.label) && n.memo ? smartTitle(n.memo, n.label) : (n.label || '?'); }
+function adoptSmartTitle(n) { if (n && isDefaultLabel(n.label) && n.memo) n.label = smartTitle(n.memo, n.label); }
+const ROLE_DESC = { oddity: 'いつもと違う、おかしいと感じたこと', question: '「なぜ？」知りたいこと・調べたいこと', material: '調べて分かった事実／試した結果', thought: '自分で分かったこと・考え・結論', option: '選べる候補のひとつ', decision: '「これにする」と決めたこと', next: '次にやること・次に調べること' };
+const STATUS_DESC = { new: 'まだ手をつけていない', thinking: '考え中・調べ中', chosen: '採用した・答えが出た', dropped: '使わないことにした' };
 function pathCardHtml(g, item, unresolved) {
   const n = g.nodes[item.id], role = nodeRole(n), st = nodeStatus(n), ri = roleInfo(role), si = statusInfo(st);
   const un = unresolved.has(item.id);
@@ -2134,7 +2170,7 @@ function pathCardHtml(g, item, unresolved) {
   const pill = un ? '<span class="p-pill unres">未解決</span>' : st === 'chosen' ? '<span class="p-pill chosen">' + si[2] + ' ' + si[1] + '</span>' : '<span class="p-pill">' + si[2] + ' ' + si[1] + '</span>';
   let h = '<div class="p-step" style="margin-left:' + (8 + item.depth * 14) + 'px"><div class="p-card ' + cls + '" data-open="' + item.id + '">' +
     '<div class="p-ico" style="color:' + (ROLE_COLORS[role] || '#fff') + '">' + ri[2] + '</div><div class="p-body">' +
-    '<div class="p-label">' + escHtml(n.label || '?') + '</div>' + (memo ? '<div class="p-memo">' + escHtml(memo) + '</div>' : '') +
+    '<div class="p-label">' + escHtml(dispLabel(n)) + '</div>' + (memo ? '<div class="p-memo">' + escHtml(memo) + '</div>' : '') +
     '<div class="p-meta"><span>' + ri[1] + '</span>' + pill + (d ? '<span>' + d + '</span>' : '') + '<button class="p-st' + (st === 'chosen' ? ' on' : '') + '" data-st="' + item.id + '|chosen">◎ 選ぶ</button><button class="p-st drop' + (st === 'dropped' ? ' on' : '') + '" data-st="' + item.id + '|dropped">✕ 見送る</button>' +
     '<button class="p-del" data-del="' + item.id + '">削除</button></div>' +
     '</div></div>';
@@ -2149,7 +2185,7 @@ function pathChainHtml(g, c, unresolved, open) {
     return '<span class="p-dot ' + (unresolved.has(it.id) ? 'unres' : st) + '"></span>';
   }).join('');
   let h = '<div class="p-chain' + (c.unres.length ? ' unres' : '') + '"><div class="p-chead" data-toggle="' + c.key + '">' +
-    '<div class="pt">' + (c.unres.length ? '⚠️ ' : '') + escHtml(first.label || '?') + '</div>' +
+    '<div class="pt">' + (c.unres.length ? '⚠️ ' : '') + escHtml(dispLabel(first)) + '</div>' +
     '<div class="p-dots">' + dots + '</div><div class="pc">' + c.members.length + '個 ' + (open ? '▾' : '▸') + '</div></div>';
   if (open) h += '<div class="p-cbody">' + c.order.map(it => pathCardHtml(g, it, unresolved)).join('') +
     (c.members.length > 1 ? '<button class="p-ai" data-app="' + c.key + '">💡 応用を考える（過去のメモとの関係も探す）</button>' : '') + '</div>';
@@ -2165,18 +2201,18 @@ function pathInboxHtml(g, n, picking, chains) {
   const memo = (n.memo || '').replace(/\s+/g, ' ').trim();
   const src = n.sourceApp ? '📥 ' + n.sourceApp : (n.kind === 'cluster-summary' ? '🧩 要約' : '✎ 自分で書いた');
   const d = n.updatedAt ? new Date(n.updatedAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-  let h = '<div class="p-inbox"><div data-open="' + n.id + '" style="cursor:pointer"><div class="p-label">' + escHtml(n.label || '?') + '</div>' +
+  let h = '<div class="p-inbox"><div data-open="' + n.id + '" style="cursor:pointer"><div class="p-label">' + escHtml(dispLabel(n)) + '</div>' +
     (memo && memo !== n.label ? '<div class="p-memo">' + escHtml(memo) + '</div>' : '') +
     '<div class="p-meta"><span>' + escHtml(src) + '</span>' + (d ? '<span>' + d + '</span>' : '') + '</div></div>' +
-    '<div class="p-acts"><button class="p-act main" data-pick="' + n.id + '">' + (picking ? '▾ つなぐ先を選ぶ' : 'つなぐ ▸') + '</button>' +
-    '<button class="p-act" data-newpath="' + n.id + '">新しい道筋</button><button class="p-act dim" data-pass="' + n.id + '">見送る</button></div>';
+    '<div class="p-acts"><button class="p-act main" data-pick="' + n.id + '">' + (picking ? '▾ どの話に足す？' : '① 今ある話に足す') + '</button>' +
+    '<button class="p-act" data-newpath="' + n.id + '">② 新しい話を始める</button><button class="p-act dim" data-pass="' + n.id + '">③ 今は使わない</button></div>';
   if (picking) {
-    h += '<div class="p-pick"><div class="p-pickh">どの道筋の続きにしますか？（その道筋の最後につながります）</div>';
-    if (!chains.length) h += '<div class="p-memo">つなげる道筋がまだありません。「新しい道筋」を押してください。</div>';
+    h += '<div class="p-pick"><div class="p-pickh">どの話の続きですか？ 選ぶと、その話の最後に足されます。</div>';
+    if (!chains.length) h += '<div class="p-memo">つなげる道筋がまだありません。「② 新しい話を始める」を押してください。</div>';
     chains.slice(0, 8).forEach(c => {
       const first = g.nodes[c.order[0].id], tail = g.nodes[c.tailId];
       h += '<button class="p-pickrow' + (c.unres.length ? ' hot' : '') + '" data-join="' + n.id + '|' + c.tailId + '">' + (c.unres.length ? '⚠️ ' : '') + escHtml(first.label || '?') +
-        '<small>' + c.members.length + '個 ／ 続き：' + escHtml((tail.label || '?').slice(0, 20)) + '（' + roleInfo(nodeRole(tail))[1] + '）</small></button>';
+        '<small>全' + c.members.length + '個。いまの最後は「' + escHtml(dispLabel(tail).slice(0, 18)) + '」（' + roleInfo(nodeRole(tail))[1] + '）。この次に足します</small></button>';
     });
     h += '</div>';
   }
@@ -2209,12 +2245,12 @@ function renderPathView() {
   const singles = comps.filter(c => !isChain(c) && !unorgIds.has(c.members[0])).sort(byLatest);
   comps.forEach(c => { c.tailId = pathTail(g, c); });
   const chainsForPick = hot.concat(rest);
-  let h = '<div class="p-sum"><span class="inb">📥 未整理 ' + unorg.length + '</span><span class="hot">⚠️ 未解決 ' + hot.length + '</span><span>🧭 道筋 ' + (hot.length + rest.length) + '</span><span class="p-zoom">文字 <button class="p-zb" data-z="-1">A−</button><button class="p-zb" data-z="1">A＋</button></span></div>';
+  let h = '';
   if (!unorg.length && !hot.length && !rest.length && !singles.length) {
     h += '<div class="p-empty">まだ何もありません。<br>メモは<b>quick-ref</b>で取ってください。ここに届いて、道筋に並べられます。<br>いま思いついたことは、下の<b>＋ 一言</b>で書けます。</div>';
   }
   if (unorg.length) {
-    h += '<div class="p-sec">📥 未整理のメモ（' + unorg.length + '）<span style="font-weight:400"> 一覧から選んで、道筋につなぎます</span></div>';
+    h += '<div class="p-sec">📥 未整理のメモ（' + unorg.length + '）</div><div class="p-help">1件ずつ、下の3つのボタンから選んで仕分けます。</div>';
     const lim = pathShowInbox ? unorg.length : 5;
     unorg.slice(0, lim).forEach(n => { h += pathInboxHtml(g, n, pathPick === n.id, chainsForPick); });
     if (unorg.length > lim) h += '<button class="p-more" data-more="inbox">残り ' + (unorg.length - lim) + ' 件を表示</button>';
@@ -2243,7 +2279,7 @@ function renderPathView() {
 }
 
 // ── 未整理メモの操作 ──
-function pathTouch(n) { n.updatedAt = Date.now(); if (n.triageStatus === 'inbox') n.triageStatus = 'done'; }
+function pathTouch(n) { adoptSmartTitle(n); n.updatedAt = Date.now(); if (n.triageStatus === 'inbox') n.triageStatus = 'done'; }
 function joinInboxTo(nodeId, tailId) {
   const g = currentGraph(); const n = g && g.nodes[nodeId], tail = g && g.nodes[tailId];
   if (!n || !tail) return;
@@ -2845,7 +2881,7 @@ let editingRole = 'thought', editingStatus = 'thinking';
 function renderRoleStatus(n) {
   editingRole = nodeRole(n); editingStatus = nodeStatus(n);
   const draw = () => {
-    const mk = (list, cur, key) => list.map(x => `<button type="button" class="tool-btn${x[0] === cur ? ' active' : ''}" data-${key}="${x[0]}" style="padding:7px 10px">${x[2]} ${x[1]}</button>`).join('');
+    const mk = (list, cur, key) => list.map(x => `<button type="button" class="opt-row${x[0] === cur ? ' active' : ''}" data-${key}="${x[0]}"><span class="oi">${x[2]}</span><span><b>${x[1]}</b><small>${escHtml((key === 'role' ? ROLE_DESC : STATUS_DESC)[x[0]] || '')}</small></span></button>`).join('');
     document.getElementById('roleRow').innerHTML = mk(ROLES, editingRole, 'role');
     document.getElementById('statusRow').innerHTML = mk(STATUSES, editingStatus, 'status');
   };
@@ -2898,7 +2934,7 @@ function openNodeSheet(id, isNew=false) {
   renderRoleStatus(n);
 
   document.getElementById('nodeSheetTitle').textContent = isNew ? '新規ノード' : 'ノード編集';
-  document.getElementById('nLabel').value = n.label || '';
+  document.getElementById('nLabel').value = (isDefaultLabel(n.label) && n.memo) ? smartTitle(n.memo, n.label) : (n.label || '');
   document.getElementById('nMemo').value = n.memo || '';
   updateLabelSuggestions(id);
   const slider = document.getElementById('nWeight');
@@ -3511,7 +3547,7 @@ function quickAddNode(text, opts) {
   const pos = { x: basePos.x + Math.cos(angle)*dist, y: basePos.y + Math.sin(angle)*dist };
 
   const id = uid();
-  const firstLine = trimmed.split('\n')[0].slice(0, 18);
+  const firstLine = smartTitle(trimmed, '').slice(0, 24);
   g.nodes[id] = {
     updatedAt: Date.now(),
     id,
@@ -4785,6 +4821,8 @@ function wireOnboarding() {
   document.getElementById('onboardingSkip').addEventListener('click', closeOnboardingAndMark);
   document.getElementById('helpBtn').addEventListener('click', openOnboarding);
   document.getElementById('dailyNoteBtn').addEventListener('click', openOrCreateDailyNode);
+  document.getElementById('zmMinus').addEventListener('click', () => pathZoomStep(-1));
+  document.getElementById('zmPlus').addEventListener('click', () => pathZoomStep(1));
 }
 
 // ═══════════════════════════════════
