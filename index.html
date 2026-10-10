@@ -2184,6 +2184,7 @@ function pathCardHtml(g, item, unresolved) {
     '<div class="p-label">' + escHtml(dispLabel(n)) + '</div>' + (memo ? '<div class="p-memo">' + escHtml(memo) + '</div>' : '') +
     '<div class="p-meta"><span>' + ri[1] + '</span>' + pill + (d ? '<span>' + d + '</span>' : '') + '<button class="p-st' + (st === 'chosen' ? ' on' : '') + '" data-st="' + item.id + '|chosen">◎ 選ぶ</button><button class="p-st drop' + (st === 'dropped' ? ' on' : '') + '" data-st="' + item.id + '|dropped">✕ 見送る</button>' +
     '<button class="p-del" data-del="' + item.id + '">削除</button></div>' +
+    '<div class="p-meta"><button class="p-st" data-nextfor="' + item.id + '">💡 次は？</button><button class="p-st" data-paste="' + item.id + '">📥 結果を貼る</button></div>' +
     '</div></div>';
   if (!item.kids && nx) h += '<button class="p-next" data-next="' + item.id + '">＋ ' + escHtml(nx.label) + '</button>';
   return h + '</div>';
@@ -2437,17 +2438,18 @@ function nextSecHint(text) {
     '<b>暗号アプリが効くのは</b> ③（預け先が破られても、中身は読めない暗号文）と、端末をなくしたとき。<br><b>効かないのは</b> ①②（入力中・表示中に盗まれる）。<br>→ だから「どの入口を、どの仕組みで塞ぐか」を1つずつ調べるのが次の一手です。</div>';
 }
 function nextPrompt(n, role, memo, lines, cands) {
-  return 'あなたは、ユーザーが「ここから何を調べればいいか分からない」ときに、道を示す助手です。ユーザーは個人開発者で、暗号化メモやフローチャートなどのアプリを自分で作っています。専門用語は使わず、やさしい日本語で、具体的に答えてください。\n\n【いまの考え】\n役割: ' + roleInfo(role)[1] + '\n題名: ' + (n.label || '') + '\n内容: ' + memo.slice(0, 600) +
+  return 'あなたは、ユーザーが「ここから何を調べればいいか分からない」ときに、道を示す助手です。ユーザーは個人開発者で、暗号化メモやフローチャートなどのアプリを自分で作っています。専門用語は使わず、やさしい日本語で、具体的に答えてください。\n\n【いまの考え】\n役割: ' + roleInfo(role)[1] + '\n題名: ' + (n.label || '') + '\n内容: ' + memo.slice(0, role === 'material' ? 1800 : 600) +
     (lines.length ? '\n\n【ここまでの道筋】\n' + lines.join('\n') : '') +
     '\n\n【ユーザーの過去のメモ候補】\n' + (cands.length ? cands.map(c => c.alias + ' 「' + c.label.slice(0, 40) + '」' + (c.memo ? ' ' + c.memo.replace(/\s+/g, ' ').slice(0, 50) : '')).join('\n') : '（なし）') +
-    '\n\n次を出してください。\n1. understand: この考えを1〜2文で言い直す。\n2. question: いま一番大事な問いを1文で。\n3. steps: 次にやること4つ。各: role(question か material か next), title(30字以内), how(何をどう調べる・試すか。1〜2文。検索に使う言葉も含める)。\n4. searches: 検索に使う言葉を3つ。\n5. apply: この考えを、ユーザー自身のアプリ（暗号化・メモ・フロー等）にどう活かせるか1〜2文。無理なら空文字。\n6. connections: 過去メモ候補のうち本当に関係あるものだけ。各: id(記号), reason(一言)。\n7. tags: 短い名詞タグ3〜5個。\n\n出力はJSONのみ（前置き・コードブロック不要）: {"understand":"","question":"","steps":[{"role":"","title":"","how":""}],"searches":[],"apply":"","connections":[{"id":"","reason":""}],"tags":[]}';
+    '\n\n次を出してください。\n1. understand: ' + (role === 'material' ? 'この調べた結果から「分かったこと」を、やさしい言葉で1〜2文。' : 'この考えを1〜2文で言い直す。') + '\n2. question: いま一番大事な問いを1文で。\n3. steps: 次にやること4つ。各: role(question か material か next), title(30字以内), how(何をどう調べる・試すか。1〜2文。検索に使う言葉も含める)。\n4. searches: 検索に使う言葉を3つ。\n5. apply: この考えを、ユーザー自身のアプリ（暗号化・メモ・フロー等）にどう活かせるか1〜2文。無理なら空文字。\n6. connections: 過去メモ候補のうち本当に関係あるものだけ。各: id(記号), reason(一言)。\n7. tags: 短い名詞タグ3〜5個。\n\n出力はJSONのみ（前置き・コードブロック不要）: {"understand":"","question":"","steps":[{"role":"","title":"","how":""}],"searches":[],"apply":"","connections":[{"id":"","reason":""}],"tags":[]}';
 }
-async function openNextSheet() {
-  const g = currentGraph(), id = editingNodeId, n = g && g.nodes[id]; if (!n) return;
-  const label = document.getElementById('nLabel').value.trim(), memo = document.getElementById('nMemo').value.trim();
+async function openNextSheet(nodeIdArg) {
+  const fromArg = (typeof nodeIdArg === 'string' && nodeIdArg) ? nodeIdArg : '';
+  const g = currentGraph(), id = fromArg || editingNodeId, n = g && g.nodes[id]; if (!n) return;
+  const label = fromArg ? String(n.label || '').trim() : document.getElementById('nLabel').value.trim(), memo = fromArg ? String(n.memo || '').trim() : document.getElementById('nMemo').value.trim();
   const text = (label + ' ' + memo).trim();
   if (!text) { showToast('先に題名かメモを書いてください'); return; }
-  const role = editingRole, kw = kwList(text);
+  const role = fromArg ? nodeRole(n) : editingRole, kw = kwList(text);
   lastNext = { nodeId: id, kw, frames: localFrames(role, kw), steps: [], tags: [], label, memo };
   const qs = [kw[0] ? kw[0] + ' 仕組み' : '', kw[0] ? kw[0] + ' 原因 対策' : '', kw[0] ? kw[0] + ' 事例' : '', kw[1] ? kw[0] + ' ' + kw[1] : ''].filter(Boolean);
   const search = q => '<a class="ns-search" target="_blank" rel="noopener" href="https://www.google.com/search?q=' + encodeURIComponent(q) + '">🔍 ' + escHtml(q) + '</a>';
@@ -2476,7 +2478,7 @@ async function openNextSheet() {
     const byAlias = {}; cands.forEach(x => { byAlias[x.alias] = x; });
     const chip = x => '<span class="ap-chip" data-rel="' + x.gid + '|' + x.id + '">' + escHtml(x.label.slice(0, 24)) + '</span>';
     let a = '';
-    if (r.understand) a += '<div class="ns-note">' + escHtml(r.understand) + '</div>';
+    if (r.understand) a += '<div class="ns-note">' + escHtml(r.understand) + '</div>' + (role === 'material' ? '<button class="ap-go" data-ns="u">＋ 分かったことを「考え」に足す</button>' : '');
     if (r.question) a += '<div class="ns-h">❓ いま一番大事な問い</div><div class="ns-q">' + escHtml(r.question) + '</div>';
     a += '<div class="ns-h">次にやること</div>' + lastNext.steps.map((s, i) => '<div class="ap-card"><div class="ap-title">' + escHtml(s.title || '') + '</div><div class="ap-text">' + escHtml(s.how || '') + '</div><button class="ap-go" data-ns="a' + i + '">＋ これを足す</button></div>').join('');
     if ((r.searches || []).length) a += '<div class="ns-h">🔍 AIがすすめる検索の言葉</div>' + r.searches.slice(0, 3).map(q => search(String(q))).join('');
@@ -2530,7 +2532,7 @@ async function sendPlanToQuickRef(btn) {
 function addNextNode(btn, key) {
   const g = currentGraph(); if (!g || !lastNext) return;
   const src = g.nodes[lastNext.nodeId]; if (!src) return;
-  const item = key[0] === 'f' ? lastNext.frames[+key.slice(1)] : lastNext.steps[+key.slice(1)];
+  const item = key === 'u' ? { role: 'thought', title: smartTitle((lastNext.ai && lastNext.ai.understand) || '', '分かったこと'), how: (lastNext.ai && lastNext.ai.understand) || '' } : key[0] === 'f' ? lastNext.frames[+key.slice(1)] : lastNext.steps[+key.slice(1)];
   if (!item) return;
   const role = ROLES.some(r => r[0] === item.role) ? item.role : 'question';
   const id = makePathNode(role, 'new', String(item.title || '次の一手').slice(0, 40), src.x, (src.y || 0) + 160);
@@ -2539,6 +2541,32 @@ function addNextNode(btn, key) {
   g.edges.push({ from: lastNext.nodeId, to: id, weight: 1, conductance: 1.0, src: 'path' });
   applyFlowchartLayout(); saveGraphs(); updateScoreBar();
   btn.textContent = '✓ 足しました'; btn.disabled = true; btn.style.opacity = '.6';
+  if (key !== 'u') { const pb = document.createElement('button'); pb.className = 'ap-go'; pb.dataset.paste = id; pb.textContent = '📥 調べた結果を貼る'; btn.insertAdjacentElement('afterend', pb); }
+  try { if (document.body.classList.contains('pathMode')) renderPathView(); } catch (e) {}
+}
+// ── 調べた結果を貼って、道筋につなぎ、続けて次を考える ──
+let pasteTarget = null;
+function openPasteSheet(nodeId) {
+  const g = currentGraph(), n = g && g.nodes[nodeId]; if (!n) return;
+  pasteTarget = nodeId;
+  document.getElementById('appSheetTitle').textContent = '📥 調べた結果を貼る';
+  document.getElementById('appSheetBody').innerHTML = '<div class="ns-note">「' + escHtml(dispLabel(n)) + '」について調べた結果を、ここに貼ってください。Google・Gemini・ChatGPT などの文章を、そのまま貼れます。</div>' +
+    '<textarea id="pasteBox" rows="9" style="width:100%;margin:10px 0;font-size:16px;padding:12px;border-radius:12px;border:1px solid var(--border2);background:var(--surface2);color:var(--text)" placeholder="ここに貼り付け"></textarea>' +
+    '<button class="ap-go" data-pasteclip="1" style="margin-bottom:10px">📋 コピーしたものを貼る</button>' +
+    '<button class="next-btn" data-pastego="1">✓ 結果として足して、次を考える</button>' +
+    '<div class="ns-note" style="margin-top:8px">足すと「材料」として道筋につながり、続けて「分かったこと」と「次にやること」を出します。</div>';
+  openSheet('appSheet');
+}
+function pasteGo() {
+  const g = currentGraph(), src = g && g.nodes[pasteTarget], ta = document.getElementById('pasteBox'); if (!src || !ta) return;
+  const text = ta.value.trim(); if (!text) { showToast('貼り付ける文章がありません'); return; }
+  const id = makePathNode('material', 'thinking', smartTitle(text, '調べた結果').slice(0, 40), src.x, (src.y || 0) + 160);
+  g.nodes[id].memo = text.slice(0, 6000);
+  g.nodes[id].tags = [...new Set([...(src.tags || []), ...extractTagsFromText(g.nodes[id].label, text.slice(0, 300))])].slice(0, 10);
+  g.edges.push({ from: pasteTarget, to: id, weight: 1, conductance: 1.0, src: 'path' });
+  applyFlowchartLayout(); saveGraphs(); updateScoreBar();
+  try { if (document.body.classList.contains('pathMode')) renderPathView(); } catch (e) {}
+  openNextSheet(id);
 }
 function openRelatedNode(ref) {
   const [gid, id] = ref.split('|');
@@ -2565,6 +2593,8 @@ function wirePathView() {
     const t = e.target;
     const del = t.closest('[data-del]');
     if (del) { e.stopPropagation(); if (confirm('このノードを削除しますか？')) { deleteNode(del.dataset.del); renderPathView(); } return; }
+    const pst = t.closest('[data-paste]'); if (pst) { e.stopPropagation(); openPasteSheet(pst.dataset.paste); return; }
+    const nfr = t.closest('[data-nextfor]'); if (nfr) { e.stopPropagation(); openNextSheet(nfr.dataset.nextfor); return; }
     const zb = t.closest('[data-z]');
     if (zb) { pathZoomStep(+zb.dataset.z); return; }
     const st = t.closest('[data-st]');
@@ -2600,6 +2630,9 @@ function wirePathView() {
     const go = e.target.closest('[data-go]'); if (go) { addAppliedNode(+go.dataset.go); return; }
     const ns = e.target.closest('[data-ns]'); if (ns) { addNextNode(ns, ns.dataset.ns); return; }
     const nsend = e.target.closest('[data-nssend]'); if (nsend) { sendPlanToQuickRef(nsend); return; }
+    const pa = e.target.closest('[data-paste]'); if (pa) { openPasteSheet(pa.dataset.paste); return; }
+    const pc = e.target.closest('[data-pasteclip]'); if (pc) { navigator.clipboard.readText().then(t => { const b = document.getElementById('pasteBox'); if (b && t) b.value = t; else showToast('コピーされた文章がありません'); }).catch(() => showToast('貼り付けを許可してください。または、枠を長押しして貼り付けてください')); return; }
+    const pg = e.target.closest('[data-pastego]'); if (pg) { pasteGo(); return; }
   });
   document.getElementById('pathQuickBtn').addEventListener('click', () => openQuickCapture());
   document.getElementById('pathMicBtn').addEventListener('click', () => {
