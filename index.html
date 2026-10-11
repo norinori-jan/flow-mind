@@ -200,6 +200,13 @@ body:not(.pathMode) #pathView, body:not(.pathMode) #pathBar { display:none; }
 .p-st.on { color:var(--green); border-color:rgba(74,224,154,0.6); background:rgba(74,224,154,0.10); }
 .p-st.on.drop { color:var(--text-dim); border-color:var(--text-dim); background:rgba(255,255,255,0.06); }
 body.pathMode #quickCaptureFab, body.pathMode #analyzeBtn, body.pathMode #dailyNoteBtn { display:none !important; }
+body.pathMode #aiPhysTools { display:none !important; }
+.ai-mrow { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px; }
+.ai-mchip { flex:1; min-width:84px; padding:11px 8px; border-radius:12px; border:1px solid var(--border2); background:rgba(255,255,255,0.06); color:var(--text); font-size:15px; font-weight:700; cursor:pointer; }
+.ai-mchip.on { border-color:rgba(255,159,67,0.9); background:rgba(255,159,67,0.16); color:var(--gold, #FF9F43); outline:2px solid rgba(255,159,67,0.5); }
+.ai-mnote { font-size:12px; color:var(--text-dim); line-height:1.6; margin-bottom:12px; }
+.p-ai.sum { background:rgba(255,159,67,0.12); border-color:rgba(255,159,67,0.6); color:#FF9F43; }
+#pathBar .pbtn.ai { color:#FF9F43; border-color:rgba(255,159,67,0.6); background:rgba(255,159,67,0.12); font-weight:800; }
 #pathBar .pbtn.main { flex:1; background:rgba(74,158,255,0.14); border-color:rgba(74,158,255,0.55); color:var(--blue); font-size:15px; }
 body:not(.pathMode) .hdr-btn.zm{display:none;}
 body.pathMode #helpBtn{display:none;}
@@ -512,6 +519,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
 <div id="pathBar">
   <button class="pbtn mic" id="pathMicBtn">🎙 声で記録</button>
   <button class="pbtn" id="pathQuickBtn">＋ 一言</button>
+  <button class="pbtn ai" id="pathAIBtn" title="AI分析">✦ AI</button>
   <button class="pbtn" id="pathPhysBtn" title="物理ビュー">⬡</button>
 </div>
 
@@ -652,11 +660,20 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
   <div class="sheet-handle"></div>
   <div class="sheet-header">
     <button id="aiSheetClose">閉じる</button>
-    <h2>AI グラフ分析</h2>
+    <h2>AI 分析</h2>
     <span id="aiModelBadge" style="font-size:11px;background:var(--gold-dim);color:var(--gold);border-radius:100px;padding:3px 12px;font-weight:700;"></span>
   </div>
   <div class="sheet-body">
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+    <div style="font-size:13px;font-weight:700;margin-bottom:6px;">使うAI（ここで選べます）</div>
+    <div class="ai-mrow" id="aiModelRow"></div>
+    <div class="ai-mnote" id="aiModelNote"></div>
+    <div style="font-size:13px;font-weight:700;margin-bottom:6px;" id="aiScopeLabel">道筋の分析</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;" id="aiPathTools">
+      <button class="tool-btn gold" id="aiPSumBtn">🧭 まとめる</button>
+      <button class="tool-btn" id="aiPGapBtn">❓ 足りないこと</button>
+      <button class="tool-btn" id="aiPNextBtn">➡️ 次に調べること</button>
+    </div>
+    <div id="aiPhysTools" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
       <button class="tool-btn" id="aiStructureBtn">🔍 構造分析</button>
       <button class="tool-btn" id="aiWeakBtn">⚠️ 弱点検出</button>
       <button class="tool-btn" id="aiSuggestBtn">💡 ノード提案</button>
@@ -2198,9 +2215,9 @@ function pathChainHtml(g, c, unresolved, open) {
   }).join('');
   let h = '<div class="p-chain' + (c.unres.length ? ' unres' : '') + '"><div class="p-chead" data-toggle="' + c.key + '">' +
     '<div class="pt">' + (c.unres.length ? '⚠️ ' : '') + escHtml(dispLabel(first)) + '</div>' +
-    '<div class="p-dots">' + dots + '</div><div class="pc">' + c.members.length + '個 ' + (open ? '▾' : '▸') + '</div></div>';
+    '<div class="p-dots">' + dots + '</div>' + (c.members.length > 1 ? '<button class="p-st" data-aisum="' + c.key + '" style="color:#FF9F43;border-color:rgba(255,159,67,0.6);margin-right:6px">✦ AI</button>' : '') + '<div class="pc">' + c.members.length + '個 ' + (open ? '▾' : '▸') + '</div></div>';
   if (open) h += '<div class="p-cbody">' + c.order.map(it => pathCardHtml(g, it, unresolved)).join('') +
-    (c.members.length > 1 ? '<button class="p-ai" data-app="' + c.key + '">💡 応用を考える（過去のメモとの関係も探す）</button>' : '') + '</div>';
+    (c.members.length > 1 ? '<button class="p-ai sum" data-aisum="' + c.key + '">✦ この道筋をAIでまとめる</button><button class="p-ai" data-app="' + c.key + '">💡 応用を考える（過去のメモとの関係も探す）</button>' : '') + '</div>';
   return h + '</div>';
 }
 
@@ -2609,6 +2626,7 @@ function wirePathView() {
     if (ps) { passNode(ps.dataset.pass); return; }
     const nx = t.closest('[data-next]');
     if (nx) { addNextStep(nx.dataset.next); return; }
+    const asm = t.closest('[data-aisum]'); if (asm) { openAISheet(asm.dataset.aisum); return; }
     const ap = t.closest('[data-app]');
     if (ap) { openAppSheet(ap.dataset.app); return; }
     const mr = t.closest('[data-more]');
@@ -2640,6 +2658,10 @@ function wirePathView() {
     openQuickCapture(); qcAutoSend = true; startQcRecording();   // ユーザー操作の直接の結果として録音を始める（iOSの許可条件）
   });
   document.getElementById('pathPhysBtn').addEventListener('click', () => setViewMode('physics'));
+  document.getElementById('pathAIBtn').addEventListener('click', () => openAISheet(null));
+  document.getElementById('aiPSumBtn').addEventListener('click', () => runPathAI('sum'));
+  document.getElementById('aiPGapBtn').addEventListener('click', () => runPathAI('gap'));
+  document.getElementById('aiPNextBtn').addEventListener('click', () => runPathAI('next'));
   document.getElementById('oddityBtn').addEventListener('click', () => setViewMode('path'));
   window.addEventListener('resize', schedulePathRender);
 }
@@ -3471,7 +3493,7 @@ async function callAI(prompt) {
   if (!apiKey && !proxyUrl && !viaWorker) throw new Error(`APIキーが未設定です。キーを入れるか、設定の「quick-ref メモ同期」を設定してください（${m.label}）`);
 
   if (viaWorker) {
-    const modelId = modelKey === 'gemini' ? 'gemini-3.5-flash-lite' : m.model;   // Gemini は quick-ref の標準と同じ名前（古い名前は止まることがある）
+    const modelId = (modelKey !== 'claude' && typeof aiModelId === 'function') ? aiModelId(modelKey) : (modelKey === 'gemini' ? 'gemini-3.5-flash-lite' : m.model);   // quick-refの設定（モデル名）に合わせる   // Gemini は quick-ref の標準と同じ名前（古い名前は止まることがある）
     const res = await fetch(syncEp + '/ai', {
       method:'POST', headers:{'Content-Type':'application/json', 'Authorization':'Bearer ' + syncTk},
       body: JSON.stringify({ provider: modelKey, model: modelId, maxTokens: 1024, prompt }),
@@ -3555,6 +3577,77 @@ function buildAttractorContext() {
       `  推定attractor: ${attr ? attr.label : '未収束（過渡状態）'}`;
   });
   return `現在、以下の神経同期パターン（電気振動のクラスタ）が検出されています：\n${lines.join('\n\n')}`;
+}
+
+// ── AI分析（物理ビューでも道筋ビューでも使える。使うAIはここで選ぶ） ──
+let aiScopeKey = null;   // 道筋のキー。nullなら、全体
+function aiModelId(kind) {
+  const k = { gemini: 'ml_gemini_model', openai: 'ml_openai_model' }[kind]; let v = '';
+  try { v = (localStorage.getItem(k) || '').trim(); } catch (_) {}
+  return /^[A-Za-z0-9._-]{3,60}$/.test(v) ? v : ({ gemini: 'gemini-3.5-flash-lite', openai: 'gpt-4o-mini' }[kind] || '');
+}
+function aiKeyState(kind) {
+  const keyName = { claude: LS_CLAUDE, gemini: LS_GEMINI, openai: LS_OPENAI }[kind];
+  let key = '', ep = '', tk = '', px = '';
+  try { key = localStorage.getItem(keyName) || ''; ep = localStorage.getItem('qr_sync_endpoint') || ''; tk = localStorage.getItem('qr_sync_token') || ''; px = localStorage.getItem(LS_PROXY) || ''; } catch (_) {}
+  if (key) return { ok: true, text: 'この端末のキーで動きます' };
+  if (ep && tk) return { ok: true, text: 'キー不要：クラウド同期の設定からWorker経由で動きます' };
+  if (px && kind === 'claude') return { ok: true, text: 'Proxy経由で動きます' };
+  return { ok: false, text: '⚠ 使えません（quick-refの⚙️でキーを入れるか、クラウド同期を設定）' };
+}
+function renderAiModelRow() {
+  const cur = localStorage.getItem(LS_MODEL) || 'claude', row = document.getElementById('aiModelRow'); if (!row) return;
+  row.innerHTML = Object.keys(MODELS).map(k => '<button type="button" class="ai-mchip' + (k === cur ? ' on' : '') + '" data-aim="' + k + '">' + (k === cur ? '✔ ' : '') + MODELS[k].label + '</button>').join('');
+  const st = aiKeyState(cur);
+  const nm = cur === 'claude' ? 'claude-sonnet-4-6' : aiModelId(cur);
+  document.getElementById('aiModelNote').innerHTML = '使用中：<b>' + MODELS[cur].label + '</b>（' + nm + '）<br>' + st.text + '<br>この選択は quick-ref と共通です。';
+  document.getElementById('aiModelBadge').textContent = MODELS[cur].label;
+  row.querySelectorAll('[data-aim]').forEach(b => b.addEventListener('click', () => { localStorage.setItem(LS_MODEL, b.dataset.aim); renderAiModelRow(); }));
+}
+function openAISheet(scopeKey) {
+  aiScopeKey = scopeKey || null;
+  const g = currentGraph(), lab = document.getElementById('aiScopeLabel');
+  let name = '全体';
+  if (aiScopeKey && g) { const c = pathAnalyze(g).comps.find(x => x.key === aiScopeKey); if (c) name = '「' + dispLabel(g.nodes[c.order[0].id]) + '」の道筋'; else aiScopeKey = null; }
+  lab.textContent = '道筋の分析（対象：' + name + '）';
+  renderAiModelRow();
+  document.getElementById('aiResultBox').classList.remove('visible');
+  document.getElementById('aiResultCopyBtn').style.display = 'none';
+  openSheet('aiSheet');
+}
+function pathNodeLine(g, it) {
+  const n = g.nodes[it.id], r = ROLES.find(x => x[0] === nodeRole(n)), s = STATUSES.find(x => x[0] === nodeStatus(n));
+  const memo = (n.memo || '').replace(/\s+/g, ' ').trim().slice(0, 90);
+  return '  '.repeat(it.depth || 0) + '・' + (r ? r[1] : 'メモ') + '（' + (s ? s[1] : '') + '）' + dispLabel(n).slice(0, 40) + (memo && memo !== n.label ? '：' + memo : '');
+}
+function pathScopeText(g) {
+  const { comps } = pathAnalyze(g);
+  let list = comps.filter(c => c.members.length > 1);
+  if (aiScopeKey) list = list.filter(c => c.key === aiScopeKey);
+  else list = list.sort((a, b) => (b.unres.length - a.unres.length) || (b.latest - a.latest)).slice(0, 6);
+  return list.map((c, i) => '【道筋' + (i + 1) + '】\n' + c.order.slice(0, 14).map(it => pathNodeLine(g, it)).join('\n')).join('\n\n');
+}
+async function runPathAI(kind) {
+  const g = currentGraph(); if (!g) return;
+  const body = pathScopeText(g);
+  if (!body) { showToast('つながったメモ（道筋）がまだありません'); return; }
+  const head = '次は、私の考えの流れ（道筋）です。上から順に、違和感→問い→調べた→分かった→応用 とつながっています（字下げは枝分かれ）。\n\n' + body + '\n\n';
+  const ask = {
+    sum: '次の形で日本語でまとめてください。前置きは不要。各項目は短く。\n【ひとことで】何を考えている道筋か（1〜2文）\n【つながり】なぜ次へ進んだのか（箇条書き）\n【分かっていること】（3つまで）\n【足りないこと・次に調べること】（3つまで。具体的な検索語や試すことを書く）\n書かれていないことは断定せず、推測と明記してください。',
+    gap: '論理の飛躍、根拠の薄いところ、見落としていそうな点を、日本語で3〜5個、短く指摘してください。それぞれ「なぜそう思うか」と「何を確かめれば埋まるか」を添えてください。断定せず、推測は推測と書いてください。',
+    next: '次に調べること・試すことを、日本語で3つ提案してください。それぞれに、具体的な検索語（または試す手順）と、「それで何が分かると道筋が進むか」を書いてください。'
+  }[kind];
+  await runAIPrompt(head + ask);
+}
+async function runAIPrompt(prompt) {
+  const box = document.getElementById('aiResultBox'), copyBtn = document.getElementById('aiResultCopyBtn');
+  box.classList.remove('visible'); copyBtn.style.display = 'none';
+  document.getElementById('aiLoading').classList.add('show');
+  try {
+    const result = await callAI(prompt);
+    box.textContent = result; box.classList.add('visible'); copyBtn.style.display = '';
+  } catch (e) { showToast(e.message); }
+  finally { document.getElementById('aiLoading').classList.remove('show'); }
 }
 
 async function runAnalysis(type, custom='') {
@@ -5079,12 +5172,7 @@ function wireEvents() {
   });
 
   // AI分析シート
-  document.getElementById('analyzeBtn').addEventListener('click', () => {
-    const modelKey = localStorage.getItem(LS_MODEL) || 'claude';
-    document.getElementById('aiModelBadge').textContent = MODELS[modelKey]?.label || modelKey;
-    document.getElementById('aiResultBox').classList.remove('visible');
-    openSheet('aiSheet');
-  });
+  document.getElementById('analyzeBtn').addEventListener('click', () => openAISheet(null));
   document.getElementById('aiSheetClose').addEventListener('click', () => closeSheet('aiSheet'));
   document.getElementById('aiStructureBtn').addEventListener('click', () => runAnalysis('structure'));
   document.getElementById('aiWeakBtn').addEventListener('click', () => runAnalysis('weak'));
