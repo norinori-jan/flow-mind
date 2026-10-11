@@ -3465,7 +3465,22 @@ async function callAI(prompt) {
   const keyMap = { claude:LS_CLAUDE, gemini:LS_GEMINI, openai:LS_OPENAI };
   const apiKey = localStorage.getItem(keyMap[modelKey]) || '';
 
-  if (!apiKey && !proxyUrl) throw new Error(`APIキーが未設定です。quick-refの⚙️設定から入力してください（${m.label}）`);
+  // 端末にキーが無く、quick-ref の同期設定（エンドポイント＋トークン）があるときは、Worker の /ai 経由で呼ぶ（キーは Worker だけが持つ）
+  const syncEp = (localStorage.getItem('qr_sync_endpoint') || '').trim().replace(/\/+$/, ''), syncTk = (localStorage.getItem('qr_sync_token') || '').trim();
+  const viaWorker = !apiKey && !proxyUrl && !!(syncEp && syncTk);
+  if (!apiKey && !proxyUrl && !viaWorker) throw new Error(`APIキーが未設定です。キーを入れるか、設定の「quick-ref メモ同期」を設定してください（${m.label}）`);
+
+  if (viaWorker) {
+    const modelId = modelKey === 'gemini' ? 'gemini-3.5-flash-lite' : m.model;   // Gemini は quick-ref の標準と同じ名前（古い名前は止まることがある）
+    const res = await fetch(syncEp + '/ai', {
+      method:'POST', headers:{'Content-Type':'application/json', 'Authorization':'Bearer ' + syncTk},
+      body: JSON.stringify({ provider: modelKey, model: modelId, maxTokens: 1024, prompt }),
+    });
+    if (res.status === 401) throw new Error('同期トークンが違います（設定の「quick-ref メモ同期」を確認してください）');
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(String(d.error || ('AI中継 ' + res.status)).slice(0, 200));
+    return d.text || '';
+  }
 
   if (proxyUrl) {
     const res = await fetch(proxyUrl, {
@@ -3490,8 +3505,8 @@ async function callAI(prompt) {
     return d.content?.[0]?.text || '';
   }
   if (modelKey === 'gemini') {
-    const res = await fetch(`${m.endpoint}?key=${apiKey}`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
+    const res = await fetch(m.endpoint, {   // キーはURLに入れず、ヘッダーで渡す（履歴・ログに残さない）
+      method:'POST', headers:{'Content-Type':'application/json', 'x-goog-api-key': apiKey},
       body: JSON.stringify({ contents:[{parts:[{text:prompt}]}],
         generationConfig:{maxOutputTokens:1024} }),
     });
