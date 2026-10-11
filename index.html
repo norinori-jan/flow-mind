@@ -152,6 +152,11 @@ body:not(.pathMode) #pathView, body:not(.pathMode) #pathBar { display:none; }
   border-radius:12px; padding:10px 10px; cursor:pointer; }
 .p-card.unres { border-color:rgba(255,159,67,0.7); box-shadow:0 0 0 0 rgba(255,159,67,0.5); animation:p-glow 2s infinite; }
 .p-card.chosen { border-color:rgba(74,224,154,0.5); }
+.p-card.br-yes { border-left:5px solid #4AE09A; }
+.p-card.br-no { border-left:5px solid #8a93a6; }
+.p-br { display:inline-block; font-size:12px; font-weight:800; border-radius:100px; padding:2px 10px; margin-bottom:4px; }
+.p-br.yes { color:#4AE09A; background:rgba(74,224,154,0.14); border:1px solid rgba(74,224,154,0.5); }
+.p-br.no { color:#b4bccd; background:rgba(138,147,166,0.16); border:1px solid rgba(138,147,166,0.5); }
 .p-card.dropped { opacity:.5; }
 .p-ico { width:30px; height:30px; flex-shrink:0; border-radius:50%; display:flex; align-items:center; justify-content:center;
   font-size:15px; background:rgba(255,255,255,0.08); }
@@ -655,6 +660,33 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
   <div class="sheet-body" id="appSheetBody"></div>
 </div>
 
+<!-- 見方シート -->
+<div class="sheet" id="legendSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header"><button id="legendClose">閉じる</button><h2>画面の見方</h2><span></span></div>
+  <div class="sheet-body" style="line-height:1.75;font-size:15px;">
+    <div style="font-weight:800;margin-bottom:4px;">⭕ 丸＝ひとつのメモ・考え</div>
+    <div style="margin-bottom:12px;color:var(--text-mid);">丸の中の文字は、メモの題名です。<b>（空）</b>と出る丸は、まだ何も書いていないノードです。タップして書くか、「空のノードを整理」で消せます。</div>
+    <div style="font-weight:800;margin-bottom:4px;">📏 丸のまわりの印</div>
+    <div style="margin-bottom:12px;color:var(--text-mid);">
+      ・<b>金色の細い弧</b>：重要度。つながりが多く、大事に置いたものほど、長くなります。<br>
+      ・<b>丸の内側の白い輪</b>：引っかかり。何度も触れた・強く反応したノードほど、濃くなります。<br>
+      ・<b>金色の太い輪</b>：「選んだ」状態（答えが出た・採用した）。<br>
+      ・<b>左上の絵</b>：自分で決めた役割（⚠️違和感・❓問い・📎材料・💭考え・🔀選択肢・✅決定・▶次の一手）。決めていないものには出ません。<br>
+      ・<b>下の W4 など</b>：自分で付けた「大事さ」の数字。標準（3）のときは出しません。<br>
+      ・<b>赤い 📥</b>：他のアプリから届いて、まだ確認していないノード。<br>
+      ・<b>うすくなった丸 ✕</b>：「見送った」もの。
+    </div>
+    <div style="font-weight:800;margin-bottom:4px;">➡️ 線＝つながり</div>
+    <div style="margin-bottom:12px;color:var(--text-mid);">矢印の向きが、考えの進む向きです。線の上に <b>×2</b> などと出るのは、その線を強くしたとき（標準の×1は出しません）。線をタップすると、由来を見て、消せます。</div>
+    <div style="font-weight:800;margin-bottom:4px;">🌊 上の「θ波」「γ波」などの帯</div>
+    <div style="margin-bottom:12px;color:var(--text-mid);">同時に強く反応しているノードのグループを、脳波になぞらえた名前で示しています。「不安」などの言葉は、そのグループから推定した気分の傾向で、診断ではありません。</div>
+    <div style="font-weight:800;margin-bottom:4px;">📊 上の「重要度順 ▸」</div>
+    <div style="margin-bottom:12px;color:var(--text-mid);">重要度が高い上位5つです。タップすると、そのノードを開きます。</div>
+    <button class="tool-btn" id="legendOnbBtn" style="width:100%;justify-content:center;">📖 はじめの使い方をもう一度見る</button>
+  </div>
+</div>
+
 <!-- AI ANALYSIS SHEET -->
 <div class="sheet" id="aiSheet">
   <div class="sheet-handle"></div>
@@ -698,6 +730,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
     <button id="newGraphBtn" style="color:var(--gold);font-weight:800;">＋ 新規</button>
   </div>
   <div class="sheet-body">
+    <button class="tool-btn" id="cleanEmptyNodesBtn" style="width:100%;justify-content:center;margin-bottom:10px;">🧹 空のノードを整理（いまのグラフ）</button>
     <button class="tool-btn" id="cleanEmptyBtn" style="display:none;width:100%;justify-content:center;margin-bottom:10px;">🧹 空のグラフを整理</button>
     <div id="graphListWrap"></div>
     <div style="margin-top:8px;border-top:1px solid var(--border);padding-top:14px;">
@@ -1537,6 +1570,7 @@ function drawEdgeLabel(x1, y1, x2, y2, text) {
 }
 
 function drawEdgeWeight(x1, y1, x2, y2, w) {
+  if (!w || w === 1) return;   // 標準(×1)は出さない。強さを変えた線だけ見せる
   const mx = (x1+x2)/2, my = (y1+y2)/2;
   ctx.save();
   ctx.fillStyle = 'rgba(245,200,66,0.9)';
@@ -1635,7 +1669,9 @@ function drawNode(n, id, score, phase) {
   const fs = Math.max(10, Math.min(14, 12)) * vpScale;
   ctx.font = `700 ${fs}px -apple-system`;
   const maxW = r * 1.6;
-  const label = n.label || '?';
+  const emptyNode = isDefaultLabel(n.label) && !(n.memo && n.memo.trim());
+  const label = emptyNode ? '（空）' : dispLabel(n);
+  if (emptyNode) ctx.fillStyle = 'rgba(255,255,255,0.45)';
   // 折り返し
   const words = label.split('');
   const lineH = fs * 1.3;
@@ -1654,7 +1690,7 @@ function drawNode(n, id, score, phase) {
   {   // 役割の印（左上）と、見送った印
     const ri = roleInfo(nodeRole(n));
     ctx.font = `${13 * vpScale}px -apple-system`; ctx.fillStyle = '#fff';
-    ctx.fillText(ri[2], s.x - r * 0.72, s.y - r * 0.78);
+    if (n.role) ctx.fillText(ri[2], s.x - r * 0.72, s.y - r * 0.78);
     if (nodeStatus(n) === 'dropped') { ctx.font = `700 ${16 * vpScale}px -apple-system`; ctx.fillStyle = '#FF5F5F'; ctx.fillText('✕', s.x + r * 0.72, s.y + r * 0.72); }
   }
 
@@ -1662,7 +1698,7 @@ function drawNode(n, id, score, phase) {
   const badge = `W${n.weight||3}`;
   ctx.font = `600 ${9*vpScale}px -apple-system`;
   ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.fillText(badge, s.x, s.y + r * 0.7);
+  if ((n.weight || 3) !== 3) ctx.fillText(badge, s.x, s.y + r * 0.7);
 
   // 未処理(inbox)バッジ — 他アプリから取り込んだまま未確認のノードに表示
   if (n.triageStatus === 'inbox') {
@@ -1797,7 +1833,7 @@ function updateScoreBar() {
   const g = currentGraph();
   if (!g) return;
   const sorted = Object.entries(scores)
-    .filter(([id]) => g.nodes[id])
+    .filter(([id]) => g.nodes[id] && !(isDefaultLabel(g.nodes[id].label) && !(g.nodes[id].memo && g.nodes[id].memo.trim())))
     .sort((a,b) => b[1]-a[1])
     .slice(0, 5);
 
@@ -1806,10 +1842,12 @@ function updateScoreBar() {
     const n = g.nodes[id];
     const pct = Math.round(sc * 100);
     const col = n.color || '#4A9EFF';
-    return `<span class="score-chip" style="color:${col};border-color:${col}40;background:${col}18;">
-      ${escHtml(n.label || '?')} ${pct}%
+    return `<span class="score-chip" data-sc="${id}" style="color:${col};border-color:${col}40;background:${col}18;cursor:pointer">
+      ${escHtml(dispLabel(n).slice(0, 14))} ${pct}%
     </span>`;
   }).join('');
+  bar.insertAdjacentHTML('afterbegin', '<span class="score-chip" style="color:var(--text-dim);border-color:transparent;background:none;font-weight:700">重要度順 ▸</span>');
+  bar.onclick = e => { const c = e.target.closest('[data-sc]'); if (c) openNodeSheet(c.dataset.sc); };
 }
 
 // ═══════════════════════════════════
@@ -1994,6 +2032,7 @@ function addNode(wx, wy) {
   applyFlowchartLayout();
   saveGraphs();
   updateScoreBar();
+  pendingNewNodeId = id;   // 内容を書かずに「キャンセル」したら、空のノードは捨てる
   openNodeSheet(id, true);
 }
 
@@ -2191,17 +2230,17 @@ const STATUS_DESC = { new: 'まだ手をつけていない', thinking: '考え�
 function pathCardHtml(g, item, unresolved) {
   const n = g.nodes[item.id], role = nodeRole(n), st = nodeStatus(n), ri = roleInfo(role), si = statusInfo(st);
   const un = unresolved.has(item.id);
-  const cls = un ? 'unres' : st === 'chosen' ? 'chosen' : st === 'dropped' ? 'dropped' : '';
+  const cls = (un ? 'unres' : st === 'chosen' ? 'chosen' : st === 'dropped' ? 'dropped' : '') + (n.branch ? ' br-' + n.branch : '');
   const memo = (n.memo || '').replace(/\s+/g, ' ').trim();
   const nx = STAGE_NEXT[role];
   const d = n.updatedAt ? new Date(n.updatedAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
   const pill = un ? '<span class="p-pill unres">未解決</span>' : st === 'chosen' ? '<span class="p-pill chosen">' + si[2] + ' ' + si[1] + '</span>' : '<span class="p-pill">' + si[2] + ' ' + si[1] + '</span>';
   let h = '<div class="p-step" style="margin-left:' + (8 + item.depth * 14) + 'px"><div class="p-card ' + cls + '" data-open="' + item.id + '">' +
     '<div class="p-ico" style="color:' + (ROLE_COLORS[role] || '#fff') + '">' + ri[2] + '</div><div class="p-body">' +
-    '<div class="p-label">' + escHtml(dispLabel(n)) + '</div>' + (memo ? '<div class="p-memo">' + escHtml(memo) + '</div>' : '') +
+    (n.branch ? '<div><span class="p-br ' + n.branch + '">' + (n.branch === 'yes' ? '✔ はい' : '✖ いいえ') + '</span></div>' : '') + '<div class="p-label">' + escHtml(dispLabel(n)) + '</div>' + (memo ? '<div class="p-memo">' + escHtml(memo) + '</div>' : (n.branch ? '<div class="p-memo" style="opacity:.6">タップして、そのときどうするかを書く</div>' : '')) +
     '<div class="p-meta"><span>' + ri[1] + '</span>' + pill + (d ? '<span>' + d + '</span>' : '') + '<button class="p-st' + (st === 'chosen' ? ' on' : '') + '" data-st="' + item.id + '|chosen">◎ 選ぶ</button><button class="p-st drop' + (st === 'dropped' ? ' on' : '') + '" data-st="' + item.id + '|dropped">✕ 見送る</button>' +
     '<button class="p-del" data-del="' + item.id + '">削除</button></div>' +
-    '<div class="p-meta"><button class="p-st" data-nextfor="' + item.id + '">💡 次は？</button><button class="p-st" data-paste="' + item.id + '">📥 結果を貼る</button></div>' +
+    '<div class="p-meta"><button class="p-st" data-nextfor="' + item.id + '">💡 次は？</button><button class="p-st" data-paste="' + item.id + '">📥 結果を貼る</button>' + (role === 'question' && !item.kids && !n.branch ? '<button class="p-st" data-yn="' + item.id + '" style="color:#4AE09A;border-color:rgba(74,224,154,0.6)">🔀 はい／いいえに分ける</button>' : '') + '</div>' +
     '</div></div>';
   if (!item.kids && nx) h += '<button class="p-next" data-next="' + item.id + '">＋ ' + escHtml(nx.label) + '</button>';
   return h + '</div>';
@@ -2611,6 +2650,7 @@ function wirePathView() {
     const del = t.closest('[data-del]');
     if (del) { e.stopPropagation(); if (confirm('このノードを削除しますか？')) { deleteNode(del.dataset.del); renderPathView(); } return; }
     const pst = t.closest('[data-paste]'); if (pst) { e.stopPropagation(); openPasteSheet(pst.dataset.paste); return; }
+    const yn = t.closest('[data-yn]'); if (yn) { e.stopPropagation(); makeYesNo(yn.dataset.yn); return; }
     const nfr = t.closest('[data-nextfor]'); if (nfr) { e.stopPropagation(); openNextSheet(nfr.dataset.nextfor); return; }
     const zb = t.closest('[data-z]');
     if (zb) { pathZoomStep(+zb.dataset.z); return; }
@@ -2671,6 +2711,21 @@ function makePathNode(role, status, label, x, y) {
   g.nodes[id] = { updatedAt: Date.now(), id, label, x, y, weight: role === 'oddity' ? 4 : 3, color: ROLE_COLORS[role] || '#4A9EFF',
     memo: '', charge: role === 'oddity' ? 0.8 : 0, fireHistory: [], lastFired: 0, tags: [], role, status };
   return id;
+}
+// 問いを「はい／いいえ」の2つの枝に分ける
+function makeYesNo(id) {
+  const g = currentGraph(); const q = g && g.nodes[id]; if (!q) return;
+  if (g.edges.some(e => e.from === id)) { showToast('この問いには、すでに先があります'); return; }
+  const mk = (kind, label, dx) => {
+    const nid = makePathNode('option', 'new', label, (q.x || 0) + dx, (q.y || 0) + 120);
+    g.nodes[nid].branch = kind;
+    g.edges.push({ from: id, to: nid, weight: 1, conductance: 1.0, src: 'manual', label: kind === 'yes' ? 'はい' : 'いいえ' });
+  };
+  mk('yes', 'はいのとき', -90); mk('no', 'いいえのとき', 90);
+  if (!q.role) q.role = 'question';
+  q.updatedAt = Date.now();
+  applyFlowchartLayout(); saveGraphs(); updateScoreBar(); schedulePathRender();
+  showToast('はい／いいえの枝を作りました。開いて書き込んでください');
 }
 function addPathNode(role) {
   const g = currentGraph(); if (!g) return;
@@ -3118,7 +3173,7 @@ function renderNodeAbout(n, g) {
   if (n.thought && n.thought.next) st.push('返した次の一手: ' + n.thought.next);
   const d = n.updatedAt ? new Date(n.updatedAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
   const ri = roleInfo(nodeRole(n)), si = statusInfo(nodeStatus(n));
-  box.innerHTML = '<b>' + ri[2] + ' ' + ri[1] + '</b> ／ ' + si[2] + ' ' + si[1] + ' ／ 引っかかり: ' + hookLabel(n) + '<br>' + escHtml(kind) + (from ? '<br>' + escHtml(from) : '') +
+  box.innerHTML = '役割：<b>' + ri[2] + ' ' + ri[1] + '</b> ／ 状態：<b>' + si[2] + ' ' + si[1] + '</b><br>引っかかり（無意識の気になり度）：<b>' + hookLabel(n) + '</b><br>' + escHtml(kind) + (from ? '<br>' + escHtml(from) : '') +
     '<br>つながり: 前 ' + nin + '本 ／ 先 ' + nout + '本' + (d ? ' ・更新 ' + d : '') +
     (st.length ? '<br>' + st.map(escHtml).join('<br>') : '');
 }
@@ -3618,7 +3673,7 @@ function openAISheet(scopeKey) {
 function pathNodeLine(g, it) {
   const n = g.nodes[it.id], r = ROLES.find(x => x[0] === nodeRole(n)), s = STATUSES.find(x => x[0] === nodeStatus(n));
   const memo = (n.memo || '').replace(/\s+/g, ' ').trim().slice(0, 90);
-  return '  '.repeat(it.depth || 0) + '・' + (r ? r[1] : 'メモ') + '（' + (s ? s[1] : '') + '）' + dispLabel(n).slice(0, 40) + (memo && memo !== n.label ? '：' + memo : '');
+  return '  '.repeat(it.depth || 0) + '・' + (n.branch ? (n.branch === 'yes' ? '[はいの場合] ' : '[いいえの場合] ') : '') + (r ? r[1] : 'メモ') + '（' + (s ? s[1] : '') + '）' + dispLabel(n).slice(0, 40) + (memo && memo !== n.label ? '：' + memo : '');
 }
 function pathScopeText(g) {
   const { comps } = pathAnalyze(g);
@@ -3631,7 +3686,7 @@ async function runPathAI(kind) {
   const g = currentGraph(); if (!g) return;
   const body = pathScopeText(g);
   if (!body) { showToast('つながったメモ（道筋）がまだありません'); return; }
-  const head = '次は、私の考えの流れ（道筋）です。上から順に、違和感→問い→調べた→分かった→応用 とつながっています（字下げは枝分かれ）。\n\n' + body + '\n\n';
+  const head = '次は、私の考えの流れ（道筋）です。上から順に、違和感→問い→調べた→分かった→応用 とつながっています（字下げは枝分かれ。[はいの場合]・[いいえの場合]は、直前の問いの「はい／いいえ」の分かれ道です）。\n\n' + body + '\n\n';
   const ask = {
     sum: '次の形で日本語でまとめてください。前置きは不要。各項目は短く。\n【ひとことで】何を考えている道筋か（1〜2文）\n【つながり】なぜ次へ進んだのか（箇条書き）\n【分かっていること】（3つまで）\n【足りないこと・次に調べること】（3つまで。具体的な検索語や試すことを書く）\n書かれていないことは断定せず、推測と明記してください。',
     gap: '論理の飛躍、根拠の薄いところ、見落としていそうな点を、日本語で3〜5個、短く指摘してください。それぞれ「なぜそう思うか」と「何を確かめれば埋まるか」を添えてください。断定せず、推測は推測と書いてください。',
@@ -3741,7 +3796,7 @@ function closeSheet(id) {
   if (!document.querySelector('.sheet.open')) document.getElementById('overlay').classList.remove('open');
 }
 function closeAllSheets() {
-  ['nodeSheet','aiSheet','graphsSheet','backSheet','appSheet','uiSheet'].forEach(id => {
+  ['nodeSheet','aiSheet','graphsSheet','backSheet','appSheet','uiSheet','legendSheet'].forEach(id => {
     const el = document.getElementById(id); if (el) el.classList.remove('open');
   });
   document.getElementById('overlay').classList.remove('open');
@@ -5105,7 +5160,9 @@ function wireOnboarding() {
     }
   });
   document.getElementById('onboardingSkip').addEventListener('click', closeOnboardingAndMark);
-  document.getElementById('helpBtn').addEventListener('click', openOnboarding);
+  document.getElementById('helpBtn').addEventListener('click', () => openSheet('legendSheet'));
+  document.getElementById('legendClose').addEventListener('click', () => closeSheet('legendSheet'));
+  document.getElementById('legendOnbBtn').addEventListener('click', () => { closeSheet('legendSheet'); openOnboarding(); });
   document.getElementById('dailyNoteBtn').addEventListener('click', openOrCreateDailyNode);
   document.getElementById('nodeNextBtn').addEventListener('click', openNextSheet);
   document.getElementById('zmMinus').addEventListener('click', () => pathZoomStep(-1));
@@ -5190,6 +5247,15 @@ function wireEvents() {
   // グラフ一覧
   document.getElementById('graphsBtn').addEventListener('click', () => { renderGraphList(); openSheet('graphsSheet'); });
   document.getElementById('graphsSheetClose').addEventListener('click', () => closeSheet('graphsSheet'));
+  document.getElementById('cleanEmptyNodesBtn').addEventListener('click', () => {
+    const g = currentGraph(); if (!g) return;
+    const linked = new Set(); g.edges.forEach(e => { linked.add(e.from); linked.add(e.to); });
+    const ids = Object.keys(g.nodes).filter(id => { const n = g.nodes[id]; return isDefaultLabel(n.label) && !(n.memo && n.memo.trim()) && !linked.has(id) && !n.role && !n.dailyNoteDate && !(n.tags && n.tags.length); });
+    if (!ids.length) { showToast('整理する空のノードはありません'); return; }
+    if (!confirm('名前も内容も線もない空のノード ' + ids.length + '個を削除します。中身のあるノードは消えません。よろしいですか？')) return;
+    ids.forEach(id => deleteNode(id));
+    saveGraphs(); updateScoreBar(); showToast(ids.length + '個を整理しました');
+  });
   document.getElementById('cleanEmptyBtn').addEventListener('click', () => {
     const ids = Object.keys(graphs).filter(id => id !== currentGraphId && !Object.keys(graphs[id].nodes || {}).length);
     if (!ids.length) return;
