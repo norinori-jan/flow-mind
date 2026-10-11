@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14110c">
+<title>ぶつける ― flow-mind</title>
+<style>
+:root{--bg:#f6f3ec;--card:#fff;--ink:#1d1a14;--sub:#7a7468;--line:#e3ddd0;--gold:#b8860b;--gold-bg:#fbf1d3;--ok:#1f8f55;--ng:#c0392b;--r:14px}
+@media (prefers-color-scheme:dark){:root{--bg:#14110c;--card:#1e1a13;--ink:#f1ece0;--sub:#a39b88;--line:#332f25;--gold:#e8b84a;--gold-bg:#2d2512;--ok:#4cc38a;--ng:#ff7a6b}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.7 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;-webkit-text-size-adjust:100%}
+body{padding:calc(env(safe-area-inset-top) + 10px) 16px calc(env(safe-area-inset-bottom) + 28px);max-width:640px;margin:0 auto;overflow-x:hidden}
+header{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+h1{font-size:20px;margin:0;flex:1;letter-spacing:.02em}
+h1 span{color:var(--gold)}
+.stat{font-size:12px;color:var(--sub);white-space:nowrap}
+button{font:inherit;color:inherit;cursor:pointer}
+.icon{background:none;border:1px solid var(--line);border-radius:10px;width:40px;height:40px;font-size:18px}
+.note{font-size:12px;color:var(--sub);margin:2px 0 12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin:10px 0;position:relative}
+.card .lab{font-size:11px;font-weight:700;color:var(--gold);letter-spacing:.08em}
+.card h2{font-size:16px;margin:2px 0 4px;word-break:break-word;padding-right:84px}
+.card .snip{font-size:14px;color:var(--sub);word-break:break-word;white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.card.open .snip{display:block;-webkit-line-clamp:unset;max-height:50vh;overflow:auto;color:var(--ink)}
+.card .tags{font-size:11px;color:var(--sub);margin-top:4px}
+.lock{position:absolute;top:8px;right:8px;border:1px solid var(--line);background:none;border-radius:999px;font-size:12px;padding:4px 10px;min-height:32px}
+.lock[aria-pressed=true]{background:var(--gold-bg);border-color:var(--gold);color:var(--gold);font-weight:700}
+.more{background:none;border:none;color:var(--sub);font-size:12px;padding:4px 0;text-decoration:underline}
+.row{display:flex;gap:10px;margin:12px 0}
+.btn{flex:1;min-height:52px;border-radius:var(--r);border:1px solid var(--line);background:var(--card);font-weight:700;font-size:16px}
+.btn.main{background:var(--gold);border-color:var(--gold);color:#fff}
+@media (prefers-color-scheme:dark){.btn.main{color:#14110c}}
+.btn.ok{border-color:var(--ok);color:var(--ok)}
+.btn.ng{border-color:var(--ng);color:var(--ng)}
+.btn[disabled]{opacity:.45;cursor:default}
+.res{background:var(--card);border:1px solid var(--gold);border-radius:var(--r);padding:12px 14px;margin:12px 0}
+.res .head{font-size:18px;font-weight:700;margin:0 0 6px}
+.res dt{font-size:11px;font-weight:700;color:var(--gold);letter-spacing:.08em;margin-top:10px}
+.res dd{margin:2px 0 0;word-break:break-word}
+.res dd.q{font-weight:700}
+label{display:block;font-size:12px;color:var(--sub);margin:10px 0 3px}
+input[type=text],input[type=password],textarea,select{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+textarea{min-height:120px;resize:vertical}
+.send{border:1px dashed var(--gold);border-radius:var(--r);padding:4px 14px 14px;margin:12px 0}
+.mic{margin-top:6px;border:1px solid var(--line);background:none;border-radius:999px;padding:6px 14px;font-size:14px}
+.mic.on{background:var(--ng);color:#fff;border-color:var(--ng)}
+.msg{font-size:14px;margin:10px 0;padding:10px 12px;border-radius:10px;background:var(--gold-bg);word-break:break-word}
+.msg.err{background:rgba(192,57,43,.12);color:var(--ng)}
+details.cfg{margin-top:20px;border-top:1px solid var(--line);padding-top:10px}
+details.cfg summary{font-size:13px;color:var(--sub);cursor:pointer}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:s .7s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes s{to{transform:rotate(360deg)}}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <h1><span>✦</span> ぶつける</h1>
+  <div class="stat" id="stat" aria-live="polite"></div>
+  <button class="icon" id="cfgBtn" aria-label="設定">⚙</button>
+</header>
+<div class="note" id="note">離れたメモを2枚ぶつけて、考えのきっかけを作ります。</div>
+<div id="msg" hidden></div>
+
+<div id="pair"></div>
+<div class="row">
+  <button class="btn" id="shuffleBtn" style="flex:.45">組み替え</button>
+  <button class="btn main" id="goBtn">ぶつける ✦</button>
+</div>
+
+<div id="result" hidden></div>
+
+<details class="cfg" id="cfg">
+  <summary>接続の設定（flow-mind / quick-ref と共通）</summary>
+  <label for="ep">sync-worker のエンドポイント</label>
+  <input type="text" id="ep" inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="https://sync-worker.○○.workers.dev">
+  <label for="tk">同期トークン</label>
+  <input type="password" id="tk" autocapitalize="off" autocomplete="off" spellcheck="false">
+  <label for="prov">使うAI</label>
+  <select id="prov"><option value="gemini">Gemini</option><option value="claude">Claude</option></select>
+  <div class="row"><button class="btn" id="saveCfg">保存して読み込む</button></div>
+  <div class="note">保護メモ・秘密らしい行（鍵・トークン・パスワードなど）は、AI に送りません。</div>
+</details>
+
+<script>
+/*PURE_START*/
+const SKIP_TAGS = ['エンドポイント','トークン','パスワード','認証','機密','保護','AI作成','まとまり','用語','スライス','ぶつける'];
+const SKIP_TITLE_RE = /トークン|token|パスワード|password|passwd|エンドポイント|api[-_ ]?key|秘密鍵|シークレット|secret/i;
+const SECRET_LINE_RE = /(token|トークン|api[-_ ]?key|apikey|secret|シークレット|password|passwd|パスワード|bearer|authorization|エンドポイント|workers\.dev|pages\.dev|sk-[A-Za-z0-9_-]{8,}|AIza[0-9A-Za-z_-]{10,}|ghp_[A-Za-z0-9]{10,}|[A-Fa-f0-9]{32,}|[A-Za-z0-9+\/_=-]{40,})/i;
+
+function stripHtml(html, DP) {
+  const s = String(html || '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|li|h[1-6])>/gi, '\n');
+  if (DP) return (new DP().parseFromString(s, 'text/html').body.textContent || '');
+  return s.replace(/<[^>]*>/g, '');
+}
+function redactText(text) {
+  let removed = 0;
+  const out = String(text || '').split('\n').filter(l => { if (SECRET_LINE_RE.test(l)) { removed++; return false; } return true; });
+  return { text: out.join('\n').replace(/\n{3,}/g, '\n\n').trim(), removed };
+}
+// 送ってよいメモだけを、{id,title,text,tags} にして返す
+function prepareItems(items, DP) {
+  const res = [];
+  for (const it of (Array.isArray(items) ? items : [])) {
+    if (!it || !it.id) continue;
+    if (it.sensitive || it.encBody || it.encFields) continue;
+    if (it.origin && it.origin.app === 'flow-mind') continue;
+    const tags = (Array.isArray(it.tags) ? it.tags : []).map(String);
+    if (tags.some(t => SKIP_TAGS.includes(t))) continue;
+    const title = String(it.title || '').trim();
+    if (SKIP_TITLE_RE.test(title)) continue;
+    const r = redactText(stripHtml(it.body, DP));
+    const t = redactText(title);
+    if (t.removed) continue;
+    if ((title + r.text).length < 20) continue;
+    res.push({ id: String(it.id), title: title || r.text.slice(0, 20), text: r.text, tags, updatedAt: it.updatedAt || 0 });
+  }
+  return res;
+}
+function overlap(a, b) {
+  const A = new Set(a.tags), B = new Set(b.tags);
+  if (!A.size || !B.size) return 0.3;
+  let n = 0; A.forEach(t => { if (B.has(t)) n++; });
+  return n / (A.size + B.size - n);
+}
+const pkey = (a, b) => [a.id, b.id].sort().join('|');
+// 離れた2枚を選ぶ。keep が渡されたら、その1枚は残して相手だけ選ぶ
+function pickPair(items, seen, rnd, keep) {
+  if (items.length < 2) return null;
+  const seenSet = seen instanceof Set ? seen : new Set(seen || []);
+  let best = null, bestScore = Infinity;
+  for (let i = 0; i < 40; i++) {
+    const a = keep || items[Math.floor(rnd() * items.length)];
+    const b = items[Math.floor(rnd() * items.length)];
+    if (a.id === b.id) continue;
+    const score = overlap(a, b) + (seenSet.has(pkey(a, b)) ? 2 : 0) + rnd() * 0.05;
+    if (score < bestScore) { bestScore = score; best = [a, b]; }
+  }
+  return best;
+}
+function buildPrompt(a, b) {
+  const cut = (s, n) => s.length > n ? s.slice(0, n) + '…' : s;
+  return [
+    'あなたは、利用者の2つのメモを「ぶつけて」、新しい考えのきっかけを作る相手です。',
+    'ルール:',
+    '・メモに書かれていないことを事実として足さない。推測は「〜かもしれない」と書く。',
+    '・一般論や教訓にしない。この2枚だからこそ言えることだけを書く。',
+    '・各項目は日本語で最大2文。',
+    '・次のJSONだけを返す（前後に文章やコードフェンスを付けない）:',
+    '{"headline":"この組み合わせに付ける題（15字以内）","common":"共通点","clash":"食い違い・緊張","combo":"2つを組み合わせたら起きること、または試せる具体案","question":"利用者に問う一問（1文）"}',
+    '',
+    '【メモA】題: ' + a.title + '\n' + cut(a.text, 500),
+    '',
+    '【メモB】題: ' + b.title + '\n' + cut(b.text, 500)
+  ].join('\n');
+}
+function parseAI(text) {
+  let s = String(text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+  const i = s.indexOf('{'), j = s.lastIndexOf('}');
+  if (i >= 0 && j > i) {
+    try {
+      const o = JSON.parse(s.slice(i, j + 1));
+      const g = k => String(o[k] == null ? '' : o[k]).trim();
+      if (g('combo') || g('common') || g('clash') || g('question')) return { headline: g('headline'), common: g('common'), clash: g('clash'), combo: g('combo'), question: g('question') };
+    } catch (_) {}
+  }
+  return { headline: '', common: '', clash: '', combo: '', question: '', raw: String(text || '').trim() };
+}
+function mergeThoughts(existing, rec, max) {
+  const list = (Array.isArray(existing) ? existing : []).filter(t => t && t.id !== rec.id);
+  return [rec].concat(list).slice(0, max || 50);
+}
+function makeRecord(o) {
+  const src = '出所メモ: 「' + o.a.title.slice(0, 30) + '」×「' + o.b.title.slice(0, 30) + '」';
+  const decided = (String(o.thought || '').trim() + '\n\n' + src).trim().slice(0, 1500);
+  return { id: 'col_' + o.now.toString(36), title: String(o.title || '').trim().slice(0, 40) || 'ぶつけた考え', decided,
+    next: String(o.next || '').trim().slice(0, 120), flow: '', steps: 0, srcNoteId: '', graph: 'ぶつける', tags: ['ぶつける'], sentAt: o.now };
+}
+/*PURE_END*/
+
+const $ = id => document.getElementById(id);
+const LSK = { ep: 'qr_sync_endpoint', tk: 'qr_sync_token', prov: 'col_provider', seen: 'col_seen', stats: 'col_stats' };
+const ls = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (_) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (_) {} }
+};
+const cfg = () => ({ ep: (ls.get(LSK.ep, '') || '').trim().replace(/\/+$/, ''), tk: (ls.get(LSK.tk, '') || '').trim(), prov: ls.get(LSK.prov, 'gemini') });
+
+let pool = [], pair = null, lockIdx = -1, openCard = [false, false], busy = false, result = null, sendOpen = false;
+const todayKey = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);   // 日本時間の日付
+function stats() { try { const s = JSON.parse(ls.get(LSK.stats, '{}')); return s.d === todayKey() ? s : { d: todayKey(), shown: 0, hit: 0 }; } catch (_) { return { d: todayKey(), shown: 0, hit: 0 }; } }
+function bump(k) { const s = stats(); s[k]++; ls.set(LSK.stats, JSON.stringify(s)); renderStat(); }
+function renderStat() { const s = stats(); $('stat').textContent = s.shown ? 'きょう ' + s.shown + '組 ／ ピンと来た ' + s.hit : ''; }
+function seenSet() { try { return new Set(JSON.parse(ls.get(LSK.seen, '[]'))); } catch (_) { return new Set(); } }
+function addSeen(a, b) { const s = [...seenSet(), pkey(a, b)].slice(-300); ls.set(LSK.seen, JSON.stringify(s)); }
+function showMsg(t, err) { const m = $('msg'); if (!t) { m.hidden = true; return; } m.hidden = false; m.className = 'msg' + (err ? ' err' : ''); m.textContent = t; }
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function renderPair() {
+  const box = $('pair');
+  if (!pair) { box.innerHTML = ''; return; }
+  box.innerHTML = pair.map((m, i) => '<div class="card' + (openCard[i] ? ' open' : '') + '" data-i="' + i + '">' +
+    '<div class="lab">メモ ' + 'AB'[i] + '</div><button class="lock" data-lock="' + i + '" aria-pressed="' + (lockIdx === i) + '">' + (lockIdx === i ? '📌 固定中' : '📌 固定') + '</button>' +
+    '<h2>' + esc(m.title) + '</h2><div class="snip">' + esc(m.text || '（本文なし）') + '</div>' +
+    (m.tags.length ? '<div class="tags">#' + m.tags.slice(0, 5).map(esc).join(' #') + '</div>' : '') +
+    '<button class="more" data-more="' + i + '">' + (openCard[i] ? '閉じる' : '全文を見る') + '</button></div>').join('');
+}
+function shuffle() {
+  if (pool.length < 2) { pair = null; renderPair(); return false; }
+  const keep = lockIdx >= 0 && pair ? pair[lockIdx] : null;
+  const p = pickPair(pool, seenSet(), Math.random, keep);
+  if (!p) return false;
+  pair = lockIdx >= 0 && keep ? (lockIdx === 0 ? [p[0], p[1]] : [p[1], p[0]]) : p;
+  openCard = [false, false]; result = null; sendOpen = false; $('result').hidden = true; renderPair();
+  return true;
+}
+async function api(path, init) {
+  const c = cfg();
+  if (!c.ep || !c.tk) throw new Error('エンドポイントとトークンを、下の設定に入れてください');
+  const res = await fetch(c.ep + path, Object.assign({}, init, { headers: Object.assign({ Authorization: 'Bearer ' + c.tk }, (init && init.headers) || {}) }));
+  if (res.status === 401) throw new Error('同期トークンが違います（設定を確認してください）');
+  return res;
+}
+async function load() {
+  showMsg('');
+  const c = cfg();
+  if (!c.ep || !c.tk) { $('cfg').open = true; showMsg('はじめに、下の設定でエンドポイントとトークンを入れてください', false); return; }
+  $('note').innerHTML = '<span class="spin"></span>メモを読み込み中…';
+  try {
+    const res = await api('/sync/quick-ref');
+    if (!res.ok) throw new Error('メモを読めませんでした (' + res.status + ')');
+    const j = await res.json();
+    const all = (j.data && j.data.items) || [];
+    pool = prepareItems(all, window.DOMParser);
+    $('note').textContent = 'メモ ' + all.length + '件のうち ' + pool.length + '件から選びます（保護メモ・秘密らしいものは除外）。';
+    if (pool.length < 2) { showMsg('ぶつけられるメモが2件ありません', true); pair = null; renderPair(); return; }
+    shuffle();
+  } catch (e) { $('note').textContent = ''; showMsg(e.message || String(e), true); }
+}
+async function go() {
+  if (busy || !pair) return;
+  busy = true; $('goBtn').disabled = true; $('goBtn').innerHTML = '<span class="spin"></span>ぶつけ中…'; showMsg('');
+  const [a, b] = pair, c = cfg();
+  try {
+    const body = { provider: c.prov, model: c.prov === 'claude' ? 'claude-sonnet-4-6' : 'gemini-3.5-flash-lite', prompt: buildPrompt(a, b) };
+    if (c.prov === 'claude') body.maxTokens = 800;
+    const res = await api('/ai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(String(d.error || ('AI中継 ' + res.status)).slice(0, 200));
+    result = parseAI(d.text); sendOpen = false;
+    addSeen(a, b); bump('shown');
+    renderResult();
+  } catch (e) { showMsg(e.message || String(e), true); }
+  busy = false; $('goBtn').disabled = false; $('goBtn').textContent = 'ぶつける ✦';
+}
+function renderResult() {
+  const r = result, box = $('result'); box.hidden = false;
+  let h = '<div class="res">';
+  if (r.raw) h += '<dd style="margin:0;white-space:pre-wrap">' + esc(r.raw) + '</dd>';
+  else {
+    h += '<p class="head">' + esc(r.headline || 'ぶつけた結果') + '</p><dl style="margin:0">';
+    if (r.common) h += '<dt>共通点</dt><dd>' + esc(r.common) + '</dd>';
+    if (r.clash) h += '<dt>食い違い</dt><dd>' + esc(r.clash) + '</dd>';
+    if (r.combo) h += '<dt>組み合わせたら</dt><dd>' + esc(r.combo) + '</dd>';
+    if (r.question) h += '<dt>問い</dt><dd class="q">' + esc(r.question) + '</dd>';
+    h += '</dl>';
+  }
+  h += '</div>';
+  if (!sendOpen) h += '<div class="row"><button class="btn ng" id="ngBtn">違う → 次へ</button><button class="btn ok" id="okBtn">ピンと来た ✓</button></div>';
+  else {
+    h += '<div class="send"><label for="sTitle">題</label><input type="text" id="sTitle" maxlength="40" value="' + esc(r.headline) + '">' +
+      '<label for="sThought">考え（自分の言葉で。声でも入れられます）</label><textarea id="sThought">' + esc([r.combo, r.question ? '問い: ' + r.question : ''].filter(Boolean).join('\n')) + '</textarea>' +
+      (SR ? '<button class="mic" id="micBtn" type="button">🎙 声で足す</button>' : '') +
+      '<label for="sNext">次の一手（任意・1文）</label><input type="text" id="sNext" maxlength="120">' +
+      '<div class="row" style="margin-bottom:0"><button class="btn" id="cancelBtn" style="flex:.4">戻る</button><button class="btn main" id="sendBtn">quick-ref へ送る</button></div></div>';
+  }
+  box.innerHTML = h;
+  box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null;
+function toggleMic() {
+  const btn = $('micBtn'); if (!SR || !btn) return;
+  if (rec) { rec.stop(); return; }
+  rec = new SR(); rec.lang = 'ja-JP'; rec.interimResults = false; rec.continuous = false;
+  rec.onresult = e => { const t = Array.from(e.results).map(x => x[0].transcript).join(''); const ta = $('sThought'); if (ta && t) ta.value = (ta.value ? ta.value.replace(/\s*$/, '\n') : '') + t; };
+  rec.onend = () => { rec = null; const b = $('micBtn'); if (b) { b.classList.remove('on'); b.textContent = '🎙 声で足す'; } };
+  rec.onerror = () => { showMsg('声の入力が使えませんでした。キーボードのマイクをお使いください', true); };
+  btn.classList.add('on'); btn.textContent = '■ 止める'; try { rec.start(); } catch (_) { rec = null; }
+}
+async function send() {
+  const btn = $('sendBtn'); if (btn.disabled) return;
+  const o = { a: pair[0], b: pair[1], title: $('sTitle').value, thought: $('sThought').value, next: $('sNext').value, now: Date.now() };
+  if (!o.title.trim()) { showMsg('題を入れてください', true); return; }
+  if (!o.thought.trim() && !o.next.trim()) { showMsg('「考え」か「次の一手」を書いてください', true); return; }
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>送信中…';
+  try {
+    const record = makeRecord(o);
+    let existing = [];
+    const g = await api('/sync/flow-mind-out');       // flow-mind が返した分を消さないよう、いまの一覧に足してから書く
+    if (g.ok) { const j = await g.json().catch(() => ({})); existing = (j.data && j.data.thoughts) || []; }
+    else if (g.status !== 404) throw new Error('いまの一覧を読めませんでした (' + g.status + ')');
+    const put = await api('/sync/flow-mind-out', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: { version: 1, thoughts: mergeThoughts(existing, record, 50) } }) });
+    if (!put.ok) throw new Error('送れませんでした (' + put.status + ')');
+    bump('hit'); showMsg('quick-ref へ送りました。quick-ref の「まとまり」画面で確認すると、メモにできます。');
+    lockIdx = -1; shuffle();
+  } catch (e) { showMsg(e.message || String(e), true); btn.disabled = false; btn.textContent = 'quick-ref へ送る'; }
+}
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.dataset.lock != null) { const i = +t.dataset.lock; lockIdx = lockIdx === i ? -1 : i; renderPair(); }
+  else if (t.dataset.more != null) { const i = +t.dataset.more; openCard[i] = !openCard[i]; renderPair(); }
+  else if (t.id === 'okBtn') { sendOpen = true; renderResult(); }
+  else if (t.id === 'ngBtn') { shuffle(); go(); }
+  else if (t.id === 'cancelBtn') { sendOpen = false; renderResult(); }
+  else if (t.id === 'sendBtn') send();
+  else if (t.id === 'micBtn') toggleMic();
+});
+$('goBtn').onclick = go;
+$('shuffleBtn').onclick = () => { showMsg(''); shuffle(); };
+$('cfgBtn').onclick = () => { $('cfg').open = !$('cfg').open; };
+$('saveCfg').onclick = () => {
+  const ep = $('ep').value.trim().replace(/\/+$/, ''), tk = $('tk').value.trim();
+  if (ep) ls.set(LSK.ep, ep); if (tk) ls.set(LSK.tk, tk); ls.set(LSK.prov, $('prov').value);
+  $('tk').value = ''; $('tk').placeholder = ls.get(LSK.tk, '') ? '設定済み（変えるときだけ入力）' : '';
+  load();
+};
+(function init() {
+  const c = cfg(); $('ep').value = c.ep; $('prov').value = c.prov === 'claude' ? 'claude' : 'gemini';
+  $('tk').placeholder = c.tk ? '設定済み（変えるときだけ入力）' : '';
+  renderStat(); load();
+})();
+</script>
+</body>
+</html>
