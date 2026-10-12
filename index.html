@@ -660,6 +660,16 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
   <div class="sheet-body" id="appSheetBody"></div>
 </div>
 
+<!-- 未処理の録音シート -->
+<div class="sheet" id="voiceSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header"><button id="voiceClose">閉じる</button><h2>未処理の録音</h2><span></span></div>
+  <div class="sheet-body">
+    <div style="font-size:13px;color:var(--text-dim);line-height:1.7;margin-bottom:10px;">文字起こしに失敗した録音を、この端末に残しています。聞き直して自分で書くか、「再試行」で文字にできます。</div>
+    <div id="voiceList"></div>
+  </div>
+</div>
+
 <!-- 見方シート -->
 <div class="sheet" id="legendSheet">
   <div class="sheet-handle"></div>
@@ -730,6 +740,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
     <button id="newGraphBtn" style="color:var(--gold);font-weight:800;">＋ 新規</button>
   </div>
   <div class="sheet-body">
+    <button class="tool-btn" id="autoNameBtn" style="width:100%;justify-content:center;margin-bottom:10px;">🏷 仮の名前（はじめてのグラフ等）を内容から付け直す</button>
     <button class="tool-btn" id="cleanEmptyNodesBtn" style="width:100%;justify-content:center;margin-bottom:10px;">🧹 空のノードを整理（いまのグラフ）</button>
     <button class="tool-btn" id="cleanEmptyBtn" style="display:none;width:100%;justify-content:center;margin-bottom:10px;">🧹 空のグラフを整理</button>
     <div id="graphListWrap"></div>
@@ -909,6 +920,7 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
   </div>
   <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-dim);padding:2px 4px 6px;"><input type="checkbox" id="qcChain"> 直前に触れたノードに線でつなぐ（オフなら、つなぎません）</label>
   <div class="qc-status" id="qcStatus"></div>
+  <button type="button" id="qcVoiceLeft" style="display:none;margin:6px 0;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,159,67,0.7);background:rgba(255,159,67,0.12);color:#FF9F43;font-size:14px;font-weight:700;width:100%;">🎙 未処理の録音があります ▸</button>
 </div>
 
 <!-- TOAST -->
@@ -2576,11 +2588,10 @@ async function sendPlanToQuickRef(btn) {
   }
   const now = Date.now(), title = ('調べる計画：' + (lastNext.label || smartTitle(lastNext.memo, ''))).slice(0, 40);
   const rec = { id: 'ns_' + lastNext.nodeId, kind: 'plan', title, decided: text.slice(0, 3000), next: String(((lastNext.steps[0] || lastNext.frames[0]) || {}).title || '').slice(0, 120), flow: '', steps: 0, srcNoteId: n.qrItemId || '', graph: g.name || '', tags, sentAt: now };
-  const list = [rec].concat(loadOutThoughts().filter(t => t.id !== rec.id)).slice(0, 30);
+  let list = [rec].concat(loadOutThoughts().filter(t => t.id !== rec.id)).slice(0, 30);
   btn.disabled = true; btn.textContent = '送っています…';
   try {
-    const res = await fetch(ep + '/sync/flow-mind-out', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk }, body: JSON.stringify({ data: { version: 1, thoughts: list } }) });
-    if (!res.ok) throw new Error('PUT失敗 (' + res.status + ')');
+    list = await mergeOutThoughts(ep, tk, rec);
     try { localStorage.setItem(FM_OUT_KEY, JSON.stringify(list)); } catch (_) {}
     btn.textContent = '✓ 送りました（タグ：' + tags.join('、') + '）'; showToast('quick-ref の「まとまり」画面で「メモにする」を押すと、メモになります');
   } catch (e) { btn.disabled = false; btn.textContent = '📝 この内容にタグを付けて quick-ref に書く'; showToast('送れませんでした：' + ((e && e.message) || e)); }
@@ -3796,7 +3807,7 @@ function closeSheet(id) {
   if (!document.querySelector('.sheet.open')) document.getElementById('overlay').classList.remove('open');
 }
 function closeAllSheets() {
-  ['nodeSheet','aiSheet','graphsSheet','backSheet','appSheet','uiSheet','legendSheet'].forEach(id => {
+  ['nodeSheet','aiSheet','graphsSheet','backSheet','appSheet','uiSheet','legendSheet','voiceSheet'].forEach(id => {
     const el = document.getElementById(id); if (el) el.classList.remove('open');
   });
   document.getElementById('overlay').classList.remove('open');
@@ -3844,6 +3855,7 @@ let qcChunks = [];
 let qcRecording = false;
 
 function openQuickCapture(prefillText) {
+  refreshVoiceBadge();
   qcAutoSend = false;
   document.getElementById('quickCaptureBar').classList.add('open');
   const input = document.getElementById('qcInput');
@@ -3864,6 +3876,52 @@ function autoGrowQc() {
   el.style.height = Math.min(120, el.scrollHeight) + 'px';
 }
 
+// ── 失敗した録音を残す（IndexedDB。録音が消えないように） ──
+function fmVoiceDB() {
+  return new Promise((res, rej) => {
+    try { const rq = indexedDB.open('fm-voice', 1); rq.onupgradeneeded = () => rq.result.createObjectStore('rec', { keyPath: 'id' }); rq.onsuccess = () => res(rq.result); rq.onerror = () => rej(rq.error); }
+    catch (e) { rej(e); }
+  });
+}
+async function voiceKeep(blob) {
+  try { const db = await fmVoiceDB(); await new Promise((res, rej) => { const tx = db.transaction('rec', 'readwrite'); tx.objectStore('rec').put({ id: 'v' + Date.now(), blob, type: blob.type || '', at: Date.now() }); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); db.close(); } catch (e) { console.warn('voiceKeep', e); return false; }
+  refreshVoiceBadge(); return true;
+}
+async function voiceAll() {
+  try { const db = await fmVoiceDB(); const l = await new Promise((res, rej) => { const rq = db.transaction('rec').objectStore('rec').getAll(); rq.onsuccess = () => res(rq.result || []); rq.onerror = () => rej(rq.error); }); db.close(); return l.sort((a, b) => b.at - a.at); } catch (_) { return []; }
+}
+async function voiceDel(id) { try { const db = await fmVoiceDB(); await new Promise(res => { const tx = db.transaction('rec', 'readwrite'); tx.objectStore('rec').delete(id); tx.oncomplete = res; tx.onerror = res; }); db.close(); } catch (_) {} refreshVoiceBadge(); }
+async function refreshVoiceBadge() {
+  const b = document.getElementById('qcVoiceLeft'); if (!b) return;
+  const n = (await voiceAll()).length; b.style.display = n ? '' : 'none'; b.textContent = '🎙 未処理の録音が ' + n + '件 あります ▸';
+}
+async function transcribeBlobText(blob) {
+  const apiKey = localStorage.getItem(LS_OPENAI) || '', proxyUrl = localStorage.getItem(LS_PROXY) || '';
+  if (!apiKey && !proxyUrl) throw new Error('文字起こしにはOpenAI APIキーが必要です（quick-refの⚙️設定）');
+  const form = new FormData(); form.append('file', blob, 'audio.' + ((blob.type || '').includes('mp4') ? 'mp4' : 'webm'));
+  if (proxyUrl) { form.append('purpose', 'transcription'); const r = await fetch(proxyUrl.replace(/\/$/, '') + '/transcribe', { method: 'POST', body: form }); if (!r.ok) throw new Error('Proxy ' + r.status); return ((await r.json()).text || '').trim(); }
+  form.append('model', 'whisper-1'); form.append('language', 'ja');
+  const r = await fetch('https://api.openai.com/v1/audio/transcriptions', { method: 'POST', headers: { Authorization: 'Bearer ' + apiKey }, body: form });
+  const d = await r.json(); if (!r.ok) throw new Error((d.error && d.error.message) || ('Whisper ' + r.status)); return (d.text || '').trim();
+}
+async function openVoiceSheet() {
+  const l = await voiceAll(), box = document.getElementById('voiceList');
+  box.innerHTML = l.length ? '' : '<div style="opacity:.7;padding:16px 0">未処理の録音はありません。</div>';
+  l.forEach(r => {
+    const d = document.createElement('div'); d.style.cssText = 'border:1px solid var(--border2);border-radius:14px;padding:12px;margin-bottom:10px;background:var(--surface2)';
+    const when = new Date(r.at).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    d.innerHTML = '<div style="font-size:13px;color:var(--text-dim);margin-bottom:6px">' + when + '（' + Math.round((r.blob.size || 0) / 1024) + 'KB）</div><audio controls style="width:100%"></audio><div style="display:flex;gap:8px;margin-top:8px"><button type="button" class="tool-btn gold" data-vr="1" style="flex:1;justify-content:center">再試行（文字にする）</button><button type="button" class="tool-btn" data-vd="1" style="flex:1;justify-content:center">削除</button></div><div data-vs style="font-size:12px;color:var(--text-dim);margin-top:6px"></div>';
+    d.querySelector('audio').src = URL.createObjectURL(r.blob);
+    d.querySelector('[data-vr]').addEventListener('click', async ev => {
+      const st = d.querySelector('[data-vs]'); ev.target.disabled = true; st.textContent = '⏳ 文字起こし中…';
+      try { const t = await transcribeBlobText(r.blob); if (!t) throw new Error('文字が取れませんでした'); await voiceDel(r.id); closeSheet('voiceSheet'); openQuickCapture(t); }
+      catch (e) { ev.target.disabled = false; st.textContent = '失敗：' + ((e && e.message) || e); }
+    });
+    d.querySelector('[data-vd]').addEventListener('click', async () => { if (!confirm('この録音を削除します。よろしいですか？')) return; await voiceDel(r.id); openVoiceSheet(); });
+    box.appendChild(d);
+  });
+  openSheet('voiceSheet');
+}
 function setQcStatus(msg, busy) {
   const el = document.getElementById('qcStatus');
   el.textContent = msg || '';
@@ -4000,7 +4058,7 @@ async function transcribeAndFill(blob) {
   const proxyUrl = localStorage.getItem(LS_PROXY) || '';
   if (!apiKey && !proxyUrl) {
     setQcStatus('');
-    showToast('文字起こしにはOpenAI APIキーが必要です（quick-refの⚙️設定）');
+    voiceKeep(blob).then(ok => showToast('文字起こしにはOpenAI APIキーが必要です。録音は' + (ok ? '端末に残しました（「未処理の録音」から）' : '残せませんでした')));
     return;
   }
   try {
@@ -4035,7 +4093,7 @@ async function transcribeAndFill(blob) {
   } catch(e) {
     console.error(e);
     setQcStatus('');
-    showToast('文字起こしに失敗しました: ' + e.message);
+    voiceKeep(blob).then(ok => showToast('文字起こしに失敗しました: ' + e.message + (ok ? '（録音は端末に残しました）' : '')));
   }
 }
 
@@ -4820,6 +4878,24 @@ function extractFromMemo() {
   showToast('抜き出しました（金色のノード）。元のメモには【 】で印を付けました');
 }
 const FM_OUT_KEY = 'fm_out_thoughts';
+// 返信箱(flow-mind-out)：書く前に、クラウドにある一覧を読んで、idで合流する（ほかのアプリが返した分を消さない）
+async function mergeOutThoughts(ep, tk, rec) {
+  const auth = { Authorization: 'Bearer ' + tk };
+  let remote = [];
+  try {
+    const r = await fetch(ep + '/sync/flow-mind-out', { headers: auth });
+    if (r.status === 401 || r.status === 403) throw new Error('同期トークンが違います（' + r.status + '）');
+    if (r.ok) { const j = await r.json(); const a = Array.isArray(j.data) ? j.data : (j.data && j.data.thoughts); if (Array.isArray(a)) remote = a; }
+    else if (r.status !== 404) throw new Error('返信箱の読み込みに失敗（' + r.status + '）');
+  } catch (e) { throw new Error('返信箱を読めなかったので、上書きせずに止めました：' + ((e && e.message) || e)); }
+  const by = new Map();
+  remote.concat(loadOutThoughts()).forEach(t => { if (t && t.id) by.set(t.id, Object.assign({}, by.get(t.id) || {}, t)); });
+  by.set(rec.id, rec);
+  const list = [...by.values()].sort((a, b) => (b.sentAt || 0) - (a.sentAt || 0)).slice(0, 60);
+  const res = await fetch(ep + '/sync/flow-mind-out', { method: 'PUT', headers: Object.assign({ 'Content-Type': 'application/json' }, auth), body: JSON.stringify({ data: { version: 1, thoughts: list } }) });
+  if (!res.ok) throw new Error('PUT失敗 (' + res.status + ')');
+  return list;
+}
 function loadOutThoughts() { try { const v = JSON.parse(localStorage.getItem(FM_OUT_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch (_) { return []; } }
 let backNodeId = null;
 function renderClusterOps(n) {
@@ -4855,10 +4931,9 @@ async function sendThoughtToQuickRef() {
   if (!decided && !next) { showToast('「決めたこと」か「次の一手」のどちらかを書いてください'); return false; }
   const fl = composeThoughtFlow(backNodeId), now = Date.now();
   const rec = { id: 'th_' + backNodeId, title, decided, next, flow: fl.text, steps: fl.nodeCount, srcNoteId: n.qrItemId || '', graph: g.name || '', sentAt: now };
-  const list = [rec].concat(loadOutThoughts().filter(t => t.id !== rec.id)).slice(0, 30);
+  let list = [rec].concat(loadOutThoughts().filter(t => t.id !== rec.id)).slice(0, 30);
   try {
-    const res = await fetch(ep + '/sync/flow-mind-out', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk }, body: JSON.stringify({ data: { version: 1, thoughts: list } }) });
-    if (!res.ok) throw new Error('PUT失敗 (' + res.status + ')');
+    list = await mergeOutThoughts(ep, tk, rec);
   } catch (e) { showToast('送れませんでした：' + ((e && e.message) || e)); return false; }
   try { localStorage.setItem(FM_OUT_KEY, JSON.stringify(list)); } catch (_) {}
   n.thought = { title, decided, next }; n.sentBackAt = now; n.updatedAt = now; saveGraphs();
@@ -5160,6 +5235,8 @@ function wireOnboarding() {
     }
   });
   document.getElementById('onboardingSkip').addEventListener('click', closeOnboardingAndMark);
+  document.getElementById('qcVoiceLeft').addEventListener('click', openVoiceSheet);
+  document.getElementById('voiceClose').addEventListener('click', () => closeSheet('voiceSheet'));
   document.getElementById('helpBtn').addEventListener('click', () => openSheet('legendSheet'));
   document.getElementById('legendClose').addEventListener('click', () => closeSheet('legendSheet'));
   document.getElementById('legendOnbBtn').addEventListener('click', () => { closeSheet('legendSheet'); openOnboarding(); });
@@ -5247,6 +5324,19 @@ function wireEvents() {
   // グラフ一覧
   document.getElementById('graphsBtn').addEventListener('click', () => { renderGraphList(); openSheet('graphsSheet'); });
   document.getElementById('graphsSheetClose').addEventListener('click', () => closeSheet('graphsSheet'));
+  document.getElementById('autoNameBtn').addEventListener('click', () => {
+    const isTmp = nm => /^(はじめてのグラフ|新しいグラフ|無題|グラフ\s*\d*)$/.test(String(nm || '').trim());
+    const todo = Object.keys(graphs).filter(id => isTmp(graphs[id].name) && Object.keys(graphs[id].nodes || {}).length);
+    if (!todo.length) { showToast('付け直す名前はありません'); return; }
+    const used = new Set(Object.values(graphs).map(x => x.name));
+    const names = todo.map(id => {
+      const ns = Object.values(graphs[id].nodes), pick = ns.filter(n => n.role === 'question').concat(ns.filter(n => n.role === 'oddity'), ns).find(n => !isDefaultLabel(n.label) || (n.memo && n.memo.trim()));
+      let nm = pick ? dispLabel(pick).slice(0, 18) : '（内容なし）'; let k = 2, base = nm; while (used.has(nm)) nm = base + ' ' + (k++); used.add(nm); return nm;
+    });
+    if (!confirm(todo.length + '個のグラフに、内容から名前を付けます。\n例：' + names.slice(0, 3).join(' ／ ') + '\nよろしいですか？')) return;
+    todo.forEach((id, i) => { graphs[id].name = names[i]; graphs[id].updatedAt = Date.now(); });
+    saveGraphs(); renderGraphList(); showToast(todo.length + '個に名前を付けました');
+  });
   document.getElementById('cleanEmptyNodesBtn').addEventListener('click', () => {
     const g = currentGraph(); if (!g) return;
     const linked = new Set(); g.edges.forEach(e => { linked.add(e.from); linked.add(e.to); });
