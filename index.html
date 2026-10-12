@@ -565,7 +565,11 @@ textarea { min-height:70px; resize:vertical; line-height:1.5; }
       <button type="button" id="nMemoExtractBtn" style="background:none;border:none;color:var(--gold);font-size:12px;font-weight:700;padding:2px 4px;cursor:pointer;margin-left:auto;">✂ 選択を抜き出す</button>
       <button type="button" id="nMemoCopyBtn" style="background:none;border:none;color:var(--blue);font-size:12px;font-weight:600;padding:2px 4px;cursor:pointer;">📋 コピー</button>
     </label>
+    <div style="display:flex;gap:8px;align-items:center;margin:2px 0 6px;"><button type="button" id="nMemoVoiceBtn" class="p-st" style="font-size:14px;padding:8px 14px;border-color:rgba(255,90,90,0.7)">🎙 声で足す</button><span style="font-size:11px;color:var(--text-dim)">音声は残さず、文字だけ保存します</span></div>
+    <div id="nMemoVoiceStat" style="display:none;font-size:12px;color:var(--gold);margin:0 0 6px;"></div>
     <textarea id="nMemo" placeholder="補足・根拠など（任意）"></textarea>
+    <label class="field-label">形</label>
+    <div id="shapeRow" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
     <button type="button" class="next-btn" id="nodeNextBtn">💡 ここからどう進める？<br><span style="font-size:12px;font-weight:600">次に調べること・試すことを出します</span></button>
 
     <label class="field-label" style="margin-top:18px">① これは何ですか？（ひとつ選ぶ）</label>
@@ -1142,6 +1146,7 @@ const NODE_R = 38;
 let editingNodeId = null;
 let editingNodeColor = '#4A9EFF';
 
+
 // ═══════════════════════════════════
 // FLOWCHART LAYOUT — 常時、構造化された上→下のレイアウトに整列させる
 // ═══════════════════════════════════
@@ -1628,8 +1633,7 @@ function drawNode(n, id, score, phase) {
 
   // 外リング（選択・接続）
   if (isSel || isConnFrom) {
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, r + 5*vpScale, 0, Math.PI*2);
+    nodePath(ctx, n.shape, s.x, s.y, r + 5*vpScale);
     ctx.strokeStyle = isConnFrom ? '#F5C842' : 'rgba(255,255,255,0.6)';
     ctx.lineWidth = 2*vpScale;
     ctx.stroke();
@@ -1640,8 +1644,7 @@ function drawNode(n, id, score, phase) {
   const col = n.color || '#4A9EFF';
   grad.addColorStop(0, col + 'CC');
   grad.addColorStop(1, col + '55');
-  ctx.beginPath();
-  ctx.arc(s.x, s.y, r, 0, Math.PI*2);
+  nodePath(ctx, n.shape, s.x, s.y, r);
   ctx.fillStyle = grad;
   ctx.fill();
   ctx.strokeStyle = col + 'AA';
@@ -1650,7 +1653,7 @@ function drawNode(n, id, score, phase) {
   ctx.shadowBlur = 0;
 
   if (nodeStatus(n) === 'chosen') {   // 選んだ：金の太い輪
-    ctx.beginPath(); ctx.arc(s.x, s.y, r + 1.5 * vpScale, 0, Math.PI * 2);
+    nodePath(ctx, n.shape, s.x, s.y, r + 1.5 * vpScale);
     ctx.strokeStyle = '#F5C842'; ctx.lineWidth = 3.5 * vpScale; ctx.stroke();
   }
 
@@ -1680,7 +1683,7 @@ function drawNode(n, id, score, phase) {
   ctx.textBaseline = 'middle';
   const fs = Math.max(10, Math.min(14, 12)) * vpScale;
   ctx.font = `700 ${fs}px -apple-system`;
-  const maxW = r * 1.6;
+  const maxW = r * ({ box: 2.1, pill: 2.3, diamond: 1.05, hex: 1.5 }[n.shape] || 1.6);
   const emptyNode = isDefaultLabel(n.label) && !(n.memo && n.memo.trim());
   const label = emptyNode ? '（空）' : dispLabel(n);
   if (emptyNode) ctx.fillStyle = 'rgba(255,255,255,0.45)';
@@ -2252,7 +2255,7 @@ function pathCardHtml(g, item, unresolved) {
     (n.branch ? '<div><span class="p-br ' + n.branch + '">' + (n.branch === 'yes' ? '✔ はい' : '✖ いいえ') + '</span></div>' : '') + '<div class="p-label">' + escHtml(dispLabel(n)) + '</div>' + (memo ? '<div class="p-memo">' + escHtml(memo) + '</div>' : (n.branch ? '<div class="p-memo" style="opacity:.6">タップして、そのときどうするかを書く</div>' : '')) +
     '<div class="p-meta"><span>' + ri[1] + '</span>' + pill + (d ? '<span>' + d + '</span>' : '') + '<button class="p-st' + (st === 'chosen' ? ' on' : '') + '" data-st="' + item.id + '|chosen">◎ 選ぶ</button><button class="p-st drop' + (st === 'dropped' ? ' on' : '') + '" data-st="' + item.id + '|dropped">✕ 見送る</button>' +
     '<button class="p-del" data-del="' + item.id + '">削除</button></div>' +
-    '<div class="p-meta"><button class="p-st" data-nextfor="' + item.id + '">💡 次は？</button><button class="p-st" data-paste="' + item.id + '">📥 結果を貼る</button>' + (role === 'question' && !item.kids && !n.branch ? '<button class="p-st" data-yn="' + item.id + '" style="color:#4AE09A;border-color:rgba(74,224,154,0.6)">🔀 はい／いいえに分ける</button>' : '') + '</div>' +
+    '<div class="p-meta"><button class="p-st" data-nextfor="' + item.id + '">💡 次は？</button><button class="p-st" data-paste="' + item.id + '">📥 結果を貼る</button><button class="p-st" data-vm="' + item.id + '" style="color:#FF8A8A;border-color:rgba(255,90,90,0.6)">🎙 声で足す</button>' + (role === 'question' && !item.kids && !n.branch ? '<button class="p-st" data-yn="' + item.id + '" style="color:#4AE09A;border-color:rgba(74,224,154,0.6)">🔀 はい／いいえに分ける</button>' : '') + '</div>' +
     '</div></div>';
   if (!item.kids && nx) h += '<button class="p-next" data-next="' + item.id + '">＋ ' + escHtml(nx.label) + '</button>';
   return h + '</div>';
@@ -2661,6 +2664,7 @@ function wirePathView() {
     const del = t.closest('[data-del]');
     if (del) { e.stopPropagation(); if (confirm('このノードを削除しますか？')) { deleteNode(del.dataset.del); renderPathView(); } return; }
     const pst = t.closest('[data-paste]'); if (pst) { e.stopPropagation(); openPasteSheet(pst.dataset.paste); return; }
+    const vm = t.closest('[data-vm]'); if (vm) { e.stopPropagation(); openNodeSheet(vm.dataset.vm); setTimeout(startVoiceMemo, 350); return; }
     const yn = t.closest('[data-yn]'); if (yn) { e.stopPropagation(); makeYesNo(yn.dataset.yn); return; }
     const nfr = t.closest('[data-nextfor]'); if (nfr) { e.stopPropagation(); openNextSheet(nfr.dataset.nextfor); return; }
     const zb = t.closest('[data-z]');
@@ -2734,6 +2738,7 @@ function makeYesNo(id) {
   };
   mk('yes', 'はいのとき', -90); mk('no', 'いいえのとき', 90);
   if (!q.role) q.role = 'question';
+  if (!q.shape) q.shape = 'diamond';
   q.updatedAt = Date.now();
   applyFlowchartLayout(); saveGraphs(); updateScoreBar(); schedulePathRender();
   showToast('はい／いいえの枝を作りました。開いて書き込んでください');
@@ -2757,7 +2762,80 @@ function addNextStep(fromId) {
   openNodeSheet(id, true);
   document.getElementById('nodeSheetTitle').textContent = st.label;
 }
+// ── ノードの形 ──
+const SHAPES = [['circle','⚪ まる'],['box','▭ 四角'],['diamond','◇ ひし形'],['hex','⬡ 六角'],['pill','⬭ 長丸']];
+function nodePath(ctx, shape, x, y, r) {
+  ctx.beginPath();
+  if (shape === 'box') {
+    const w = r * 1.15, h = r * 0.85, k = Math.min(w, h) * 0.3;
+    ctx.moveTo(x - w + k, y - h); ctx.arcTo(x + w, y - h, x + w, y + h, k); ctx.arcTo(x + w, y + h, x - w, y + h, k);
+    ctx.arcTo(x - w, y + h, x - w, y - h, k); ctx.arcTo(x - w, y - h, x + w, y - h, k); ctx.closePath();
+  } else if (shape === 'pill') {
+    const w = r * 1.3, h = r * 0.7;
+    ctx.moveTo(x - w + h, y - h); ctx.lineTo(x + w - h, y - h); ctx.arc(x + w - h, y, h, -Math.PI / 2, Math.PI / 2);
+    ctx.lineTo(x - w + h, y + h); ctx.arc(x - w + h, y, h, Math.PI / 2, Math.PI * 1.5); ctx.closePath();
+  } else if (shape === 'diamond') {
+    const d = r * 1.3;
+    ctx.moveTo(x, y - d); ctx.lineTo(x + d, y); ctx.lineTo(x, y + d); ctx.lineTo(x - d, y); ctx.closePath();
+  } else if (shape === 'hex') {
+    for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + i * Math.PI / 3; const px = x + Math.cos(a) * r * 1.1, py = y + Math.sin(a) * r * 1.1; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+    ctx.closePath();
+  } else ctx.arc(x, y, r, 0, Math.PI * 2);
+}
+let editingShape = 'circle';
+function renderShapeRow() {
+  const el = document.getElementById('shapeRow'); if (!el) return;
+  el.innerHTML = SHAPES.map(([k, l]) => '<button type="button" data-shape="' + k + '" class="p-st" style="' + (k === editingShape ? 'background:var(--blue);color:#fff;border-color:var(--blue)' : '') + '">' + l + '</button>').join('');
+}
+
+// ── 声で足す：音声は残さず、文字にして、メモに足して、その場で保存 ──
+let vmRec = null, vmNodeId = null;
+function vmStatus(msg) { const el = document.getElementById('nMemoVoiceStat'); if (el) { el.textContent = msg || ''; el.style.display = msg ? '' : 'none'; } }
+function vmSaveNow() {
+  const g = currentGraph(); const n = g && g.nodes[vmNodeId]; const ta = document.getElementById('nMemo');
+  if (!n || !ta || editingNodeId !== vmNodeId) return;
+  n.memo = ta.value; n.updatedAt = Date.now();
+  if (pendingNewNodeId === vmNodeId && ta.value.trim()) pendingNewNodeId = null;
+  try { if (isDefaultLabel(n.label) && ta.value.trim()) n.label = smartTitle(ta.value, n.label); } catch (e) {}
+  saveGraphs(); schedulePathRender();
+}
+function stopVoiceMemo() {
+  if (vmRec) { try { vmRec.onend = null; vmRec.stop(); } catch (e) {} vmRec = null; }
+  const b = document.getElementById('nMemoVoiceBtn'); if (b) { b.textContent = '🎙 声で足す'; b.style.background = ''; }
+  vmStatus('');
+}
+function startVoiceMemo() {
+  const ta = document.getElementById('nMemo'); if (!ta) return;
+  if (vmRec) { stopVoiceMemo(); vmSaveNow(); showToast('保存しました'); return; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { ta.focus(); showToast('キーボードのマイク🎙で話すと、文字になります'); return; }
+  vmNodeId = editingNodeId;
+  let r;
+  try { r = new SR(); } catch (e) { ta.focus(); showToast('キーボードのマイク🎙で話すと、文字になります'); return; }
+  r.lang = 'ja-JP'; r.continuous = true; r.interimResults = true;
+  let base = ta.value;
+  r.onresult = ev => {
+    let fin = '', tmp = '';
+    for (let i = ev.resultIndex; i < ev.results.length; i++) { const t = ev.results[i][0].transcript; if (ev.results[i].isFinal) fin += t; else tmp += t; }
+    if (fin) {
+      base = base + (base && !/\s$/.test(base) ? '\n' : '') + fin;
+      ta.value = base; vmSaveNow(); vmStatus('✅ 文字にして保存しました。続けて話せます');
+    } else if (tmp) vmStatus('聞いています… ' + tmp);
+  };
+  r.onerror = ev => {
+    const code = ev && ev.error;
+    if (code === 'not-allowed' || code === 'service-not-allowed') { stopVoiceMemo(); ta.focus(); showToast('マイクが許可されていません。キーボードのマイク🎙をお使いください'); }
+    else if (code !== 'no-speech' && code !== 'aborted') vmStatus('⚠️ ' + code);
+  };
+  r.onend = () => { if (vmRec === r) { try { r.start(); } catch (e) { stopVoiceMemo(); } } };   // 途切れても続ける
+  vmRec = r;
+  try { r.start(); } catch (e) { vmRec = null; ta.focus(); showToast('キーボードのマイク🎙で話すと、文字になります'); return; }
+  const b = document.getElementById('nMemoVoiceBtn'); if (b) { b.textContent = '⏹ とめる'; b.style.background = 'rgba(255,90,90,0.35)'; }
+  vmStatus('話してください。区切りごとに自動で保存します');
+}
+
 function cancelNodeSheet() {
+  stopVoiceMemo();
   const id = editingNodeId;
   closeSheet('nodeSheet');
   if (pendingNewNodeId && pendingNewNodeId === id) { pendingNewNodeId = null; deleteNode(id); schedulePathRender(); }
@@ -2823,6 +2901,8 @@ async function copyTextToClipboard(text, successMsg) {
 
 function wireCopyButtons() {
   document.getElementById('nMemoExtractBtn')?.addEventListener('click', extractFromMemo);
+  document.getElementById('nMemoVoiceBtn')?.addEventListener('click', startVoiceMemo);
+  document.getElementById('shapeRow')?.addEventListener('click', e => { const b = e.target.closest('[data-shape]'); if (!b) return; editingShape = b.dataset.shape; renderShapeRow(); const g = currentGraph(), n = g && g.nodes[editingNodeId]; if (n) { if (editingShape === 'circle') delete n.shape; else n.shape = editingShape; n.updatedAt = Date.now(); saveGraphs(); } });
   document.getElementById('nMemoCopyBtn')?.addEventListener('click', () => {
     copyTextToClipboard(document.getElementById('nMemo').value, 'メモをコピーしました');
   });
@@ -3208,6 +3288,7 @@ function openNodeSheet(id, isNew=false) {
   document.getElementById('nWeightVal').textContent = n.weight || 3;
   updateSliderPct(slider);
 
+  editingShape = n.shape || 'circle'; renderShapeRow();
   editingNodeColor = n.color || '#4A9EFF';
   document.querySelectorAll('.color-swatch').forEach(sw => {
     sw.classList.toggle('active', sw.dataset.color === editingNodeColor);
@@ -3237,6 +3318,7 @@ function openNodeSheet(id, isNew=false) {
 }
 
 function saveNodeSheet() {
+  stopVoiceMemo();
   const g = currentGraph();
   const n = g?.nodes[editingNodeId];
   if (!n) return;
@@ -3244,6 +3326,7 @@ function saveNodeSheet() {
   n.memo   = document.getElementById('nMemo').value;
   n.weight = parseInt(document.getElementById('nWeight').value);
   n.color  = editingNodeColor;
+  if (editingShape && editingShape !== 'circle') n.shape = editingShape; else delete n.shape;
   n.role   = editingRole;
   n.status = editingStatus;
   n.tags   = [...new Set([...(n.tags || []), ...extractTagsFromText(n.label, n.memo)])]; // 既存タグ（Gemini等で付けたもの）は消さずに足す
@@ -3807,6 +3890,7 @@ function closeSheet(id) {
   if (!document.querySelector('.sheet.open')) document.getElementById('overlay').classList.remove('open');
 }
 function closeAllSheets() {
+  stopVoiceMemo();
   ['nodeSheet','aiSheet','graphsSheet','backSheet','appSheet','uiSheet','legendSheet','voiceSheet'].forEach(id => {
     const el = document.getElementById(id); if (el) el.classList.remove('open');
   });
