@@ -2282,7 +2282,7 @@ function pathUnorganized(g, comps) {
 }
 function pathInboxHtml(g, n, picking, chains) {
   const memo = (n.memo || '').replace(/\s+/g, ' ').trim();
-  const src = n.sourceApp ? '📥 ' + n.sourceApp : (n.kind === 'cluster-summary' ? '🧩 要約' : '✎ 自分で書いた');
+  const src = n.kind === 'qa' ? '🤖 AI Q&A' : n.sourceApp ? '📥 ' + n.sourceApp : (n.kind === 'cluster-summary' ? '🧩 要約' : '✎ 自分で書いた');
   const d = n.updatedAt ? new Date(n.updatedAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
   let h = '<div class="p-inbox"><div data-open="' + n.id + '" style="cursor:pointer"><div class="p-label">' + escHtml(dispLabel(n)) + '</div>' +
     (memo && memo !== n.label ? '<div class="p-memo">' + escHtml(memo) + '</div>' : '') +
@@ -3252,6 +3252,7 @@ function renderNodeAbout(n, g) {
   if (n.kind === 'cluster-summary') { kind = '📥 quick-ref の「まとまり要約」（メモの集まりを1つにした塊）'; from = '元になったメモの一覧は、メモ欄の下のほうにあります'; }
   else if (n.kind === 'slice') { kind = '📊 スライス（quick-ref の表で選んだメモの集まり）'; from = (n.sliceCount || 0) + '件のメモが、線で中心につながっています'; }
   else if (n.kind === 'slice-member') { kind = '📊 スライスの中の1件のメモ'; from = 'スライス「' + lab(n.fromSlice) + '」の一員'; }
+  else if (n.kind === 'qa') { kind = '🤖 quick-ref の AI Q&A（AIに聞いた内容の要約）'; from = '質問・回答の全文は、quick-ref の元のQ&Aにあります'; }
   else if (n.kind === 'flow-step') { kind = '🔀 流れの一段（要約の「流れ」から展開）'; from = '塊「' + lab(n.fromCluster) + '」の流れの一段'; }
   else if (n.extractedFrom) { kind = '✂ メモから抜き出した文'; from = '「' + lab(n.extractedFrom) + '」から抜き出し'; }
   else if (n.dailyNoteDate) { kind = '📅 デイリーノート'; from = n.dailyNoteDate + ' の記録'; }
@@ -5067,7 +5068,7 @@ async function pollQuickRefSync(opts) {
 
     const importedIds = JSON.parse(localStorage.getItem('flow_mind_imported_quickref_ids') || '[]');
     const importedSet = new Set(importedIds);
-    let addedCount = 0, summaryCount = 0;
+    let addedCount = 0, summaryCount = 0, qaCount = 0;
 
     // HTML → 文字。<br> や段落の終わりは改行にする（落とすと「流れ:」の行が1本につながってしまう）。DOMParser は読み込み・実行をしない
     const stripHtml = html => {
@@ -5084,6 +5085,16 @@ async function pollQuickRefSync(opts) {
       // 押されていないものは記憶せずに見送る（あとで押されたら取り込める）。
       const aiMade = (item.tags || []).some(t => t === 'AI作成' || t === 'まとまり' || t === '用語' || t === 'スライス');
       const fmSend = item.ai && item.ai.flowMind && item.ai.flowMind.sentAt;
+      if (item.type === 'ai_qa' && item.qa) {   // quick-ref の AI Q&A：「flow-mind へ送る」を押したものだけ。題名・要約・タグだけ受け取る（回答の全文は持ち込まない）
+        if (!fmSend) continue;   // 押されていなければ記憶せず見送る（あとで押されたら取り込める。「全部取り込む」でも入らない）
+        const qa = (item.ai && item.ai.qa) || {};
+        const qTitle = String(qa.title || item.title || 'AI Q&A').slice(0, 60);
+        const qBody = qTitle + '\n' + String(qa.summary || '') + '\n出典: ' + String(qa.source || 'AI');
+        const qTags = ['AI Q&A'].concat((Array.isArray(qa.tags) ? qa.tags : []).slice(0, 6).map(x => String(x).slice(0, 20)));
+        const qid = addNodeFromTransferItem({ title: qTitle, body: qBody, memoMax: 600, extraTags: qTags, qrItemId: item.id, kind: 'qa' }, i, items.length, g, 'quick-ref');
+        if (qid) { importedSet.add(item.id); addedCount++; qaCount++; }
+        continue;
+      }
       const isOdd = (item.tags || []).includes('違和感');   // quick-ref の ⚠️違和感 ボタンで作ったメモ
       if (aiMade && !fmSend) continue;
       if (auto && !(aiMade && fmSend) && !isOdd) continue;
@@ -5134,7 +5145,7 @@ async function pollQuickRefSync(opts) {
       saveGraphs();
       updateScoreBar();
       updateInboxBadge();
-      showToast(summaryCount ? `quick-refから まとまり要約を ${summaryCount} 件受け取りました（Inbox）` : `quick-refから ${addedCount} 件のメモを自動取り込みしました`);
+      showToast(qaCount && !summaryCount ? `quick-refから AI Q&A を ${qaCount} 件受け取りました（Inbox）` : summaryCount ? `quick-refから まとまり要約を ${summaryCount} 件受け取りました（Inbox）` : `quick-refから ${addedCount} 件のメモを自動取り込みしました`);
     }
   } catch (e) {
     console.warn('[quick-ref-sync] poll failed', e);
